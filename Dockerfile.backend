@@ -1,0 +1,16 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Install build dependencies and app dependencies (including dev deps for ts-node)
+COPY package*.json ./
+RUN npm install
+
+# Copy app source
+COPY . .
+
+ENV NODE_ENV=production
+EXPOSE 5000
+
+# Start backend using the project's start script (uses ts-node loader)
+CMD ["npm", "run", "start:backend"]

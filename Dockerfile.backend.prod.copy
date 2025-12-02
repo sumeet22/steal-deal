@@ -1,0 +1,31 @@
+# Production-optimized backend Dockerfile
+# To build for a specific platform (e.g., linux/amd64), use:
+# docker buildx build --platform linux/amd64 -t your-image-name:tag -f Dockerfile.backend.prod.copy .
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Install dependencies (including dev deps for ts-node)
+COPY package*.json ./
+RUN npm ci && \
+    npm cache clean --force
+
+# Copy source
+COPY . .
+
+# Create non-root user for security
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nodejs -u 1001 && \
+    chown -R nodejs:nodejs /app
+
+USER nodejs
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:5000/', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
+
+ENV NODE_ENV=production
+EXPOSE 5000
+
+# Use ts-node for running TypeScript directly
+CMD ["node", "--loader", "ts-node/esm", "server/index.ts"]

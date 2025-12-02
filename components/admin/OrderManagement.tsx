@@ -1,0 +1,122 @@
+import React, { useState } from 'react';
+import { useAppContext } from '../../context/AppContext';
+import { Order, OrderStatus } from '../../types';
+import { ChevronDownIcon } from '../Icons';
+
+const OrderManagement: React.FC = () => {
+  const { orders, updateOrderStatus } = useAppContext();
+  const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
+  const [filterStatus, setFilterStatus] = useState<OrderStatus>(OrderStatus.New);
+
+  const filteredOrders = orders.filter(order => filterStatus === OrderStatus.New ? true : order.status === filterStatus);
+
+  const handleStatusChange = (orderId: string, newStatus: OrderStatus) => {
+    updateOrderStatus(orderId, newStatus);
+  };
+
+  const toggleExpand = (orderId: string) => {
+    setExpandedOrderId((prevId: string | null) => (prevId === orderId ? null : orderId));
+  };
+
+  const getStatusColor = (status: OrderStatus) => {
+    switch (status) {
+      case OrderStatus.New: return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
+      case OrderStatus.Accepted: return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
+      case OrderStatus.Shipped: return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+      case OrderStatus.Cancelled: return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
+      case OrderStatus.Completed: return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200';
+      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-600 dark:text-gray-200';
+    }
+  };
+
+  return (
+    <div className="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-4 sm:p-6">
+      <h2 className="text-2xl font-bold mb-6">Manage Orders</h2>
+      <div className="mb-4">
+        <label htmlFor="order-status-filter" className="sr-only">Filter by Status</label>
+        <select
+          id="order-status-filter"
+          value={filterStatus}
+          onChange={(e) => setFilterStatus(e.target.value as OrderStatus)}
+          className="p-2 border rounded-lg bg-white dark:bg-gray-700 dark:border-gray-600 focus:ring-indigo-500 focus:border-indigo-500"
+        >
+          {Object.values(OrderStatus).map(status => (
+            <option key={status} value={status}>{status}</option>
+          ))}
+        </select>
+      </div>
+      <div className="space-y-4">
+        {filteredOrders.map((order: Order) => {
+          const isExpanded = expandedOrderId === order.id;
+          return (
+            <div key={order.id} className={`p-4 border rounded-lg dark:border-gray-700 transition-all duration-300 ${isExpanded ? 'bg-gray-50 dark:bg-gray-900/50 shadow-md' : 'shadow-sm'}`}>
+              <div 
+                className="flex flex-wrap justify-between items-center cursor-pointer gap-4"
+                onClick={() => toggleExpand(order.id)}
+                aria-expanded={isExpanded}
+                aria-controls={`order-details-${order.id}`}
+              >
+                <div className="flex-1 min-w-[150px]">
+                  <p className="font-bold text-gray-900 dark:text-white">Order #{order.id}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">{order.customerName}</p>
+                </div>
+                <div className="flex-shrink-0 text-left sm:text-center">
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white">${order.total.toFixed(2)}</p>
+                  <p className="text-xs text-gray-500">{new Date(order.createdAt).toLocaleDateString()}</p>
+                </div>
+                <div className="flex items-center gap-4">
+                  <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(order.status)}`}>
+                    {order.status}
+                  </span>
+                  <ChevronDownIcon className={`transform transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
+                </div>
+              </div>
+              
+              {isExpanded && (
+                <div id={`order-details-${order.id}`} className="mt-4 pt-4 border-t dark:border-gray-600 animate-fade-in">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <h4 className="font-semibold mb-2">Customer Details</h4>
+                      <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                        <p><strong>Name:</strong> {order.customerName}</p>
+                        <p><strong>Phone:</strong> {order.customerPhone}</p>
+                        <p><strong>Address:</strong> {order.shippingAddress}</p>
+                      </div>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold mb-2">Items</h4>
+                      <ul className="list-disc pl-5 text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                        {order.items.map((item: any) => (
+                          <li key={item.id} className="flex items-center gap-2">
+                            <img src={item.image} alt={item.name} className="w-10 h-10 object-cover rounded" />
+                            <span>{item.name} x {item.quantity}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                  <div className="mt-6 flex items-center gap-2">
+                    <label htmlFor={`status-${order.id}`} className="text-sm font-medium">Change Status:</label>
+                    <select
+                      id={`status-${order.id}`}
+                      value={order.status}
+                      onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleStatusChange(order.id, e.target.value as OrderStatus)}
+                      onClick={(e: React.MouseEvent<HTMLSelectElement>) => e.stopPropagation()} // Prevent collapsing when clicking the select
+                      className="p-2 border rounded bg-gray-50 dark:bg-gray-700 dark:border-gray-600 focus:ring-indigo-500 focus:border-indigo-500"
+                    >
+                      {Object.values(OrderStatus).map(status => (
+                        <option key={status} value={status}>{status}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  );
+};
+
+export default OrderManagement;

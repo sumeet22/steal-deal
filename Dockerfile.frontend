@@ -1,0 +1,22 @@
+# Stage 1: Build the React application
+FROM node:20-alpine as builder
+
+WORKDIR /app
+
+COPY package.json ./
+COPY package-lock.json ./
+
+RUN rm -rf node_modules package-lock.json && npm install
+
+COPY . .
+
+# Stage 2: Run the React application in development mode
+FROM node:20-alpine
+
+WORKDIR /app
+
+COPY --from=builder /app .
+
+EXPOSE 5173
+
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]

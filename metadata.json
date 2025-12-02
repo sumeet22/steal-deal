@@ -1,0 +1,7 @@
+{
+  "name": "Lean Commerce Platform",
+  "description": "A mobile-first MVP for businesses to manage their product catalog, including bulk CSV upload, and process orders. This platform provides a simple web admin for catalog management and a public storefront for customers.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
