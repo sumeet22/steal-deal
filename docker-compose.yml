@@ -4,6 +4,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.frontend.prod
+    expose:
+      - "80"  # Add this - tells Docker nginx listens on port 80
     depends_on:
       backend:
         condition: service_started
@@ -11,7 +13,7 @@ services:
     networks:
       - app-network
 
-  # Backend API server (scale with: docker-compose up --scale backend=N)
+  # Backend API server
   backend:
     build:
       context: .
@@ -29,4 +31,3 @@ services:
 networks:
   app-network:
     driver: bridge
-
