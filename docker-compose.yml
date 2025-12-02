@@ -6,18 +6,18 @@ services:
       dockerfile: Dockerfile.frontend.prod
     expose:
       - "80"  # Add this - tells Docker nginx listens on port 80
+    healthcheck:
+        test: ["CMD-SHELL", "wget -qO- http://localhost:80 || exit 1"]
+        interval: 10s
+        timeout: 5s
+        retries: 3
+        start_period: 40s
     depends_on:
       backend:
         condition: service_started
     restart: unless-stopped
     networks:
       - app-network
-    healthcheck:
-      test: ["CMD-SHELL", "wget --spider -q http://localhost:80 || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 60s  # Give it more time to start
 
   # Backend API server
   backend:
