@@ -4,8 +4,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.frontend.prod
-    ports:
-      - "8081:80"
     depends_on:
       backend:
         condition: service_started
