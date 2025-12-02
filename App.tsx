@@ -1,4 +1,4 @@
-import React, { useState, Suspense, useEffect } from 'react';
+import React, { useState, Suspense, useEffect, useCallback } from 'react';
 import { AppProvider, useAppContext } from './context/AppContext';
 import { ToastProvider } from './context/ToastContext';
 import { HomeIcon, ShoppingCartIcon, SunIcon, MoonIcon, ClipboardListIcon, LoadingSpinner, UserCircleIcon } from './components/Icons';
@@ -25,32 +25,72 @@ const App: React.FC = () => {
   const [view, setView] = useState<View>('store');
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
+  const [lastViewedCategoryId, setLastViewedCategoryId] = useState<string | null>(null);
   const [theme, setTheme] = useLocalStorage<'light' | 'dark'>('theme', 'dark');
   const [authView, setAuthView] = useState<'login' | 'register'>('login');
+
+  const parseUrl = useCallback(() => {
+    const params = new URLSearchParams(window.location.search);
+    const viewParam = params.get('view') as View | null;
+    const productIdParam = params.get('productId');
+    const categoryIdParam = params.get('categoryId');
+    if (viewParam) {
+      setView(viewParam);
+      if (viewParam === 'product' && productIdParam) {
+        setSelectedProductId(productIdParam);
+        if (categoryIdParam) {
+          setLastViewedCategoryId(categoryIdParam);
+        }
+      } else {
+        setSelectedProductId(null);
+      }
+      if (viewParam === 'store' && categoryIdParam) {
+        setLastViewedCategoryId(categoryIdParam);
+      } else if (viewParam !== 'store' && viewParam !== 'product') {
+        setLastViewedCategoryId(null);
+      }
+    }
+  }, [setView, setSelectedProductId, setLastViewedCategoryId]);
 
   const { cart, products, currentUser, setCurrentUser } = useAppContext();
 
   const cartItemCount = cart.reduce((count, item) => count + item.quantity, 0);
 
-  const handleProductClick = (productId: string) => {
-  navigate('product', productId);
-};
+  const handleProductDetailClick = (productId: string | null, categoryId: string | null) => {
+    navigate('product', productId, categoryId);
+  };
+
+  const handleSelectCategory = (categoryId: string) => {
+    navigate('store', undefined, categoryId);
+  };
+
+  const handleBackToCategories = () => {
+    navigate('store');
+  };
   
-  const navigate = (newView: View, productId?: string) => {
-  setView(newView);
-  if (productId) {
-    setSelectedProductId(productId);
-  } else if (newView !== 'product') {
-    setSelectedProductId(null);
-  }
-  const params = new URLSearchParams();
-  params.set('view', newView);
-  if (productId) {
-    params.set('productId', productId);
-  }
-  window.history.pushState({}, '', `?${params.toString()}`);
-  window.scrollTo(0, 0);
-}
+  const navigate = (newView: View, productId?: string, categoryId?: string) => {
+    setView(newView);
+    if (productId) {
+      setSelectedProductId(productId);
+    } else if (newView !== 'product') {
+      setSelectedProductId(null);
+    }
+    if (categoryId) {
+      setLastViewedCategoryId(categoryId);
+    } else if (newView === 'store') {
+      setLastViewedCategoryId(null);
+    }
+    const params = new URLSearchParams();
+    params.set('view', newView);
+    if (productId) {
+      params.set('productId', productId);
+    }
+    if (categoryId) {
+      params.set('categoryId', categoryId);
+    }
+    window.history.pushState({}, '', `?${params.toString()}`);
+    parseUrl();
+  };
 
   const toggleTheme = () => {
     setTheme(prevTheme => prevTheme === 'light' ? 'dark' : 'light');
@@ -77,24 +117,11 @@ const App: React.FC = () => {
     };
   }, []);
 
-useEffect(() => {
-  const parseUrl = () => {
-    const params = new URLSearchParams(window.location.search);
-    const viewParam = params.get('view') as View | null;
-    const productIdParam = params.get('productId');
-    if (viewParam) {
-      setView(viewParam);
-      if (viewParam === 'product' && productIdParam) {
-        setSelectedProductId(productIdParam);
-      } else {
-        setSelectedProductId(null);
-      }
-    }
-  };
-  parseUrl();
-  window.addEventListener('popstate', parseUrl);
-  return () => window.removeEventListener('popstate', parseUrl);
-}, []);
+  useEffect(() => {
+    parseUrl();
+    window.addEventListener('popstate', parseUrl);
+    return () => window.removeEventListener('popstate', parseUrl);
+  }, [parseUrl]);
   
   // When user logs out, redirect to auth view if they were in a restricted area
   useEffect(() => {
@@ -137,9 +164,9 @@ useEffect(() => {
   const renderView = () => {
     switch (view) {
       case 'store':
-        return <Storefront onProductClick={handleProductClick} />;
+        return <Storefront onProductDetailClick={handleProductDetailClick} onSelectCategory={handleSelectCategory} onBackToCategories={handleBackToCategories} initialCategoryId={lastViewedCategoryId} />;
       case 'product':
-        return <ProductDetail productId={selectedProductId!} onBack={() => navigate('store')} />;
+        return <ProductDetail productId={selectedProductId} onBack={() => navigate('store', undefined, lastViewedCategoryId)} />;
       case 'checkout':
         return <Checkout onBackToStore={() => navigate('store')} />;
       case 'orders':
@@ -153,8 +180,7 @@ useEffect(() => {
           <Register onSwitchToLogin={() => setAuthView('login')} />
         );
       default:
-        return <Storefront onProductClick={handleProductClick} />;
-    }
+        return <Storefront onProductDetailClick={handleProductDetailClick} onSelectCategory={handleSelectCategory} onBackToCategories={handleBackToCategories} initialCategoryId={lastViewedCategoryId} />;    }
   };
 
   if (!isOnline) {

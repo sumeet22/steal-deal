@@ -1,18 +1,26 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { SearchIcon, ChevronLeftIcon, EyeIcon, FireIcon } from './Icons';
 import { Product } from '../types';
 import QuantityStepper from './shared/QuantityStepper';
 
 interface StorefrontProps {
-  onProductClick: (productId: string) => void;
+  onProductDetailClick: (productId: string | null, categoryId: string | null) => void;
+  onSelectCategory: (categoryId: string) => void;
+  onBackToCategories: () => void;
+  initialCategoryId: string | null;
 }
 
-const Storefront: React.FC<StorefrontProps> = ({ onProductClick }) => {
+const Storefront: React.FC<StorefrontProps> = ({ onProductDetailClick, onSelectCategory, onBackToCategories, initialCategoryId }) => {
   const { products, categories, addToCart } = useAppContext();
-  const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
+  const [activeCategoryId, setActiveCategoryId] = useState<string | null>(initialCategoryId);
   const [categorySearchTerm, setCategorySearchTerm] = useState('');
   const [globalSearchTerm, setGlobalSearchTerm] = useState('');
+  const [categoryListScrollPosition, setCategoryListScrollPosition] = useState(0);
+
+  useEffect(() => {
+    setActiveCategoryId(initialCategoryId);
+  }, [initialCategoryId]);
 
   const activeCategory = useMemo(() => {
     return categories.find(c => c.id === activeCategoryId);
@@ -36,14 +44,22 @@ const Storefront: React.FC<StorefrontProps> = ({ onProductClick }) => {
   }, [products, globalSearchTerm]);
 
   const handleSelectCategory = (categoryId: string) => {
-    setActiveCategoryId(categoryId);
+    setCategoryListScrollPosition(window.scrollY);
+    onSelectCategory(categoryId); // Call the new prop
     setCategorySearchTerm('');
   };
 
   const handleBackToCategories = () => {
-    setActiveCategoryId(null);
+    onBackToCategories();
     setCategorySearchTerm('');
+    window.scrollTo(0, categoryListScrollPosition);
   };
+
+  useEffect(() => {
+    if (activeCategoryId) {
+      window.scrollTo(0, 0);
+    }
+  }, [activeCategoryId]);
 
   const ProductCard: React.FC<{ product: Product }> = ({ product }) => {
     const [quantity, setQuantity] = useState(1);
@@ -53,7 +69,7 @@ const Storefront: React.FC<StorefrontProps> = ({ onProductClick }) => {
 
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden flex flex-col group transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
-        <div className="relative cursor-pointer" onClick={() => onProductClick(product.id)}>
+        <div className="relative cursor-pointer" onClick={() => onProductDetailClick(product.id, activeCategoryId)}>
           <div className="h-40 sm:h-48 bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden">
           {product.image ? (
             <img 
@@ -73,7 +89,7 @@ const Storefront: React.FC<StorefrontProps> = ({ onProductClick }) => {
           </div>
         </div>
         <div className="p-3 sm:p-4 flex flex-col flex-grow">
-          <h3 className="text-base sm:text-lg font-semibold truncate transition-colors group-hover:text-indigo-500 cursor-pointer" onClick={() => onProductClick(product.id)}>{product.name}</h3>
+          <h3 className="text-base sm:text-lg font-semibold truncate transition-colors group-hover:text-indigo-500 cursor-pointer" onClick={() => onProductDetailClick(product.id, activeCategoryId)}>{product.name}</h3>
           
           <div className="flex items-baseline gap-2 mt-2">
             <p className="text-lg sm:text-xl font-bold text-indigo-600 dark:text-indigo-400">${product.price.toFixed(2)}</p>
