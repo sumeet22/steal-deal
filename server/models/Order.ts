@@ -17,6 +17,7 @@ export interface IOrder extends Document {
   total: number;
   status: string;
   paymentMethod: string;
+  paymentId?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -48,8 +49,11 @@ const OrderSchema = new Schema<IOrder>({
   paymentMethod: {
     type: String,
     required: true,
-    enum: ['COD', 'Bank Transfer'],
+    enum: ['COD', 'Bank Transfer', 'Razorpay'],
     default: 'COD',
+  },
+  paymentId: {
+    type: String,
   },
 }, {
   timestamps: true,

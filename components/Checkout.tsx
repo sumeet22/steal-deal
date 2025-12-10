@@ -6,6 +6,12 @@ interface CheckoutProps {
   onBackToStore: () => void;
 }
 
+declare global {
+  interface Window {
+    Razorpay: any;
+  }
+}
+
 const Checkout: React.FC<CheckoutProps> = ({ onBackToStore }) => {
   const { cart, createOrder, currentUser } = useAppContext();
   const { showToast } = useToast();
@@ -13,8 +19,9 @@ const Checkout: React.FC<CheckoutProps> = ({ onBackToStore }) => {
     customerName: '',
     customerPhone: '',
     shippingAddress: '',
-    paymentMethod: 'COD' as 'COD' | 'Bank Transfer',
+    paymentMethod: 'COD' as 'COD' | 'Bank Transfer' | 'Razorpay',
   });
+  const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
     if (currentUser) {
@@ -33,7 +40,113 @@ const Checkout: React.FC<CheckoutProps> = ({ onBackToStore }) => {
     setCustomerInfo(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const loadRazorpayScript = () => {
+    return new Promise((resolve) => {
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
+
+  const handleRazorpayPayment = async () => {
+    const res = await loadRazorpayScript();
+
+    if (!res) {
+      showToast('Error', 'Razorpay SDK failed to load. Are you online?', 'error');
+      return;
+    }
+
+    try {
+      const orderRes = await fetch('/api/payment/orders', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: subtotal,
+          currency: 'INR',
+          receipt: `receipt_${Date.now()}`
+        })
+      });
+
+      if (!orderRes.ok) throw new Error('Failed to create order');
+      const orderData = await orderRes.json();
+
+      const options = {
+        key: (import.meta as any).env.VITE_RAZORPAY_KEY_ID, // Use environment variable
+        amount: orderData.amount,
+        currency: orderData.currency,
+        name: "Steal Deal",
+        description: "Transaction",
+        image: "https://placehold.co/100x100?text=Logo", // Replace with your logo
+        order_id: orderData.id,
+        handler: async function (response: any) {
+          try {
+            const verifyRes = await fetch('/api/payment/verify', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature
+              })
+            });
+
+            if (verifyRes.ok) {
+              createOrder({
+                ...customerInfo,
+                items: cart,
+                total: subtotal,
+                paymentMethod: 'Razorpay',
+                status: 'New',
+                paymentId: response.razorpay_payment_id, // Pass payment ID
+              } as any);
+              onBackToStore();
+              showToast('Success', 'Payment Successful. Order PLaced!', 'success');
+            } else {
+              showToast('Error', 'Payment verification failed', 'error');
+            }
+          } catch (error) {
+            console.error(error);
+            showToast('Error', 'Payment verification error', 'error');
+          }
+        },
+        modal: {
+          ondismiss: function () {
+            setIsProcessing(false);
+            showToast('Info', 'Payment cancelled by user', 'info');
+          }
+        },
+        prefill: {
+          name: customerInfo.customerName,
+          contact: customerInfo.customerPhone,
+          email: currentUser?.email || 'user@example.com' // Fallback
+        },
+        notes: {
+          address: customerInfo.shippingAddress
+        },
+        theme: {
+          color: "#4f46e5"
+        }
+      };
+
+      const paymentObject = new window.Razorpay(options);
+      paymentObject.on('payment.failed', function (response: any) {
+        console.error(response.error);
+        showToast('Error', `Payment Failed: ${response.error.description}`, 'error');
+        setIsProcessing(false);
+      });
+      paymentObject.open();
+
+    } catch (error) {
+      console.error(error);
+      showToast('Error', 'Something went wrong with payment', 'error');
+      setIsProcessing(false);
+    }
+    // finally block removed because setIsProcessing(false) is handled in ondismiss and callbacks now to prevent premature enabling
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!customerInfo.customerName || !customerInfo.customerPhone || !customerInfo.shippingAddress) {
       showToast('Error', 'Please fill in all required fields.', 'error');
@@ -43,11 +156,19 @@ const Checkout: React.FC<CheckoutProps> = ({ onBackToStore }) => {
       showToast('Error', 'Your cart is empty.', 'error');
       return;
     }
+
+    if (customerInfo.paymentMethod === 'Razorpay') {
+      setIsProcessing(true);
+      await handleRazorpayPayment();
+      return;
+    }
+
     createOrder({
       ...customerInfo,
       items: cart,
       total: subtotal,
-    });
+      paymentMethod: customerInfo.paymentMethod as any, // Cast to respect type
+    } as any);
     // After successful order, navigate back to store. AppContext handles toast.
     onBackToStore();
   };
@@ -86,10 +207,11 @@ const Checkout: React.FC<CheckoutProps> = ({ onBackToStore }) => {
             <select id="paymentMethod" name="paymentMethod" value={customerInfo.paymentMethod} onChange={handleChange} className="w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600">
               <option value="COD">Cash on Delivery (COD)</option>
               <option value="Bank Transfer">Bank Transfer</option>
+              <option value="Razorpay">Razorpay (Online Payment)</option>
             </select>
           </div>
-          <button type="submit" className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg transition-colors">
-            Place Order
+          <button type="submit" disabled={isProcessing} className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg transition-colors disabled:bg-gray-400">
+            {isProcessing ? 'Processing...' : 'Place Order'}
           </button>
         </form>
       </div>
