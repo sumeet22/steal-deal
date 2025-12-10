@@ -40,7 +40,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [categories, setCategories] = useState<Category[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [cart, setCart] = useLocalStorage<CartItem[]>('cart', []);
-  const [orders, setOrders] = useLocalStorage<Order[]>('orders', []);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [currentUser, setCurrentUserInternal] = useLocalStorage<User | null>('currentUser', null);
   const [token, setToken] = useLocalStorage<string | null>('token', null);
   const { showToast } = useToast();
@@ -109,9 +109,32 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
     };
 
+    const fetchOrders = async () => {
+      try {
+        const res = await fetch('/api/orders');
+        if (!res.ok) throw new Error('Failed to fetch orders');
+        const data = await res.json();
+        const mapped: Order[] = (data || []).map((o: any) => ({
+          id: o._id || o.id,
+          customerName: o.customerName,
+          customerPhone: o.customerPhone,
+          shippingAddress: o.shippingAddress,
+          items: o.items || [],
+          total: o.total,
+          status: o.status,
+          paymentMethod: o.paymentMethod,
+          createdAt: o.createdAt,
+        }));
+        setOrders(mapped);
+      } catch (err) {
+        showToast('Error', 'Failed to load orders from server', 'error');
+      }
+    };
+
     fetchCategories();
     fetchProducts();
     fetchUsers();
+    fetchOrders();
   }, [showToast]);
 
   const setCurrentUser = useCallback((user: User | null, newToken: string | null) => {
@@ -260,29 +283,69 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   }, [setCart]);
 
   const createOrder = useCallback((orderData: Omit<Order, 'id' | 'createdAt' | 'status'>) => {
-    const newOrder: Order = {
-      ...orderData,
-      id: new Date().getTime().toString(),
-      createdAt: new Date().toISOString(),
-      status: OrderStatus.New,
-    };
-    setOrders(prev => [newOrder, ...prev]);
+    (async () => {
+      try {
+        const body = {
+          ...orderData,
+        };
+        const headers: any = { 'Content-Type': 'application/json' };
+        if (token) headers.Authorization = `Bearer ${token}`;
 
-    setProducts(prevProducts => {
-      const itemsMap = new Map(orderData.items.map(item => [item.id, item.quantity]));
-      return prevProducts.map(p => 
-        itemsMap.has(p.id) ? { ...p, stockQuantity: p.stockQuantity - itemsMap.get(p.id)! } : p
-      );
-    });
+        const res = await fetch('/api/orders', { method: 'POST', headers, body: JSON.stringify(body) });
+        if (!res.ok) throw new Error('Failed to create order');
+        const newOrderData = await res.json();
 
-    clearCart();
-    showToast('Success!', 'Order placed successfully!', 'success');
-  }, [setOrders, setProducts, clearCart, showToast]);
+        const newOrder: Order = {
+          id: newOrderData._id || newOrderData.id,
+          customerName: newOrderData.customerName,
+          customerPhone: newOrderData.customerPhone,
+          shippingAddress: newOrderData.shippingAddress,
+          items: newOrderData.items || [],
+          total: newOrderData.total,
+          status: newOrderData.status,
+          paymentMethod: newOrderData.paymentMethod,
+          createdAt: newOrderData.createdAt,
+        };
+
+        setOrders(prev => [newOrder, ...prev]);
+
+        setProducts(prevProducts => {
+          const itemsMap = new Map(orderData.items.map(item => [item.id, item.quantity]));
+          return prevProducts.map(p =>
+            itemsMap.has(p.id) ? { ...p, stockQuantity: p.stockQuantity - itemsMap.get(p.id)! } : p
+          );
+        });
+
+        clearCart();
+        showToast('Success!', 'Order placed successfully!', 'success');
+      } catch (err) {
+        console.error(err);
+        showToast('Error', 'Failed to place order', 'error');
+      }
+    })();
+  }, [setOrders, setProducts, clearCart, showToast, token]);
 
   const updateOrderStatus = useCallback((orderId: string, status: OrderStatus) => {
-    setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o));
-    showToast('Success', 'Order status updated', 'success');
-  }, [setOrders, showToast]);
+    (async () => {
+      try {
+        const headers: any = { 'Content-Type': 'application/json' };
+        if (token) headers.Authorization = `Bearer ${token}`;
+
+        const res = await fetch(`/api/orders/${orderId}`, {
+          method: 'PUT',
+          headers,
+          body: JSON.stringify({ status })
+        });
+
+        if (!res.ok) throw new Error('Failed to update order status');
+
+        setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o));
+        showToast('Success', 'Order status updated', 'success');
+      } catch (err) {
+        showToast('Error', 'Failed to update order status', 'error');
+      }
+    })();
+  }, [setOrders, showToast, token]);
 
   const addCategory = useCallback((categoryData: Omit<Category, 'id'>) => {
     (async () => {
@@ -444,13 +507,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     removeFromCart,
     updateCartQuantity,
     clearCart,
-  createOrder,
-  updateOrderStatus,
-  setProducts,
-  setCategories,
-  setOrders,
-  setUsers,
-};
+    createOrder,
+    updateOrderStatus,
+    setProducts,
+    setCategories,
+    setOrders,
+    setUsers,
+  };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 };

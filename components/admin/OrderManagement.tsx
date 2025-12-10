@@ -50,7 +50,7 @@ const OrderManagement: React.FC = () => {
           const isExpanded = expandedOrderId === order.id;
           return (
             <div key={order.id} className={`p-4 border rounded-lg dark:border-gray-700 transition-all duration-300 ${isExpanded ? 'bg-gray-50 dark:bg-gray-900/50 shadow-md' : 'shadow-sm'}`}>
-              <div 
+              <div
                 className="flex flex-wrap justify-between items-center cursor-pointer gap-4"
                 onClick={() => toggleExpand(order.id)}
                 aria-expanded={isExpanded}
@@ -61,7 +61,7 @@ const OrderManagement: React.FC = () => {
                   <p className="text-sm text-gray-600 dark:text-gray-400">{order.customerName}</p>
                 </div>
                 <div className="flex-shrink-0 text-left sm:text-center">
-                  <p className="text-sm font-semibold text-gray-900 dark:text-white">${order.total.toFixed(2)}</p>
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white">${(order.total || 0).toFixed(2)}</p>
                   <p className="text-xs text-gray-500">{new Date(order.createdAt).toLocaleDateString()}</p>
                 </div>
                 <div className="flex items-center gap-4">
@@ -71,7 +71,7 @@ const OrderManagement: React.FC = () => {
                   <ChevronDownIcon className={`transform transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
                 </div>
               </div>
-              
+
               {isExpanded && (
                 <div id={`order-details-${order.id}`} className="mt-4 pt-4 border-t dark:border-gray-600 animate-fade-in">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

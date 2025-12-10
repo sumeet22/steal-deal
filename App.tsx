@@ -1,4 +1,4 @@
-import React, { useState, Suspense, useEffect, useCallback } from 'react';
+import React, { useState, Suspense, useEffect } from 'react';
 import { AppProvider, useAppContext } from './context/AppContext';
 import { ToastProvider } from './context/ToastContext';
 import { HomeIcon, ShoppingCartIcon, SunIcon, MoonIcon, ClipboardListIcon, LoadingSpinner, UserCircleIcon } from './components/Icons';
@@ -25,84 +25,44 @@ const App: React.FC = () => {
   const [view, setView] = useState<View>('store');
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
-  const [lastViewedCategoryId, setLastViewedCategoryId] = useState<string | null>(null);
   const [theme, setTheme] = useLocalStorage<'light' | 'dark'>('theme', 'dark');
   const [authView, setAuthView] = useState<'login' | 'register'>('login');
-
-  const parseUrl = useCallback(() => {
-    const params = new URLSearchParams(window.location.search);
-    const viewParam = params.get('view') as View | null;
-    const productIdParam = params.get('productId');
-    const categoryIdParam = params.get('categoryId');
-    if (viewParam) {
-      setView(viewParam);
-      if (viewParam === 'product' && productIdParam) {
-        setSelectedProductId(productIdParam);
-        if (categoryIdParam) {
-          setLastViewedCategoryId(categoryIdParam);
-        }
-      } else {
-        setSelectedProductId(null);
-      }
-      if (viewParam === 'store' && categoryIdParam) {
-        setLastViewedCategoryId(categoryIdParam);
-      } else if (viewParam !== 'store' && viewParam !== 'product') {
-        setLastViewedCategoryId(null);
-      }
-    }
-  }, [setView, setSelectedProductId, setLastViewedCategoryId]);
 
   const { cart, products, currentUser, setCurrentUser } = useAppContext();
 
   const cartItemCount = cart.reduce((count, item) => count + item.quantity, 0);
 
-  const handleProductDetailClick = (productId: string | null, categoryId: string | null) => {
-    navigate('product', productId, categoryId);
+  const handleProductClick = (productId: string) => {
+    navigate('product', productId);
   };
 
-  const handleSelectCategory = (categoryId: string) => {
-    navigate('store', undefined, categoryId);
-  };
-
-  const handleBackToCategories = () => {
-    navigate('store');
-  };
-  
-  const navigate = (newView: View, productId?: string, categoryId?: string) => {
+  const navigate = (newView: View, productId?: string) => {
     setView(newView);
     if (productId) {
       setSelectedProductId(productId);
     } else if (newView !== 'product') {
       setSelectedProductId(null);
     }
-    if (categoryId) {
-      setLastViewedCategoryId(categoryId);
-    } else if (newView === 'store') {
-      setLastViewedCategoryId(null);
-    }
     const params = new URLSearchParams();
     params.set('view', newView);
     if (productId) {
       params.set('productId', productId);
     }
-    if (categoryId) {
-      params.set('categoryId', categoryId);
-    }
     window.history.pushState({}, '', `?${params.toString()}`);
-    parseUrl();
-  };
+    window.scrollTo(0, 0);
+  }
 
   const toggleTheme = () => {
     setTheme(prevTheme => prevTheme === 'light' ? 'dark' : 'light');
   };
 
   useEffect(() => {
-  if (theme === 'dark') {
-    document.documentElement.classList.add('dark');
-  } else {
-    document.documentElement.classList.remove('dark');
-  }
-}, [theme]);
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [theme]);
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -118,19 +78,32 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    const parseUrl = () => {
+      const params = new URLSearchParams(window.location.search);
+      const viewParam = params.get('view') as View | null;
+      const productIdParam = params.get('productId');
+      if (viewParam) {
+        setView(viewParam);
+        if (viewParam === 'product' && productIdParam) {
+          setSelectedProductId(productIdParam);
+        } else {
+          setSelectedProductId(null);
+        }
+      }
+    };
     parseUrl();
     window.addEventListener('popstate', parseUrl);
     return () => window.removeEventListener('popstate', parseUrl);
-  }, [parseUrl]);
-  
+  }, []);
+
   // When user logs out, redirect to auth view if they were in a restricted area
   useEffect(() => {
     if (!currentUser && (view === 'admin' || view === 'orders' || view === 'checkout')) {
-        navigate('auth');
+      navigate('auth');
     }
     // If currentUser exists and they are on the auth view, redirect them to store
     if (currentUser && view === 'auth') {
-        navigate('store');
+      navigate('store');
     }
   }, [currentUser, view]);
 
@@ -164,9 +137,9 @@ const App: React.FC = () => {
   const renderView = () => {
     switch (view) {
       case 'store':
-        return <Storefront onProductDetailClick={handleProductDetailClick} onSelectCategory={handleSelectCategory} onBackToCategories={handleBackToCategories} initialCategoryId={lastViewedCategoryId} />;
+        return <Storefront onProductClick={handleProductClick} />;
       case 'product':
-        return <ProductDetail productId={selectedProductId} onBack={() => navigate('store', undefined, lastViewedCategoryId)} />;
+        return <ProductDetail productId={selectedProductId!} onBack={() => navigate('store')} />;
       case 'checkout':
         return <Checkout onBackToStore={() => navigate('store')} />;
       case 'orders':
@@ -180,7 +153,8 @@ const App: React.FC = () => {
           <Register onSwitchToLogin={() => setAuthView('login')} />
         );
       default:
-        return <Storefront onProductDetailClick={handleProductDetailClick} onSelectCategory={handleSelectCategory} onBackToCategories={handleBackToCategories} initialCategoryId={lastViewedCategoryId} />;    }
+        return <Storefront onProductClick={handleProductClick} />;
+    }
   };
 
   if (!isOnline) {
@@ -194,24 +168,24 @@ const App: React.FC = () => {
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center">
               <span className="font-bold text-xl cursor-pointer" onClick={() => navigate('store')}>
-                <img src="https://thestealdeal.com/web/image/website/1/logo/Steal%20Deal?unique=d646fd0" className="h-12 w-auto" alt="Steal Deal" />
+                <img src="https://thestealdeal.com/web/image/website/1/logo/Steal%20Deal?unique=d646fd0.jpg" className="h-12 w-auto" alt="Steal Deal" />
               </span>
             </div>
             <div className="flex items-center space-x-2 sm:space-x-4">
-              <button onClick={() => navigate('store')} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700" aria-label="Home"><HomeIcon/></button>
-              
+              <button onClick={() => navigate('store')} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700" aria-label="Home"><HomeIcon /></button>
+
               {currentUser?.role === 'user' && (
                 <button onClick={() => navigate('orders')} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700" aria-label="Order History"><ClipboardListIcon /></button>
               )}
-              
+
               {currentUser?.role === 'admin' && (
                 <button onClick={() => navigate('admin')} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700" aria-label="Admin Dashboard"><UserCircleIcon /></button>
               )}
-              
+
               <UserMenu onNavigateToAuth={(authView) => { setAuthView(authView); navigate('auth'); }} />
 
 
-              
+
               <div className="relative">
                 <button onClick={() => setIsCartOpen(true)} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700" aria-label="Cart">
                   <ShoppingCartIcon />
@@ -235,7 +209,7 @@ const App: React.FC = () => {
         </Suspense>
       </main>
 
-      <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} onCheckout={() => { navigate('checkout'); setIsCartOpen(false); }}/>
+      <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} onCheckout={() => { navigate('checkout'); setIsCartOpen(false); }} />
     </div>
   );
 };

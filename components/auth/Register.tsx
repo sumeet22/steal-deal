@@ -22,7 +22,7 @@ const Register: React.FC<RegisterProps> = ({ onSwitchToLogin }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-            const response = await fetch('/api/auth/register', {
+      const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -96,7 +96,7 @@ const Register: React.FC<RegisterProps> = ({ onSwitchToLogin }) => {
             className="w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600"
           />
         </div>
-        <div>
+        {/* <div>
           <label htmlFor="role" className="block text-sm font-medium mb-1">Role</label>
           <select
             name="role"
@@ -106,9 +106,9 @@ const Register: React.FC<RegisterProps> = ({ onSwitchToLogin }) => {
             className="w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600"
           >
             <option value="user">User</option>
-            <option value="admin">Admin</option>
+            <option value="user">Admin</option>
           </select>
-        </div>
+        </div> */}
         <button
           type="submit"
           className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
