@@ -3,7 +3,7 @@ import { useAppContext } from '../context/AppContext';
 import { useToast } from '../context/ToastContext';
 
 interface CheckoutProps {
-    onBackToStore: () => void;
+  onBackToStore: () => void;
 }
 
 const Checkout: React.FC<CheckoutProps> = ({ onBackToStore }) => {
@@ -18,11 +18,11 @@ const Checkout: React.FC<CheckoutProps> = ({ onBackToStore }) => {
 
   useEffect(() => {
     if (currentUser) {
-        setCustomerInfo(prev => ({
-            ...prev,
-            customerName: currentUser.name,
-            customerPhone: currentUser.phone
-        }));
+      setCustomerInfo(prev => ({
+        ...prev,
+        customerName: currentUser.name,
+        customerPhone: currentUser.phone
+      }));
     }
   }, [currentUser]);
 
@@ -40,8 +40,8 @@ const Checkout: React.FC<CheckoutProps> = ({ onBackToStore }) => {
       return;
     }
     if (cart.length === 0) {
-        showToast('Error', 'Your cart is empty.', 'error');
-        return;
+      showToast('Error', 'Your cart is empty.', 'error');
+      return;
     }
     createOrder({
       ...customerInfo,
@@ -51,15 +51,15 @@ const Checkout: React.FC<CheckoutProps> = ({ onBackToStore }) => {
     // After successful order, navigate back to store. AppContext handles toast.
     onBackToStore();
   };
-  
+
   if (cart.length === 0) {
     return (
-        <div className="text-center p-8 bg-white dark:bg-gray-800 rounded-lg shadow-lg">
-            <h2 className="text-2xl font-bold mb-4">Your cart is empty.</h2>
-            <p className="mb-6 text-gray-600 dark:text-gray-400">There's nothing to check out. Please add some products to your cart first.</p>
-            <button onClick={onBackToStore} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg">
-                Return to Store
-            </button>
+      <div className="text-center p-8 bg-white dark:bg-gray-800 rounded-lg shadow-lg">
+        <h2 className="text-2xl font-bold mb-4">Your cart is empty.</h2>
+        <p className="mb-6 text-gray-600 dark:text-gray-400">There's nothing to check out. Please add some products to your cart first.</p>
+        <button onClick={onBackToStore} className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg">
+          Return to Store
+        </button>
       </div>
     )
   }
@@ -93,24 +93,24 @@ const Checkout: React.FC<CheckoutProps> = ({ onBackToStore }) => {
           </button>
         </form>
       </div>
-       <div className="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-6 order-1 lg:order-2">
+      <div className="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-6 order-1 lg:order-2">
         <h2 className="text-2xl font-bold mb-6">Your Order Summary</h2>
         <div className="space-y-3 mb-6">
           {cart.map(item => (
             <div key={item.id} className="flex justify-between items-center">
               <div className="flex items-center gap-3">
-                <img src={item.image || 'https://placehold.co/40x40'} alt={item.name} className="w-10 h-10 rounded object-cover"/>
+                <img src={item.image || 'https://placehold.co/40x40'} alt={item.name} className="w-10 h-10 rounded object-cover" />
                 <span>{item.name} x {item.quantity}</span>
               </div>
-              <span>${(item.price * item.quantity).toFixed(2)}</span>
+              <span>₹{(item.price * item.quantity).toFixed(2)}</span>
             </div>
           ))}
         </div>
         <div className="border-t pt-4 dark:border-gray-700">
-            <p className="flex justify-between text-xl font-bold">
-                <span>Total</span>
-                <span>${subtotal.toFixed(2)}</span>
-            </p>
+          <p className="flex justify-between text-xl font-bold">
+            <span>Total</span>
+            <span>₹{subtotal.toFixed(2)}</span>
+          </p>
         </div>
       </div>
     </div>

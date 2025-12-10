@@ -98,8 +98,8 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({
         <h3 className="text-base sm:text-lg font-semibold truncate transition-colors group-hover:text-indigo-500 cursor-pointer" onClick={() => onProductClick(product.id)}>{product.name}</h3>
 
         <div className="flex items-baseline gap-2 mt-2">
-          <p className="text-lg sm:text-xl font-bold text-indigo-600 dark:text-indigo-400">${product.price.toFixed(2)}</p>
-          {isSale && <p className="text-md text-gray-500 line-through">${product.originalPrice!.toFixed(2)}</p>}
+          <p className="text-lg sm:text-xl font-bold text-indigo-600 dark:text-indigo-400">₹{product.price.toFixed(2)}</p>
+          {isSale && <p className="text-md text-gray-500 line-through">₹{product.originalPrice!.toFixed(2)}</p>}
         </div>
 
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-500 dark:text-gray-400 mb-2">

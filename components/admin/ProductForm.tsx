@@ -19,6 +19,9 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onClose }) => {
     categoryId: '',
     image: '',
     isNew: false,
+    viewCount: '',
+    addToCartCount: '',
+    soldLast24Hours: '',
   });
 
   useEffect(() => {
@@ -32,10 +35,14 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onClose }) => {
         categoryId: product.categoryId,
         image: product.image || '',
         isNew: product.tags?.includes('new') || false,
+        viewCount: product.viewCount?.toString() || '',
+        addToCartCount: product.addToCartCount?.toString() || '',
+        soldLast24Hours: product.soldLast24Hours?.toString() || '',
       });
     } else {
       setFormData({
         name: '', price: '', originalPrice: '', description: '', stockQuantity: '', categoryId: categories[0]?.id || '', image: '', isNew: false,
+        viewCount: '', addToCartCount: '', soldLast24Hours: '',
       });
     }
   }, [product, categories]);
@@ -43,16 +50,16 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onClose }) => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
     if (type === 'checkbox') {
-        const { checked } = e.target as HTMLInputElement;
-        setFormData({ ...formData, [name]: checked });
+      const { checked } = e.target as HTMLInputElement;
+      setFormData({ ...formData, [name]: checked });
     } else {
-        setFormData({ ...formData, [name]: value });
+      setFormData({ ...formData, [name]: value });
     }
   };
-  
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const tags: ('new' | 'sale')[] = [];
     if (formData.isNew) tags.push('new');
     if (formData.originalPrice && parseFloat(formData.originalPrice) > parseFloat(formData.price)) {
@@ -68,6 +75,9 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onClose }) => {
       categoryId: formData.categoryId,
       image: formData.image,
       tags: tags,
+      viewCount: formData.viewCount ? parseInt(formData.viewCount, 10) : undefined,
+      addToCartCount: formData.addToCartCount ? parseInt(formData.addToCartCount, 10) : undefined,
+      soldLast24Hours: formData.soldLast24Hours ? parseInt(formData.soldLast24Hours, 10) : undefined,
     };
 
     if (product) {
@@ -100,6 +110,20 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onClose }) => {
               <input type="number" name="originalPrice" id="originalPrice" value={formData.originalPrice} onChange={handleChange} step="0.01" placeholder="e.g., 199.99" className="w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600" />
             </div>
           </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="viewCount" className="block text-sm font-medium mb-1">View Count (Optional)</label>
+              <input type="number" name="viewCount" id="viewCount" value={formData.viewCount} onChange={handleChange} className="w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600" />
+            </div>
+            <div>
+              <label htmlFor="addToCartCount" className="block text-sm font-medium mb-1">Add to Cart Count (Optional)</label>
+              <input type="number" name="addToCartCount" id="addToCartCount" value={formData.addToCartCount} onChange={handleChange} className="w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600" />
+            </div>
+          </div>
+          <div>
+            <label htmlFor="soldLast24Hours" className="block text-sm font-medium mb-1">Sold Last 24 Hours (Optional)</label>
+            <input type="number" name="soldLast24Hours" id="soldLast24Hours" value={formData.soldLast24Hours} onChange={handleChange} className="w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600" />
+          </div>
           <div>
             <label htmlFor="stockQuantity" className="block text-sm font-medium mb-1">Stock Quantity</label>
             <input type="number" name="stockQuantity" id="stockQuantity" value={formData.stockQuantity} onChange={handleChange} required className="w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600" />
@@ -112,15 +136,15 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onClose }) => {
               ))}
             </select>
           </div>
-           <div className="flex items-center gap-2">
-              <input type="checkbox" name="isNew" id="isNew" checked={formData.isNew} onChange={handleChange} className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
-              <label htmlFor="isNew" className="text-sm font-medium">Mark as 'New' product</label>
-            </div>
+          <div className="flex items-center gap-2">
+            <input type="checkbox" name="isNew" id="isNew" checked={formData.isNew} onChange={handleChange} className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
+            <label htmlFor="isNew" className="text-sm font-medium">Mark as 'New' product</label>
+          </div>
           <div>
             <label htmlFor="description" className="block text-sm font-medium mb-1">Description</label>
             <textarea name="description" id="description" value={formData.description} onChange={handleChange} rows={3} className="w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600"></textarea>
           </div>
-           <div>
+          <div>
             <label htmlFor="image" className="block text-sm font-medium mb-1">Image URL</label>
             <input type="text" name="image" id="image" value={formData.image} onChange={handleChange} placeholder="https://example.com/image.png" className="w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600" />
           </div>

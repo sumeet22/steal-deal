@@ -80,9 +80,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
             categoryId: categoryId || '',
             image: p.image || p.imageUrl || undefined,
             tags: p.tags || [],
-            viewCount: p.viewCount || 0,
-            addToCartCount: p.addToCartCount || 0,
-            soldLast24Hours: p.soldLast24Hours || 0,
+            viewCount: p.viewCount ?? undefined,
+            addToCartCount: p.addToCartCount ?? undefined,
+            soldLast24Hours: p.soldLast24Hours ?? undefined,
           } as Product;
         });
         setProducts(mapped);
@@ -149,9 +149,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           name: productData.name,
           description: productData.description,
           price: productData.price,
+          originalPrice: productData.originalPrice,
           category: productData.categoryId,
           image: productData.image,
           stockQuantity: productData.stockQuantity,
+          tags: productData.tags,
+          viewCount: productData.viewCount,
+          addToCartCount: productData.addToCartCount,
+          soldLast24Hours: productData.soldLast24Hours,
         };
         const headers: any = { 'Content-Type': 'application/json' };
         if (token) headers.Authorization = `Bearer ${token}`;
@@ -169,9 +174,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           categoryId: categoryId || productData.categoryId || '',
           image: p.image || p.imageUrl || productData.image || undefined,
           tags: p.tags || [],
-          viewCount: p.viewCount || 0,
-          addToCartCount: p.addToCartCount || 0,
-          soldLast24Hours: p.soldLast24Hours || 0,
+          viewCount: p.viewCount ?? undefined,
+          addToCartCount: p.addToCartCount ?? undefined,
+          soldLast24Hours: p.soldLast24Hours ?? undefined,
         } as Product;
         setProducts(prev => [...prev, mapped]);
         showToast('Success', 'Product added successfully', 'success');
@@ -188,9 +193,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           name: updatedProduct.name,
           description: updatedProduct.description,
           price: updatedProduct.price,
+          originalPrice: updatedProduct.originalPrice,
           category: updatedProduct.categoryId,
           image: updatedProduct.image,
           stockQuantity: updatedProduct.stockQuantity,
+          tags: updatedProduct.tags,
+          viewCount: updatedProduct.viewCount,
+          addToCartCount: updatedProduct.addToCartCount,
+          soldLast24Hours: updatedProduct.soldLast24Hours,
         };
         const headers: any = { 'Content-Type': 'application/json' };
         if (token) headers.Authorization = `Bearer ${token}`;
@@ -208,9 +218,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           categoryId: categoryId || updatedProduct.categoryId || '',
           image: p.image || p.imageUrl || updatedProduct.image || undefined,
           tags: p.tags || updatedProduct.tags || [],
-          viewCount: p.viewCount || updatedProduct.viewCount || 0,
-          addToCartCount: p.addToCartCount || updatedProduct.addToCartCount || 0,
-          soldLast24Hours: p.soldLast24Hours || updatedProduct.soldLast24Hours || 0,
+          viewCount: p.viewCount ?? undefined,
+          addToCartCount: p.addToCartCount ?? undefined,
+          soldLast24Hours: p.soldLast24Hours ?? undefined,
         } as Product;
         setProducts(prev => prev.map(p => p.id === updatedProduct.id ? mapped : p));
         showToast('Success', 'Product updated successfully', 'success');

@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useAppContext } from '../context/AppContext';
-import { ChevronLeftIcon, EyeIcon, ShoppingBagIcon, FireIcon } from './Icons';
+import { ChevronLeftIcon, ShoppingCartIcon, PlusIcon, MinusIcon, EyeIcon, ShoppingBagIcon, FireIcon } from './Icons';
 import QuantityStepper from './shared/QuantityStepper';
 
 interface ProductDetailProps {
@@ -11,8 +11,18 @@ interface ProductDetailProps {
 const ProductDetail: React.FC<ProductDetailProps> = ({ productId, onBack }) => {
   const { products, addToCart } = useAppContext();
   const [quantity, setQuantity] = useState(1);
-  
+
   const product = useMemo(() => products.find(p => p.id === productId), [products, productId]);
+
+  // Randomize stats if not provided
+  const stats = useMemo(() => {
+    if (!product) return { viewCount: 0, addToCartCount: 0, soldLast24Hours: 0 };
+    return {
+      viewCount: product.viewCount !== undefined ? product.viewCount : Math.floor(Math.random() * (300 - 50 + 1)) + 50,
+      addToCartCount: product.addToCartCount !== undefined ? product.addToCartCount : Math.floor(Math.random() * (50 - 5 + 1)) + 5,
+      soldLast24Hours: product.soldLast24Hours !== undefined ? product.soldLast24Hours : Math.floor(Math.random() * (50 - 5 + 1)) + 5
+    };
+  }, [product]);
 
   if (!product) {
     return (
@@ -24,7 +34,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ productId, onBack }) => {
       </div>
     );
   }
-  
+
   const isSale = product.originalPrice && product.originalPrice > product.price;
   const isNew = product.tags?.includes('new');
   const discount = isSale ? Math.round(((product.originalPrice! - product.price) / product.originalPrice!) * 100) : 0;
@@ -36,55 +46,114 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ productId, onBack }) => {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-4 sm:p-8">
-      <button onClick={onBack} className="text-indigo-600 dark:text-indigo-400 hover:underline mb-6 flex items-center gap-1">
-        <ChevronLeftIcon /> Back to products
-      </button>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
-        <div className="relative bg-gray-200 dark:bg-gray-700 h-80 sm:h-96 rounded-lg flex items-center justify-center overflow-hidden group">
-            {product.image ? (
-              <img src={product.image} alt={product.name} loading="lazy" className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"/>
-            ) : (
-              <span className="text-gray-400">Product Image</span>
-            )}
-            <div className="absolute top-3 left-3 flex flex-col gap-2">
-                {isNew && <span className="text-sm font-bold bg-teal-500 text-white px-3 py-1 rounded-full shadow-md">NEW</span>}
-                {isSale && <span className="text-sm font-bold bg-red-500 text-white px-3 py-1 rounded-full shadow-md">-{discount}% OFF</span>}
-            </div>
+    <div className="bg-white dark:bg-gray-800 shadow-xl rounded-2xl p-6 sm:p-10 transition-all duration-300">
+      <button
+        onClick={onBack}
+        className="group text-indigo-600 dark:text-indigo-400 font-medium mb-8 flex items-center gap-2 hover:translate-x-[-4px] transition-transform duration-200"
+      >
+        <div className="p-1.5 rounded-full bg-indigo-50 dark:bg-indigo-900/30 group-hover:bg-indigo-100 dark:group-hover:bg-indigo-900/50 transition-colors">
+          <ChevronLeftIcon />
         </div>
+        <span>Back to products</span>
+      </button>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-10 lg:gap-16">
+        {/* Image Section */}
+        <div className="relative aspect-square bg-gray-100 dark:bg-gray-700/50 rounded-2xl flex items-center justify-center overflow-hidden shadow-sm group">
+          {product.image ? (
+            <img
+              src={product.image}
+              alt={product.name}
+              loading="lazy"
+              className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+            />
+          ) : (
+            <span className="text-gray-400 font-medium">No Image Available</span>
+          )}
+
+          <div className="absolute top-4 left-4 flex flex-col gap-2.5">
+            {isNew && (
+              <span className="px-3 py-1 text-xs font-bold tracking-wider text-white bg-teal-500 rounded-full shadow-lg backdrop-blur-sm bg-opacity-90">
+                NEW
+              </span>
+            )}
+            {isSale && (
+              <span className="px-3 py-1 text-xs font-bold tracking-wider text-white bg-red-500 rounded-full shadow-lg backdrop-blur-sm bg-opacity-90">
+                -{discount}% OFF
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Info Section */}
         <div className="flex flex-col justify-center">
-          <h1 className="text-3xl sm:text-4xl font-bold mb-2">{product.name}</h1>
-          
-          <div className="flex items-baseline gap-3 mb-4">
-            <p className="text-3xl font-bold text-indigo-500 dark:text-indigo-400">${product.price.toFixed(2)}</p>
-            {isSale && <p className="text-xl text-gray-500 line-through">${product.originalPrice!.toFixed(2)}</p>}
+          <div className="mb-6">
+            <h1 className="text-4xl sm:text-5xl font-extrabold text-gray-900 dark:text-white tracking-tight mb-3 leading-tight">
+              {product.name}
+            </h1>
+            <div className="w-20 h-1.5 bg-indigo-500 rounded-full"></div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-gray-600 dark:text-gray-400 mb-6 border-t border-b py-3 dark:border-gray-700">
-            {product.viewCount && <div className="flex items-center gap-1.5"><EyeIcon /><span><strong>{product.viewCount}</strong> people are viewing</span></div>}
-            {product.addToCartCount && <div className="flex items-center gap-1.5"><ShoppingBagIcon /><span>Added to cart <strong>{product.addToCartCount}</strong> times</span></div>}
-            {product.soldLast24Hours && <div className="flex items-center gap-1.5 text-red-500"><FireIcon /><span><strong>{product.soldLast24Hours}</strong> sold in last 24 hours</span></div>}
+          <div className="flex items-baseline gap-4 mb-8">
+            <p className="text-4xl sm:text-5xl font-black text-indigo-600 dark:text-indigo-400">
+              ₹{product.price.toFixed(2)}
+            </p>
+            {isSale && (
+              <div className="flex flex-col">
+                <p className="text-xl text-gray-400 font-medium line-through decoration-2 decoration-gray-400/50">
+                  ₹{product.originalPrice!.toFixed(2)}
+                </p>
+              </div>
+            )}
           </div>
 
-          <p className="text-gray-600 dark:text-gray-400 mb-6">{product.description}</p>
-          
-          <div className="flex items-center gap-4 mb-6">
-            <span className="font-semibold">Quantity:</span>
-            <QuantityStepper 
+          {/* Stats Chips */}
+          <div className="flex flex-wrap gap-3 mb-8">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-sm font-medium border border-blue-100 dark:border-blue-800">
+              <EyeIcon />
+              <span>{stats.viewCount} viewing</span>
+            </div>
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-sm font-medium border border-purple-100 dark:border-purple-800">
+              <ShoppingBagIcon />
+              <span>In {stats.addToCartCount} carts</span>
+            </div>
+            {(stats.soldLast24Hours > 0) && (
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 text-sm font-medium border border-orange-100 dark:border-orange-800 animate-pulse-slow">
+                <FireIcon />
+                <span>{stats.soldLast24Hours} sold recently</span>
+              </div>
+            )}
+          </div>
+
+          <p className="text-lg text-gray-600 dark:text-gray-300 mb-8 leading-relaxed border-l-4 border-gray-200 dark:border-gray-700 pl-4 py-1">
+            {product.description}
+          </p>
+
+          <div className="space-y-6">
+            <div className="flex items-center gap-6">
+              <span className="text-gray-900 dark:text-white font-semibold text-lg">Quantity</span>
+              <QuantityStepper
                 quantity={quantity}
                 setQuantity={setQuantity}
                 maxQuantity={product.stockQuantity}
-            />
-          </div>
-          <span className="text-sm text-gray-500 mb-6">{product.stockQuantity > 0 ? `${product.stockQuantity} in stock` : 'Out of stock'}</span>
+              />
+              <span className={`text-sm font-medium ${product.stockQuantity > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-500'}`}>
+                {product.stockQuantity > 0 ? `${product.stockQuantity} pieces available` : 'Out of stock'}
+              </span>
+            </div>
 
-          <button
-            onClick={handleAddToCart}
-            className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-6 rounded-lg text-lg disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
-            disabled={product.stockQuantity <= 0}
-          >
-            {product.stockQuantity > 0 ? 'Add to Cart' : 'Out of Stock'}
-          </button>
+            <button
+              onClick={handleAddToCart}
+              disabled={product.stockQuantity <= 0}
+              className="w-full sm:w-auto relative overflow-hidden group bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold py-4 px-8 rounded-xl text-lg shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-none min-w-[200px]"
+            >
+              <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-indigo-500 to-purple-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <span className="relative flex items-center justify-center gap-2 z-10 transition-colors group-hover:text-white">
+                <ShoppingCartIcon />
+                {product.stockQuantity > 0 ? 'Add to Cart' : 'Out of Stock'}
+              </span>
+            </button>
+          </div>
         </div>
       </div>
     </div>

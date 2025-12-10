@@ -16,11 +16,23 @@ router.get('/', async (_req: Request, res: Response) => {
 
 router.post('/', async (req: Request, res: Response) => {
   try {
-    const { name, description, price, category: categoryId, image, imageUrl, stock, stockQuantity } = req.body;
+    const { name, description, price, originalPrice, category: categoryId, image, imageUrl, stock, stockQuantity, tags, viewCount, addToCartCount, soldLast24Hours } = req.body;
     if (!name || price == null || !categoryId) return res.status(400).json({ message: 'Missing required fields' });
     const category = await Category.findById(categoryId);
     if (!category) return res.status(400).json({ message: 'Invalid category' });
-    const product = new Product({ name, description, price, category: category._id, image: image || imageUrl, imageUrl: image || imageUrl, stockQuantity: stockQuantity ?? stock });
+    const product = new Product({
+      name,
+      description,
+      price,
+      originalPrice,
+      category: category._id,
+      image: image || imageUrl,
+      stockQuantity: stockQuantity ?? stock,
+      tags,
+      viewCount,
+      addToCartCount,
+      soldLast24Hours
+    });
     await product.save();
     res.status(201).json(product);
   } catch (error) {
@@ -40,7 +52,7 @@ router.get('/:id', async (req: Request, res: Response) => {
 
 router.put('/:id', async (req: Request, res: Response) => {
   try {
-    const { name, description, price, category: categoryId, image, imageUrl, stock, stockQuantity } = req.body;
+    const { name, description, price, originalPrice, category: categoryId, image, imageUrl, stock, stockQuantity, tags, viewCount, addToCartCount, soldLast24Hours } = req.body;
     if (categoryId) {
       const category = await Category.findById(categoryId);
       if (!category) return res.status(400).json({ message: 'Invalid category' });
@@ -50,11 +62,16 @@ router.put('/:id', async (req: Request, res: Response) => {
     if (name !== undefined) update.name = name;
     if (description !== undefined) update.description = description;
     if (price !== undefined) update.price = price;
+    if (originalPrice !== undefined) update.originalPrice = originalPrice;
     if (categoryId !== undefined) update.category = categoryId;
     if (image !== undefined) update.image = image || imageUrl;
     else if (imageUrl !== undefined) update.image = imageUrl;
     if (stockQuantity !== undefined) update.stockQuantity = stockQuantity;
     else if (stock !== undefined) update.stockQuantity = stock;
+    if (tags !== undefined) update.tags = tags;
+    if (viewCount !== undefined) update.viewCount = viewCount;
+    if (addToCartCount !== undefined) update.addToCartCount = addToCartCount;
+    if (soldLast24Hours !== undefined) update.soldLast24Hours = soldLast24Hours;
     update.updatedAt = new Date();
 
     const product = await Product.findByIdAndUpdate(
