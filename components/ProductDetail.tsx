@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { useAppContext } from '../context/AppContext';
 import { ChevronLeftIcon, ShoppingCartIcon, PlusIcon, MinusIcon, EyeIcon, ShoppingBagIcon, FireIcon } from './Icons';
 import QuantityStepper from './shared/QuantityStepper';
@@ -18,9 +19,9 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ productId, onBack }) => {
   const stats = useMemo(() => {
     if (!product) return { viewCount: 0, addToCartCount: 0, soldLast24Hours: 0 };
     return {
-      viewCount: product.viewCount !== undefined ? product.viewCount : Math.floor(Math.random() * (300 - 50 + 1)) + 50,
-      addToCartCount: product.addToCartCount !== undefined ? product.addToCartCount : Math.floor(Math.random() * (50 - 5 + 1)) + 5,
-      soldLast24Hours: product.soldLast24Hours !== undefined ? product.soldLast24Hours : Math.floor(Math.random() * (50 - 5 + 1)) + 5
+      viewCount: (product.viewCount && product.viewCount > 0) ? product.viewCount : Math.floor(Math.random() * (45 - 10 + 1)) + 10,
+      addToCartCount: (product.addToCartCount && product.addToCartCount > 0) ? product.addToCartCount : Math.floor(Math.random() * (8 - 1 + 1)) + 1,
+      soldLast24Hours: (product.soldLast24Hours && product.soldLast24Hours > 0) ? product.soldLast24Hours : Math.floor(Math.random() * (12 - 2 + 1)) + 2
     };
   }, [product]);
 
@@ -56,6 +57,14 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ productId, onBack }) => {
         </div>
         <span>Back to products</span>
       </button>
+
+      <Helmet>
+        <title>{product.name} | Steal Deal</title>
+        <meta name="description" content={product.description.substring(0, 160)} />
+        <meta property="og:title" content={`${product.name} - ₹${product.price}`} />
+        <meta property="og:description" content={product.description.substring(0, 200)} />
+        {product.image && <meta property="og:image" content={product.image} />}
+      </Helmet>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-10 lg:gap-16">
         {/* Image Section */}

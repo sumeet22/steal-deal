@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from 'react';
+import { Helmet } from 'react-helmet-async';
+import { motion } from 'framer-motion';
 import { useAppContext } from '../context/AppContext';
 import { useToast } from '../context/ToastContext';
 
@@ -187,7 +189,15 @@ const Checkout: React.FC<CheckoutProps> = ({ onBackToStore }) => {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-      <div className="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-6 order-2 lg:order-1">
+      <Helmet>
+        <title>Checkout | Steal Deal</title>
+      </Helmet>
+      <motion.div
+        initial={{ opacity: 0, x: -30 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ delay: 0.1 }}
+        className="bg-white dark:bg-gray-800 shadow-lg rounded-2xl p-6 sm:p-8 order-2 lg:order-1"
+      >
         <h2 className="text-2xl font-bold mb-6">Shipping & Payment</h2>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -213,9 +223,15 @@ const Checkout: React.FC<CheckoutProps> = ({ onBackToStore }) => {
           <button type="submit" disabled={isProcessing} className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg transition-colors disabled:bg-gray-400">
             {isProcessing ? 'Processing...' : 'Place Order'}
           </button>
+
         </form>
-      </div>
-      <div className="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-6 order-1 lg:order-2">
+      </motion.div>
+      <motion.div
+        initial={{ opacity: 0, x: 30 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ delay: 0.2 }}
+        className="bg-white dark:bg-gray-800 shadow-lg rounded-2xl p-6 sm:p-8 order-1 lg:order-2 h-fit"
+      >
         <h2 className="text-2xl font-bold mb-6">Your Order Summary</h2>
         <div className="space-y-3 mb-6">
           {cart.map(item => (
@@ -234,8 +250,9 @@ const Checkout: React.FC<CheckoutProps> = ({ onBackToStore }) => {
             <span>₹{subtotal.toFixed(2)}</span>
           </p>
         </div>
-      </div>
-    </div>
+
+      </motion.div >
+    </div >
   );
 };
 

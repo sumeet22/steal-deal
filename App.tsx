@@ -1,4 +1,6 @@
 import React, { useState, Suspense, useEffect } from 'react';
+import { HelmetProvider } from 'react-helmet-async';
+import { AnimatePresence, motion } from 'framer-motion';
 import { AppProvider, useAppContext } from './context/AppContext';
 import { ToastProvider } from './context/ToastContext';
 import { HomeIcon, ShoppingCartIcon, SunIcon, MoonIcon, ClipboardListIcon, LoadingSpinner, UserCircleIcon } from './components/Icons';
@@ -23,6 +25,7 @@ type View = 'store' | 'checkout' | 'orders' | 'admin' | 'product' | 'auth';
 const App: React.FC = () => {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [view, setView] = useState<View>('store');
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [theme, setTheme] = useLocalStorage<'light' | 'dark'>('theme', 'dark');
@@ -36,20 +39,68 @@ const App: React.FC = () => {
     navigate('product', productId);
   };
 
-  const navigate = (newView: View, productId?: string) => {
+  const mainStoreScrollPos = React.useRef(0); // Scroll position of the main category list
+  const categoryScrollPos = React.useRef(0);  // Scroll position of the product list within a category
+
+  const navigate = (newView: View, productId?: string, categoryId?: string | null) => {
+
+    // 1. Going from Root Store (No Category) -> Category View
+    if (view === 'store' && !selectedCategory && newView === 'store' && categoryId) {
+      mainStoreScrollPos.current = window.scrollY;
+    }
+
+    // 2. Going from Store (Any) -> Product Detail
+    if (view === 'store' && newView === 'product') {
+      categoryScrollPos.current = window.scrollY;
+    }
+
     setView(newView);
+
+    // Handle Product ID
     if (productId) {
       setSelectedProductId(productId);
     } else if (newView !== 'product') {
       setSelectedProductId(null);
     }
+
+    // Handle Category ID
+    if (categoryId !== undefined) {
+      setSelectedCategory(categoryId);
+    }
+
     const params = new URLSearchParams();
     params.set('view', newView);
     if (productId) {
       params.set('productId', productId);
     }
+    if (categoryId) {
+      params.set('categoryId', categoryId);
+    } else if (selectedCategory && categoryId === undefined && newView === 'store') {
+      // Persist existing category if not explicitly changed/cleared
+      params.set('categoryId', selectedCategory);
+    }
+
+    // If we are explicitly clearing category (categoryId === null), we don't set it.
+
     window.history.pushState({}, '', `?${params.toString()}`);
-    window.scrollTo(0, 0);
+
+    // Scroll Handling Logic
+
+    // Case A: Back from Product -> Store (handled by Storefront component on mount via initialScroll prop)
+    if (view === 'product' && newView === 'store') {
+      // Do nothing here, let Component handle it
+    }
+
+    // Case C: New Navigation (Scroll to Top)
+    // 1. Changing Category (categoryId passed and is not null)
+    // 2. Going to Product (newView === 'product')
+    // 3. Changing major views (Store -> Checkout, etc.)
+    else if (categoryId || (newView === 'product') || newView !== view) {
+      // Reset scroll positions if we are navigating to a fresh view
+      if (categoryId) categoryScrollPos.current = 0;
+
+      window.scrollTo(0, 0);
+    }
   }
 
   const toggleTheme = () => {
@@ -88,6 +139,13 @@ const App: React.FC = () => {
           setSelectedProductId(productIdParam);
         } else {
           setSelectedProductId(null);
+        }
+
+        const categoryParam = params.get('categoryId');
+        if (categoryParam) {
+          setSelectedCategory(categoryParam);
+        } else {
+          setSelectedCategory(null);
         }
       }
     };
@@ -137,7 +195,12 @@ const App: React.FC = () => {
   const renderView = () => {
     switch (view) {
       case 'store':
-        return <Storefront onProductClick={handleProductClick} />;
+        return <Storefront
+          onProductClick={handleProductClick}
+          activeCategoryId={selectedCategory}
+          onCategorySelect={(id) => navigate('store', undefined, id)}
+          initialScroll={selectedCategory ? categoryScrollPos.current : mainStoreScrollPos.current}
+        />;
       case 'product':
         return <ProductDetail productId={selectedProductId!} onBack={() => navigate('store')} />;
       case 'checkout':
@@ -153,7 +216,12 @@ const App: React.FC = () => {
           <Register onSwitchToLogin={() => setAuthView('login')} />
         );
       default:
-        return <Storefront onProductClick={handleProductClick} />;
+        return <Storefront
+          onProductClick={handleProductClick}
+          activeCategoryId={selectedCategory}
+          onCategorySelect={(id) => navigate('store', undefined, id)}
+          initialScroll={selectedCategory ? categoryScrollPos.current : mainStoreScrollPos.current}
+        />;
     }
   };
 
@@ -167,12 +235,12 @@ const App: React.FC = () => {
         <nav className="container mx-auto px-4 sm:px-6 lg:px-8" role="navigation">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center">
-              <span className="font-bold text-xl cursor-pointer" onClick={() => navigate('store')}>
+              <span className="font-bold text-xl cursor-pointer" onClick={() => navigate('store', undefined, null)}>
                 <img src="https://thestealdeal.com/web/image/website/1/logo/Steal%20Deal?unique=d646fd0.jpg" className="h-12 w-auto" alt="Steal Deal" />
               </span>
             </div>
             <div className="flex items-center space-x-2 sm:space-x-4">
-              <button onClick={() => navigate('store')} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700" aria-label="Home"><HomeIcon /></button>
+              <button onClick={() => navigate('store', undefined, null)} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700" aria-label="Home"><HomeIcon /></button>
 
               {currentUser?.role === 'user' && (
                 <button onClick={() => navigate('orders')} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700" aria-label="Order History"><ClipboardListIcon /></button>
@@ -203,9 +271,18 @@ const App: React.FC = () => {
 
       <main className="container mx-auto p-4 sm:p-6 lg:p-8">
         <Suspense fallback={<div className="flex justify-center items-center h-64"><LoadingSpinner /></div>}>
-          <div className="animate-fade-in">
-            {renderView()}
-          </div>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={view}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.2 }}
+              className="w-full"
+            >
+              {renderView()}
+            </motion.div>
+          </AnimatePresence>
         </Suspense>
       </main>
 
@@ -216,10 +293,12 @@ const App: React.FC = () => {
 
 const AppWrapper: React.FC = () => (
   <ToastProvider>
-    <AppProvider>
-      <App />
-      <ToastContainer />
-    </AppProvider>
+    <HelmetProvider>
+      <AppProvider>
+        <App />
+        <ToastContainer />
+      </AppProvider>
+    </HelmetProvider>
   </ToastProvider>
 );
 

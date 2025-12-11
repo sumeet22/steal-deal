@@ -1,4 +1,6 @@
 import React, { useState, useMemo } from 'react';
+import { Helmet } from 'react-helmet-async';
+import { motion } from 'framer-motion';
 import { useAppContext } from '../context/AppContext';
 import { SearchIcon, ChevronLeftIcon, EyeIcon, FireIcon } from './Icons';
 import { Product } from '../types';
@@ -6,7 +8,25 @@ import QuantityStepper from './shared/QuantityStepper';
 
 interface StorefrontProps {
   onProductClick: (productId: string) => void;
+  activeCategoryId: string | null;
+  onCategorySelect: (categoryId: string | null) => void;
+  initialScroll?: number;
 }
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.05
+    }
+  }
+};
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 30 },
+  show: { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 50 } }
+};
 
 interface ProductCardProps {
   product: Product;
@@ -33,6 +53,13 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({
   const isSale = product.originalPrice && product.originalPrice > product.price;
   const isNew = product.tags?.includes('new');
   const discount = isSale ? Math.round(((product.originalPrice! - product.price) / product.originalPrice!) * 100) : 0;
+
+  const stats = useMemo(() => {
+    return {
+      viewCount: (product.viewCount && product.viewCount > 0) ? product.viewCount : Math.floor(Math.random() * (45 - 10 + 1)) + 10,
+      soldLast24Hours: (product.soldLast24Hours && product.soldLast24Hours > 0) ? product.soldLast24Hours : Math.floor(Math.random() * (12 - 2 + 1)) + 2
+    };
+  }, [product.viewCount, product.soldLast24Hours]);
 
   // Sync local quantity with cart quantity when cart changes
   React.useEffect(() => {
@@ -64,7 +91,10 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({
   };
 
   return (
-    <div className="product-card bg-white dark:bg-gray-800 rounded-lg shadow-lg overflow-hidden flex flex-col group transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
+    <motion.div
+      variants={itemVariants}
+      className="product-card bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden flex flex-col group transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 border border-transparent hover:border-indigo-500/30"
+    >
       <div className="relative cursor-pointer" onClick={() => onProductClick(product.id)}>
         <div className="h-40 sm:h-48 bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden">
           {product.image ? (
@@ -103,8 +133,8 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({
         </div>
 
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-500 dark:text-gray-400 mb-2">
-          {product.viewCount && <div className="flex items-center gap-1"><EyeIcon /><span>{product.viewCount} viewing</span></div>}
-          {product.soldLast24Hours && <div className="flex items-center gap-1 text-red-500"><FireIcon /><span>{product.soldLast24Hours} sold today</span></div>}
+          <div className="flex items-center gap-1"><EyeIcon /><span>{stats.viewCount} viewing</span></div>
+          <div className="flex items-center gap-1 text-red-500"><FireIcon /><span>{stats.soldLast24Hours} sold today</span></div>
         </div>
       </div>
 
@@ -161,7 +191,7 @@ const ProductCard: React.FC<ProductCardProps> = React.memo(({
           </button>
         )}
       </div>
-    </div>
+    </motion.div>
   );
 }, (prevProps, nextProps) => {
   // Only re-render if product data or cart item changes
@@ -197,7 +227,12 @@ const ProductGrid: React.FC<ProductGridProps> = React.memo(({
   onUpdateQuantity
 }) => (
   <>
-    <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+    <motion.div
+      variants={containerVariants}
+      initial="hidden"
+      animate="show"
+      className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 sm:gap-8"
+    >
       {productsList.map(product => {
         const cartItem = cartItemsMap.get(product.id);
         return (
@@ -211,7 +246,8 @@ const ProductGrid: React.FC<ProductGridProps> = React.memo(({
           />
         );
       })}
-    </div>
+
+    </motion.div>
     {productsList.length === 0 && (
       <div className="text-center col-span-full py-12">
         <SearchIcon />
@@ -224,9 +260,17 @@ const ProductGrid: React.FC<ProductGridProps> = React.memo(({
 
 ProductGrid.displayName = 'ProductGrid';
 
-const Storefront: React.FC<StorefrontProps> = ({ onProductClick }) => {
+const Storefront: React.FC<StorefrontProps> = ({ onProductClick, activeCategoryId, onCategorySelect, initialScroll = 0 }) => {
   const { products, categories, cart, addToCart, updateCartQuantity } = useAppContext();
-  const [activeCategoryId, setActiveCategoryId] = useState<string | null>(null);
+
+  // Restore scroll position on mount
+  React.useEffect(() => {
+    if (initialScroll > 0) {
+      window.scrollTo(0, initialScroll);
+    }
+  }, []); // Only runs on component mount
+
+  // activeCategoryId is now a prop
   const [categorySearchTerm, setCategorySearchTerm] = useState('');
   const [globalSearchTerm, setGlobalSearchTerm] = useState('');
 
@@ -261,12 +305,12 @@ const Storefront: React.FC<StorefrontProps> = ({ onProductClick }) => {
   }, [cart]);
 
   const handleSelectCategory = (categoryId: string) => {
-    setActiveCategoryId(categoryId);
+    onCategorySelect(categoryId);
     setCategorySearchTerm('');
   };
 
   const handleBackToCategories = () => {
-    setActiveCategoryId(null);
+    onCategorySelect(null);
     setCategorySearchTerm('');
   };
 
@@ -287,22 +331,63 @@ const Storefront: React.FC<StorefrontProps> = ({ onProductClick }) => {
 
 
   const renderCategoryView = () => (
-    <div key="categories" className="space-y-8">
+    <div key="categories" className="space-y-10 pb-10">
+      <Helmet>
+        <title>Steal Deal | Premium Anime Merchandise</title>
+        <meta name="description" content="Discover the best anime figures, keychains, and merchandise at unbeatable prices. Shop Naruto, One Piece, JJK, and more!" />
+        <meta property="og:title" content="Steal Deal | Premium Anime Merchandise" />
+        <meta property="og:description" content="Premium anime merchandise at unbeatable prices." />
+      </Helmet>
+
       {/* Hero Section */}
-      {/* <div className="hero-animate relative overflow-hidden bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 rounded-2xl shadow-2xl">
-        <div className="absolute inset-0 bg-black/20"></div>
-        <div className="relative px-6 py-12 sm:px-12 sm:py-16 md:py-20 text-center">
-          <div className="hero-float inline-block mb-4">
-            <span className="text-5xl sm:text-6xl md:text-7xl">🎁</span>
-          </div>
-          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold text-white mb-4 drop-shadow-lg">
-            Welcome to Steal Deal
-          </h1>
-          <p className="text-lg sm:text-xl md:text-2xl text-white/90 mb-8 max-w-3xl mx-auto drop-shadow">
-            Discover amazing products at unbeatable prices. Your one-stop shop for everything!
-          </p>
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.8 }}
+        className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-900 via-purple-900 to-indigo-900 shadow-2xl min-h-[400px] flex items-center justify-center text-center px-4"
+      >
+        <div className="absolute inset-0 opacity-30 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] mix-blend-overlay"></div>
+        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-t from-black/60 to-transparent"></div>
+
+        {/* Animated Background Blobs */}
+        <div className="absolute top-10 left-10 w-64 h-64 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
+        <div className="absolute bottom-10 right-10 w-64 h-64 bg-indigo-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
+
+        <div className="relative z-10 max-w-4xl mx-auto space-y-6 p-6">
+          <motion.div
+            initial={{ y: 30, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.2, duration: 0.8 }}
+          >
+            <span className="inline-block py-1 px-3 rounded-full bg-indigo-500/30 border border-indigo-400/30 text-indigo-200 text-sm font-semibold mb-4 backdrop-blur-sm">
+              ✨ Premium Collection
+            </span>
+            <h1 className="text-4xl sm:text-6xl md:text-7xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-white via-indigo-100 to-indigo-200 mb-2 drop-shadow-sm">
+              Upgrade Your Collection
+            </h1>
+            <p className="text-lg sm:text-xl md:text-2xl text-indigo-100/90 max-w-2xl mx-auto font-light leading-relaxed">
+              Authentic figures, premium accessories, and exclusive merchandise from your favorite anime series.
+            </p>
+          </motion.div>
+
+          <motion.div
+            initial={{ y: 30, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.5, duration: 0.8 }}
+            className="flex flex-col sm:flex-row gap-4 justify-center mt-8"
+          >
+            <button
+              onClick={() => document.getElementById('categories-grid')?.scrollIntoView({ behavior: 'smooth' })}
+              className="px-8 py-4 bg-white text-indigo-900 rounded-full font-bold text-lg hover:bg-gray-50 hover:scale-105 transition-all shadow-xl hover:shadow-indigo-500/20"
+            >
+              Shop Now
+            </button>
+            <button className="px-8 py-4 bg-transparent border-2 border-white/20 text-white rounded-full font-bold text-lg hover:bg-white/10 hover:border-white/40 transition-all backdrop-blur-sm">
+              View New Arrivals
+            </button>
+          </motion.div>
         </div>
-      </div> */}
+      </motion.div>
 
       <div>
         <div className="relative flex-grow max-w-2xl mx-auto">
@@ -331,16 +416,40 @@ const Storefront: React.FC<StorefrontProps> = ({ onProductClick }) => {
           />
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pt-4">
-          {categories.map(category => (
-            <div key={category.id} onClick={() => handleSelectCategory(category.id)} className="group relative rounded-lg overflow-hidden cursor-pointer shadow-lg hover:shadow-2xl transition-all duration-300 h-80 hover:-translate-y-1">
-              <img src={category.image || `https://placehold.co/600x400?text=${category.name}`} alt={category.name} loading="lazy" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent"></div>
-              <div className="absolute bottom-0 left-0 p-6">
-                <h2 className="text-white text-3xl font-bold tracking-wider">{category.name}</h2>
-              </div>
+        <div id="categories-grid" className="scroll-mt-24">
+          <h2 className="text-2xl font-bold mb-6">Shop by Category</h2>
+          {categories.length > 0 ? (
+            <motion.div
+              variants={containerVariants}
+              initial="hidden"
+              whileInView="show"
+              viewport={{ once: true }}
+              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+            >
+              {categories.map(category => (
+                <motion.div
+                  variants={itemVariants}
+                  key={category.id}
+                  onClick={() => handleSelectCategory(category.id)}
+                  className="group relative rounded-2xl overflow-hidden cursor-pointer shadow-lg hover:shadow-2xl transition-all duration-300 h-80 sm:h-96"
+                >
+                  <img src={category.image || `https://placehold.co/600x400?text=${category.name}`} alt={category.name} loading="lazy" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-80 group-hover:opacity-90 transition-opacity"></div>
+                  <div className="absolute bottom-0 left-0 p-8 w-full transform transition-transform duration-300 group-hover:translate-y-[-8px]">
+                    <h2 className="text-white text-3xl font-bold tracking-tight mb-2">{category.name}</h2>
+                    <div className="h-1 w-12 bg-indigo-500 rounded-full group-hover:w-24 transition-all duration-300"></div>
+                    <p className="text-gray-300 text-sm mt-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform translate-y-4 group-hover:translate-y-0">
+                      Explore Collection →
+                    </p>
+                  </div>
+                </motion.div>
+              ))}
+            </motion.div>
+          ) : (
+            <div className="text-center py-20 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-700">
+              <p className="text-xl text-gray-500 dark:text-gray-400">No categories found. Please check back soon!</p>
             </div>
-          ))}
+          )}
         </div>
       )}
     </div>
@@ -354,7 +463,13 @@ const Storefront: React.FC<StorefrontProps> = ({ onProductClick }) => {
       </button>
 
       <div>
-        <h1 className="text-4xl font-extrabold text-center mb-2">{activeCategory?.name}</h1>
+        <Helmet>
+          <title>{activeCategory?.name} | Steal Deal</title>
+          <meta name="description" content={`Shop the best ${activeCategory?.name} figures and merchandise.`} />
+        </Helmet>
+        <h1 className="text-4xl font-extrabold text-center mb-2 bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400">
+          {activeCategory?.name}
+        </h1>
       </div>
 
       <div className="relative flex-grow max-w-lg mx-auto">
