@@ -20,10 +20,15 @@ const OrderHistory = React.lazy(() => import('./components/OrderHistory'));
 const ProductDetail = React.lazy(() => import('./components/ProductDetail'));
 const Sidebar = React.lazy(() => import('./components/Sidebar'));
 const SearchOverlay = React.lazy(() => import('./components/SearchOverlay'));
-import { MenuIcon, SearchIcon } from './components/Icons';
+const TermsAndConditions = React.lazy(() => import('./components/InfoPages').then(module => ({ default: module.TermsAndConditions })));
+const PrivacyPolicy = React.lazy(() => import('./components/InfoPages').then(module => ({ default: module.PrivacyPolicy })));
+const ReturnsPolicy = React.lazy(() => import('./components/InfoPages').then(module => ({ default: module.ReturnsPolicy })));
+const ShippingPolicy = React.lazy(() => import('./components/InfoPages').then(module => ({ default: module.ShippingPolicy })));
+
+import { MenuIcon, SearchIcon, ShieldCheckIcon, CreditCardIcon, TruckIcon } from './components/Icons';
 
 
-type View = 'store' | 'checkout' | 'orders' | 'admin' | 'product' | 'auth';
+type View = 'store' | 'checkout' | 'orders' | 'admin' | 'product' | 'auth' | 'terms' | 'privacy' | 'returns' | 'shipping';
 
 const App: React.FC = () => {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -222,13 +227,23 @@ const App: React.FC = () => {
         ) : (
           <Register onSwitchToLogin={() => setAuthView('login')} />
         );
+      case 'terms':
+        return <TermsAndConditions />;
+      case 'privacy':
+        return <PrivacyPolicy />;
+      case 'returns':
+        return <ReturnsPolicy />;
+      case 'shipping':
+        return <ShippingPolicy />;
       default:
-        return <Storefront
-          onProductClick={handleProductClick}
-          activeCategoryId={selectedCategory}
-          onCategorySelect={(id) => navigate('store', undefined, id)}
-          initialScroll={selectedCategory ? categoryScrollPos.current : mainStoreScrollPos.current}
-        />;
+        return (
+          <Storefront
+            onProductClick={handleProductClick}
+            activeCategoryId={selectedCategory}
+            onCategorySelect={(id) => navigate('store', undefined, id)}
+            initialScroll={selectedCategory ? categoryScrollPos.current : mainStoreScrollPos.current}
+          />
+        );
     }
   };
 
@@ -294,6 +309,36 @@ const App: React.FC = () => {
           </AnimatePresence>
         </Suspense>
       </main>
+
+      {/* Footer */}
+      <footer className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 mt-auto">
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+
+            {/* Trusted By / Features */}
+            <div className="flex flex-wrap justify-center gap-6 text-gray-500 dark:text-gray-400">
+              <div className="flex items-center gap-2">
+                <ShieldCheckIcon className="text-indigo-500" />
+                <span className="text-sm font-medium">Secure Payments</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <TruckIcon className="text-indigo-500" />
+                <span className="text-sm font-medium">Fast Shipping</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <CreditCardIcon className="text-indigo-500" />
+                <span className="text-sm font-medium">Trusted Sellers</span>
+              </div>
+            </div>
+
+            {/* Copyright */}
+            <div className="text-center md:text-right text-sm text-gray-500">
+              <p>&copy; StealDeal2025. All rights reserved.</p>
+            </div>
+
+          </div>
+        </div>
+      </footer>
 
       <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} onCheckout={() => { navigate('checkout'); setIsCartOpen(false); }} />
       <Sidebar

@@ -95,6 +95,22 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onNavigate }) => {
                                         <span className="ml-4 font-medium">Login / Register</span>
                                     </button>
                                 )}
+
+                                <div className="border-t border-gray-100 dark:border-gray-800 my-2 pt-2">
+                                    <p className="px-6 py-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">Help & Support</p>
+                                    <button onClick={() => handleNavigation('terms')} className="w-full flex items-center px-6 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-sm text-gray-600 dark:text-gray-300">
+                                        <span className="ml-8">Terms & Conditions</span>
+                                    </button>
+                                    <button onClick={() => handleNavigation('privacy')} className="w-full flex items-center px-6 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-sm text-gray-600 dark:text-gray-300">
+                                        <span className="ml-8">Privacy Policy</span>
+                                    </button>
+                                    <button onClick={() => handleNavigation('returns')} className="w-full flex items-center px-6 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-sm text-gray-600 dark:text-gray-300">
+                                        <span className="ml-8">Returns Policy</span>
+                                    </button>
+                                    <button onClick={() => handleNavigation('shipping')} className="w-full flex items-center px-6 py-2 text-left hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-sm text-gray-600 dark:text-gray-300">
+                                        <span className="ml-8">Shipping Policy</span>
+                                    </button>
+                                </div>
                             </nav>
                         </div>
 
