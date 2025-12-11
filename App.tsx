@@ -235,8 +235,9 @@ const App: React.FC = () => {
         <nav className="container mx-auto px-4 sm:px-6 lg:px-8" role="navigation">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center">
-              <span className="font-bold text-xl cursor-pointer" onClick={() => navigate('store', undefined, null)}>
-                <img src="https://thestealdeal.com/web/image/website/1/logo/Steal%20Deal?unique=d646fd0.jpg" className="h-12 w-auto" alt="Steal Deal" />
+              <span className="font-bold text-xl cursor-pointer" onClick={() => { navigate('store', undefined, null); window.scrollTo(0, 0); }}>
+
+                <img src="/logo.jpg" className="h-12 w-auto" alt="Steal Deal" />
               </span>
             </div>
             <div className="flex items-center space-x-2 sm:space-x-4">
