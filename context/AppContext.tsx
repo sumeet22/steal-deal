@@ -12,6 +12,7 @@ interface AppContextType {
   currentUser: User | null;
   setCurrentUser: (user: User | null, token: string | null) => void;
   token: string | null;
+  logout: () => void;
   addProduct: (product: Omit<Product, 'id'>) => void;
   updateProduct: (product: Product) => void;
   deleteProduct: (productId: string) => void;
@@ -141,6 +142,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setCurrentUserInternal(user);
     setToken(newToken);
   }, [setCurrentUserInternal, setToken]);
+
+  const logout = useCallback(() => {
+    setCurrentUserInternal(null);
+    setToken(null);
+    showToast('Success', 'Logged out successfully', 'success');
+  }, [setCurrentUserInternal, setToken, showToast]);
 
   const addProduct = useCallback((productData: Omit<Product, 'id'>) => {
     (async () => {
@@ -504,6 +511,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     currentUser,
     setCurrentUser,
     token,
+    logout,
     addProduct,
     updateProduct,
     deleteProduct,

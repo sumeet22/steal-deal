@@ -18,6 +18,9 @@ const AdminDashboard = React.lazy(() => import('./components/AdminDashboard'));
 const Checkout = React.lazy(() => import('./components/Checkout'));
 const OrderHistory = React.lazy(() => import('./components/OrderHistory'));
 const ProductDetail = React.lazy(() => import('./components/ProductDetail'));
+const Sidebar = React.lazy(() => import('./components/Sidebar'));
+const SearchOverlay = React.lazy(() => import('./components/SearchOverlay'));
+import { MenuIcon, SearchIcon } from './components/Icons';
 
 
 type View = 'store' | 'checkout' | 'orders' | 'admin' | 'product' | 'auth';
@@ -26,7 +29,11 @@ const App: React.FC = () => {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [view, setView] = useState<View>('store');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [globalSearchTerm, setGlobalSearchTerm] = useState('');
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [theme, setTheme] = useLocalStorage<'light' | 'dark'>('theme', 'dark');
   const [authView, setAuthView] = useState<'login' | 'register'>('login');
@@ -233,36 +240,37 @@ const App: React.FC = () => {
     <div className="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen font-sans">
       <header className="bg-white dark:bg-gray-800 shadow-md sticky top-0 z-40">
         <nav className="container mx-auto px-4 sm:px-6 lg:px-8" role="navigation">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center">
-              <span className="font-bold text-xl cursor-pointer" onClick={() => { navigate('store', undefined, null); window.scrollTo(0, 0); }}>
+          <div className="flex items-center justify-between h-16 relative">
+            {/* Left: Menu */}
+            <div className="flex items-center justify-start z-10">
+              <button onClick={() => setIsSidebarOpen(true)} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
+                <MenuIcon />
+              </button>
+            </div>
 
-                <img src="/logo.jpg" className="h-12 w-auto" alt="Steal Deal" />
+            {/* Center: Logo (Absolute) */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <span className="font-bold text-xl cursor-pointer pointer-events-auto" onClick={() => { navigate('store', undefined, null); window.scrollTo(0, 0); }}>
+                <img src="/logo.jpg" className="h-16 sm:h-12 w-auto mix-blend-screen rounded-lg" alt="Steal Deal" />
               </span>
             </div>
-            <div className="flex items-center space-x-2 sm:space-x-4">
-              <button onClick={() => navigate('store', undefined, null)} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700" aria-label="Home"><HomeIcon /></button>
 
-              {currentUser?.role === 'user' && (
-                <button onClick={() => navigate('orders')} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700" aria-label="Order History"><ClipboardListIcon /></button>
-              )}
-
-              {currentUser?.role === 'admin' && (
-                <button onClick={() => navigate('admin')} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700" aria-label="Admin Dashboard"><UserCircleIcon /></button>
-              )}
-
-              <UserMenu onNavigateToAuth={(authView) => { setAuthView(authView); navigate('auth'); }} />
-
-
+            {/* Right: Actions */}
+            <div className="flex items-center justify-end space-x-1 sm:space-x-2 z-10">
+              <button onClick={() => setIsSearchOpen(true)} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300">
+                <SearchIcon />
+              </button>
 
               <div className="relative">
-                <button onClick={() => setIsCartOpen(true)} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700" aria-label="Cart">
-                  <ShoppingCartIcon />
-                  {cartItemCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center border-2 border-white dark:border-gray-800">
-                      {cartItemCount}
-                    </span>
-                  )}
+                <button onClick={() => setIsCartOpen(true)} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-red-500" aria-label="Cart">
+                  <div className="relative">
+                    <ShoppingCartIcon />
+                    {cartItemCount > 0 && (
+                      <span className="absolute -top-2 -right-2 bg-red-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full border-2 border-white dark:border-gray-800">
+                        {cartItemCount}
+                      </span>
+                    )}
+                  </div>
                 </button>
               </div>
             </div>
@@ -288,7 +296,30 @@ const App: React.FC = () => {
       </main>
 
       <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} onCheckout={() => { navigate('checkout'); setIsCartOpen(false); }} />
-    </div>
+      <Sidebar
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+        onNavigate={(view) => {
+          if (view === 'auth') {
+            setAuthView('login');
+          }
+          navigate(view);
+        }}
+      />
+      <SearchOverlay
+        isOpen={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
+        onSearch={(term) => {
+          setGlobalSearchTerm(term);
+          navigate('store');
+          setIsSearchOpen(false);
+        }}
+        onProductClick={(productId) => {
+          navigate('product', productId);
+          setIsSearchOpen(false);
+        }}
+      />
+    </div >
   );
 };
 

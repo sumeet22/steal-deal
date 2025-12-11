@@ -37,7 +37,7 @@ interface ProductCardProps {
 }
 
 // Memoized ProductCard to prevent unnecessary re-renders
-const ProductCard: React.FC<ProductCardProps> = React.memo(({
+export const ProductCard: React.FC<ProductCardProps> = React.memo(({
   product,
   cartItem,
   onProductClick,
@@ -229,7 +229,7 @@ const ProductGrid: React.FC<ProductGridProps> = React.memo(({
   <>
     <motion.div
       variants={containerVariants}
-      initial="hidden"
+      initial="show"
       animate="show"
       className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 sm:gap-8"
     >
@@ -280,11 +280,20 @@ const Storefront: React.FC<StorefrontProps> = ({ onProductClick, activeCategoryI
 
   const categoryFilteredProducts = useMemo(() => {
     if (!activeCategoryId) return [];
-    return products.filter(product => {
-      const matchesCategory = product.categoryId === activeCategoryId;
-      const matchesSearch = product.name.toLowerCase().includes(categorySearchTerm.toLowerCase());
-      return matchesCategory && matchesSearch;
-    });
+
+    // First get all products in this category
+    const categoryProducts = products.filter(p => p.categoryId === activeCategoryId);
+
+    // If search term is empty, return all category products
+    if (!categorySearchTerm.trim()) {
+      return categoryProducts;
+    }
+
+    // Otherwise, filter by search term
+    const term = categorySearchTerm.trim().toLowerCase();
+    return categoryProducts.filter(product =>
+      (product.name || '').toLowerCase().includes(term)
+    );
   }, [products, categorySearchTerm, activeCategoryId]);
 
   const globalFilteredProducts = useMemo(() => {
@@ -495,7 +504,36 @@ const Storefront: React.FC<StorefrontProps> = ({ onProductClick, activeCategoryI
     </div>
   );
 
-  return activeCategoryId ? renderProductView() : renderCategoryView();
+  if (activeCategoryId) {
+    // Show loading if we have an ID but categories haven't loaded yet
+    if (categories.length === 0) {
+      return (
+        <div className="flex justify-center items-center h-screen">
+          <div className="animate-spin h-12 w-12 border-4 border-indigo-500 border-t-transparent rounded-full"></div>
+        </div>
+      );
+    }
+
+    // If categories are loaded but ID matches nothing
+    if (!activeCategory) {
+      return (
+        <div className="flex flex-col items-center justify-center h-96 text-center">
+          <h2 className="text-3xl font-bold mb-4 text-gray-800 dark:text-gray-200">Category Not Found</h2>
+          <p className="text-gray-500 dark:text-gray-400 mb-8">The category you are looking for does not exist or has been removed.</p>
+          <button
+            onClick={handleBackToCategories}
+            className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-full transition-colors"
+          >
+            Return to Store
+          </button>
+        </div>
+      );
+    }
+
+    return renderProductView();
+  }
+
+  return renderCategoryView();
 };
 
 export default Storefront;
