@@ -83,7 +83,14 @@ const ProductManagement: React.FC = () => {
                   <span className="md:hidden text-xs uppercase text-gray-500 font-bold">Product</span>
                   <div className="flex items-center gap-3">
                     <img
-                      src={(product.image ? product.image.replace('/products/', '/products_400/') : 'https://placehold.co/40x40?text=?')}
+                      src={(() => {
+                        // Get main image or first image from images array, fallback to legacy image field
+                        if (product.images && product.images.length > 0) {
+                          const mainImage = product.images.find(img => img.isMain) || product.images[0];
+                          return mainImage.url.replace('/products/', '/products_400/');
+                        }
+                        return (product.image ? product.image.replace('/products/', '/products_400/') : 'https://placehold.co/40x40?text=?');
+                      })()}
                       alt={product.name}
                       className="w-10 h-10 rounded-md object-cover"
                     />

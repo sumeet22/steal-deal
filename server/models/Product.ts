@@ -1,5 +1,11 @@
 import { Schema, model, Document } from 'mongoose';
 
+export interface ProductImage {
+  url: string;
+  order: number;
+  isMain: boolean;
+}
+
 export interface IProduct extends Document {
   name: string;
   description: string;
@@ -7,7 +13,8 @@ export interface IProduct extends Document {
   originalPrice?: number;
   stockQuantity: number;
   category: Schema.Types.ObjectId;
-  image?: string;
+  image?: string; // Deprecated, kept for backward compatibility
+  images?: ProductImage[]; // New: array of images (max 5)
   tags?: ('new' | 'sale')[];
   viewCount?: number;
   addToCartCount?: number;
@@ -48,6 +55,23 @@ const ProductSchema = new Schema<IProduct>({
   image: {
     type: String,
   },
+  images: [
+    {
+      url: {
+        type: String,
+        required: true,
+      },
+      order: {
+        type: Number,
+        required: true,
+        min: 0,
+      },
+      isMain: {
+        type: Boolean,
+        default: false,
+      },
+    },
+  ],
   tags: [
     {
       type: String,

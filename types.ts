@@ -4,6 +4,12 @@ export interface Category {
   image?: string;
 }
 
+export interface ProductImage {
+  url: string;
+  order: number;
+  isMain: boolean;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -12,7 +18,8 @@ export interface Product {
   description: string;
   stockQuantity: number;
   categoryId: string;
-  image?: string; // image URL
+  image?: string; // Deprecated, kept for backward compatibility
+  images?: ProductImage[]; // New: array of images (max 5)
   tags?: ('new' | 'sale')[];
   viewCount?: number;
   addToCartCount?: number;

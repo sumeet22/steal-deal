@@ -1,19 +1,33 @@
 import React, { useState, useMemo } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useAppContext } from '../context/AppContext';
-import { ChevronLeftIcon, ShoppingCartIcon, PlusIcon, MinusIcon, EyeIcon, ShoppingBagIcon, FireIcon } from './Icons';
+import { ChevronLeftIcon, ChevronRightIcon, ShoppingCartIcon, EyeIcon, ShoppingBagIcon, FireIcon } from './Icons';
 import QuantityStepper from './shared/QuantityStepper';
+import { Product, ProductImage } from '../types';
 
 interface ProductDetailProps {
   productId: string;
   onBack: () => void;
 }
 
+// Helper function to get sorted images with fallback to legacy image field
+const getProductImages = (product: Product): ProductImage[] => {
+  if (product.images && product.images.length > 0) {
+    return [...product.images].sort((a, b) => a.order - b.order);
+  } else if (product.image) {
+    // Fallback to legacy single image
+    return [{ url: product.image, order: 0, isMain: true }];
+  }
+  return [];
+};
+
 const ProductDetail: React.FC<ProductDetailProps> = ({ productId, onBack }) => {
   const { products, addToCart } = useAppContext();
   const [quantity, setQuantity] = useState(1);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   const product = useMemo(() => products.find(p => p.id === productId), [products, productId]);
+  const productImages = useMemo(() => product ? getProductImages(product) : [], [product]);
 
   // Randomize stats if not provided
   const stats = useMemo(() => {
@@ -46,6 +60,16 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ productId, onBack }) => {
     }
   };
 
+  const handlePrevImage = () => {
+    setCurrentImageIndex((prev) => (prev === 0 ? productImages.length - 1 : prev - 1));
+  };
+
+  const handleNextImage = () => {
+    setCurrentImageIndex((prev) => (prev === productImages.length - 1 ? 0 : prev + 1));
+  };
+
+  const currentImage = productImages[currentImageIndex];
+
   return (
     <div className="bg-white dark:bg-gray-800 shadow-xl rounded-2xl p-6 sm:p-10 transition-all duration-300">
       <button
@@ -63,35 +87,95 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ productId, onBack }) => {
         <meta name="description" content={product.description.substring(0, 160)} />
         <meta property="og:title" content={`${product.name} - ₹${product.price}`} />
         <meta property="og:description" content={product.description.substring(0, 200)} />
-        {product.image && <meta property="og:image" content={product.image} />}
+        {currentImage && <meta property="og:image" content={currentImage.url} />}
       </Helmet>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-10 lg:gap-16">
-        {/* Image Section */}
-        <div className="relative aspect-square bg-gray-100 dark:bg-gray-700/50 rounded-2xl flex items-center justify-center overflow-hidden shadow-sm group">
-          {product.image ? (
-            <img
-              src={product.image}
-              alt={product.name}
-              loading="lazy"
-              className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-            />
-          ) : (
-            <span className="text-gray-400 font-medium">No Image Available</span>
-          )}
+        {/* Image Section with Carousel */}
+        <div className="space-y-4">
+          <div className="relative aspect-square bg-gray-100 dark:bg-gray-700/50 rounded-2xl flex items-center justify-center overflow-hidden shadow-sm group">
+            {currentImage ? (
+              <>
+                <img
+                  src={currentImage.url}
+                  alt={product.name}
+                  loading="lazy"
+                  className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                />
 
-          <div className="absolute top-4 left-4 flex flex-col gap-2.5">
-            {isNew && (
-              <span className="px-3 py-1 text-xs font-bold tracking-wider text-white bg-teal-500 rounded-full shadow-lg backdrop-blur-sm bg-opacity-90">
-                NEW
-              </span>
+                {/* Navigation Arrows - Only show if multiple images */}
+                {productImages.length > 1 && (
+                  <>
+                    <button
+                      onClick={handlePrevImage}
+                      className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-3 rounded-full transition-all opacity-0 group-hover:opacity-100"
+                      aria-label="Previous image"
+                    >
+                      <ChevronLeftIcon />
+                    </button>
+                    <button
+                      onClick={handleNextImage}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-3 rounded-full transition-all opacity-0 group-hover:opacity-100"
+                      aria-label="Next image"
+                    >
+                      <ChevronRightIcon />
+                    </button>
+                  </>
+                )}
+              </>
+            ) : (
+              <span className="text-gray-400 font-medium">No Image Available</span>
             )}
-            {isSale && (
-              <span className="px-3 py-1 text-xs font-bold tracking-wider text-white bg-red-500 rounded-full shadow-lg backdrop-blur-sm bg-opacity-90">
-                -{discount}% OFF
-              </span>
+
+            <div className="absolute top-4 left-4 flex flex-col gap-2.5">
+              {isNew && (
+                <span className="px-3 py-1 text-xs font-bold tracking-wider text-white bg-teal-500 rounded-full shadow-lg backdrop-blur-sm bg-opacity-90">
+                  NEW
+                </span>
+              )}
+              {isSale && (
+                <span className="px-3 py-1 text-xs font-bold tracking-wider text-white bg-red-500 rounded-full shadow-lg backdrop-blur-sm bg-opacity-90">
+                  -{discount}% OFF
+                </span>
+              )}
+            </div>
+
+            {/* Image Counter */}
+            {productImages.length > 1 && (
+              <div className="absolute bottom-4 right-4 bg-black/70 text-white px-3 py-1.5 rounded-full text-sm font-medium">
+                {currentImageIndex + 1} / {productImages.length}
+              </div>
             )}
           </div>
+
+          {/* Thumbnail Strip - Only show if multiple images */}
+          {productImages.length > 1 && (
+            <div className="flex gap-2 overflow-x-auto pb-2">
+              {productImages.map((img, index) => (
+                <button
+                  key={index}
+                  onClick={() => setCurrentImageIndex(index)}
+                  className={`relative flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all ${index === currentImageIndex
+                      ? 'border-indigo-500 scale-105 shadow-lg'
+                      : 'border-gray-300 dark:border-gray-600 hover:border-indigo-300 dark:hover:border-indigo-700'
+                    }`}
+                >
+                  <img
+                    src={img.url}
+                    alt={`${product.name} ${index + 1}`}
+                    className="w-full h-full object-cover"
+                  />
+                  {img.isMain && (
+                    <div className="absolute top-1 right-1 bg-yellow-500 rounded-full p-0.5">
+                      <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                      </svg>
+                    </div>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Info Section */}

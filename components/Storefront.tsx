@@ -3,7 +3,7 @@ import { Helmet } from 'react-helmet-async';
 import { motion } from 'framer-motion';
 import { useAppContext } from '../context/AppContext';
 import { SearchIcon, ChevronLeftIcon, EyeIcon, FireIcon } from './Icons';
-import { Product } from '../types';
+import { Product, ProductImage } from '../types';
 import QuantityStepper from './shared/QuantityStepper';
 
 interface StorefrontProps {
@@ -28,6 +28,7 @@ const itemVariants = {
   show: { opacity: 1, y: 0, transition: { type: "spring" as const, stiffness: 50 } }
 };
 
+
 interface ProductCardProps {
   product: Product;
   cartItem: { id: string; quantity: number } | undefined;
@@ -35,6 +36,18 @@ interface ProductCardProps {
   onAddToCart: (product: Product) => void;
   onUpdateQuantity: (productId: string, quantity: number) => void;
 }
+
+// Helper function to get sorted images with fallback to legacy image field
+const getProductImages = (product: Product): string[] => {
+  if (product.images && product.images.length > 0) {
+    return [...product.images]
+      .sort((a, b) => a.order - b.order)
+      .map(img => img.url);
+  } else if (product.image) {
+    return [product.image];
+  }
+  return [];
+};
 
 // Memoized ProductCard to prevent unnecessary re-renders
 export const ProductCard: React.FC<ProductCardProps> = React.memo(({
@@ -50,9 +63,15 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
   const [quantity, setQuantity] = useState(cartItem?.quantity || 1);
   const [isAdding, setIsAdding] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [isHovering, setIsHovering] = useState(false);
+
   const isSale = product.originalPrice && product.originalPrice > product.price;
   const isNew = product.tags?.includes('new');
   const discount = isSale ? Math.round(((product.originalPrice! - product.price) / product.originalPrice!) * 100) : 0;
+
+  const productImages = useMemo(() => getProductImages(product), [product]);
+  const hasMultipleImages = productImages.length > 1;
 
   const stats = useMemo(() => {
     return {
@@ -60,6 +79,16 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
       soldLast24Hours: (product.soldLast24Hours && product.soldLast24Hours > 0) ? product.soldLast24Hours : Math.floor(Math.random() * (12 - 2 + 1)) + 2
     };
   }, [product.viewCount, product.soldLast24Hours]);
+
+  // Auto-cycle images if multiple images exist
+  React.useEffect(() => {
+    if (hasMultipleImages && !isHovering) {
+      const interval = setInterval(() => {
+        setCurrentImageIndex((prev) => (prev + 1) % productImages.length);
+      }, 3000); // Change image every 3 seconds
+      return () => clearInterval(interval);
+    }
+  }, [hasMultipleImages, productImages.length, isHovering]);
 
   // Sync local quantity with cart quantity when cart changes
   React.useEffect(() => {
@@ -90,20 +119,50 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
     onUpdateQuantity(product.id, newQuantity);
   };
 
+  const currentImage = productImages[currentImageIndex];
+
   return (
     <motion.div
       variants={itemVariants}
       className="product-card bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden flex flex-col group transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 border border-transparent hover:border-indigo-500/30"
     >
-      <div className="relative cursor-pointer" onClick={() => onProductClick(product.id)}>
-        <div className="h-40 sm:h-48 bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden">
-          {product.image ? (
-            <img
-              src={product.image.replace('/products/', '/products_400/')}
-              alt={product.name}
-              loading="lazy"
-              className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-            />
+      <div
+        className="relative cursor-pointer"
+        onClick={() => onProductClick(product.id)}
+        onMouseEnter={() => setIsHovering(true)}
+        onMouseLeave={() => setIsHovering(false)}
+      >
+        <div className="h-40 sm:h-48 bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden relative">
+          {currentImage ? (
+            <>
+              <img
+                src={currentImage.replace('/products/', '/products_400/')}
+                alt={product.name}
+                loading="lazy"
+                className="h-full w-full object-cover transition-all duration-500 group-hover:scale-105"
+                key={currentImageIndex} // Force re-render on image change for smooth transition
+              />
+
+              {/* Image dots indicator - only show if multiple images */}
+              {hasMultipleImages && (
+                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5 bg-black/50 px-2 py-1 rounded-full">
+                  {productImages.map((_, index) => (
+                    <button
+                      key={index}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setCurrentImageIndex(index);
+                      }}
+                      className={`w-1.5 h-1.5 rounded-full transition-all ${index === currentImageIndex
+                        ? 'bg-white w-4'
+                        : 'bg-white/50 hover:bg-white/75'
+                        }`}
+                      aria-label={`View image ${index + 1}`}
+                    />
+                  ))}
+                </div>
+              )}
+            </>
           ) : (
             <span className="text-gray-400">No Image</span>
           )}
