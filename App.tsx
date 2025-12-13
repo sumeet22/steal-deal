@@ -258,7 +258,7 @@ const App: React.FC = () => {
           <div className="flex items-center justify-between h-16 relative">
             {/* Left: Menu */}
             <div className="flex items-center justify-start z-10">
-              <button onClick={() => setIsSidebarOpen(true)} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
+              <button onClick={() => setIsSidebarOpen(true)} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700" aria-label="Open menu">
                 <MenuIcon />
               </button>
             </div>
@@ -266,13 +266,13 @@ const App: React.FC = () => {
             {/* Center: Logo (Absolute) */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <span className="font-bold text-xl cursor-pointer pointer-events-auto" onClick={() => { navigate('store', undefined, null); window.scrollTo(0, 0); }}>
-                <img src="/logo.jpg" className="h-16 sm:h-12 w-auto mix-blend-screen rounded-lg" alt="Steal Deal" />
+                <img src="/logo.jpg" className="h-16 sm:h-12 w-auto mix-blend-screen rounded-lg" alt="Steal Deal" width="64" height="64" loading="eager" />
               </span>
             </div>
 
             {/* Right: Actions */}
             <div className="flex items-center justify-end space-x-1 sm:space-x-2 z-10">
-              <button onClick={() => setIsSearchOpen(true)} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300">
+              <button onClick={() => setIsSearchOpen(true)} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300" aria-label="Search products">
                 <SearchIcon />
               </button>
 
