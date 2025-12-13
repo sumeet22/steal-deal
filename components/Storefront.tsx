@@ -1,10 +1,11 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { motion } from 'framer-motion';
 import { useAppContext } from '../context/AppContext';
 import { SearchIcon, ChevronLeftIcon, EyeIcon, FireIcon } from './Icons';
 import { Product, ProductImage } from '../types';
 import QuantityStepper from './shared/QuantityStepper';
+import PullToRefresh from './shared/PullToRefresh';
 
 interface StorefrontProps {
   onProductClick: (productId: string) => void;
@@ -403,6 +404,27 @@ const Storefront: React.FC<StorefrontProps> = ({ onProductClick, activeCategoryI
     setCategorySearchTerm('');
   };
 
+  // Pull-to-refresh handler
+  const handleRefresh = useCallback(async () => {
+    if (activeCategoryId) {
+      // Refresh products in current category
+      await fetchProductsByCategory(activeCategoryId, 1, 20).then(result => {
+        setCurrentPage(1);
+        setHasMore(result.hasMore);
+      });
+    } else if (globalSearchTerm) {
+      // Refresh search results
+      await fetchProductsBySearch(globalSearchTerm, 1, 20).then(result => {
+        setCurrentPage(1);
+        setHasMore(result.hasMore);
+      });
+    } else {
+      // Refresh categories (reload page)
+      window.location.reload();
+    }
+  }, [activeCategoryId, globalSearchTerm, fetchProductsByCategory, fetchProductsBySearch]);
+
+
   // Infinite scroll - load more when sentinel element is visible
   const loadMoreRef = React.useRef<HTMLDivElement>(null);
 
@@ -686,7 +708,11 @@ const Storefront: React.FC<StorefrontProps> = ({ onProductClick, activeCategoryI
     return renderProductView();
   }
 
-  return renderCategoryView();
+  return (
+    <PullToRefresh onRefresh={handleRefresh}>
+      {renderCategoryView()}
+    </PullToRefresh>
+  );
 };
 
 export default Storefront;
