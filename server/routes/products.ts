@@ -4,10 +4,58 @@ import Category from '../models/Category.js';
 
 const router = express.Router();
 
-router.get('/', async (_req: Request, res: Response) => {
+// GET /api/products - Optimized with pagination, filtering, and search
+router.get('/', async (req: Request, res: Response) => {
   try {
-    const products = await Product.find().populate('category');
-    res.json(products);
+    const {
+      page = '1',
+      limit = '20',
+      category,
+      search,
+      sort = '-createdAt' // Default: newest first
+    } = req.query;
+
+    const pageNum = parseInt(page as string, 10);
+    const limitNum = parseInt(limit as string, 10);
+    const skip = (pageNum - 1) * limitNum;
+
+    // Build query
+    const query: any = {};
+
+    // Category filter
+    if (category && category !== 'all') {
+      query.category = category;
+    }
+
+    // Search filter (name and description)
+    if (search && typeof search === 'string' && search.trim()) {
+      query.$or = [
+        { name: { $regex: search.trim(), $options: 'i' } },
+        { description: { $regex: search.trim(), $options: 'i' } }
+      ];
+    }
+
+    // Execute query with pagination
+    const [products, total] = await Promise.all([
+      Product.find(query)
+        .populate('category')
+        .sort(sort as string)
+        .skip(skip)
+        .limit(limitNum)
+        .lean(), // Use lean() for better performance
+      Product.countDocuments(query)
+    ]);
+
+    res.json({
+      products,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages: Math.ceil(total / limitNum),
+        hasMore: skip + products.length < total
+      }
+    });
   } catch (error: any) {
     console.error('Error fetching products:', error);
     res.status(500).json({ message: 'Server error', error: error.message });

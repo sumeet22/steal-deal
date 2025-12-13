@@ -1,15 +1,20 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../../context/AppContext';
 import { Product } from '../../types';
 import ProductForm from './ProductForm';
 import { PlusIcon, PencilIcon, TrashIcon } from '../Icons';
 
 const ProductManagement: React.FC = () => {
-  const { products, deleteProduct, categories } = useAppContext();
+  const { products, deleteProduct, categories, fetchAllProductsForAdmin } = useAppContext();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | 'all'>('all');
+
+  // Fetch all products when component mounts (admin needs to see all products)
+  useEffect(() => {
+    fetchAllProductsForAdmin();
+  }, [fetchAllProductsForAdmin]);
 
   const filteredProducts = products.filter(product => {
     const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||

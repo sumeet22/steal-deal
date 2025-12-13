@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useAppContext } from '../context/AppContext';
 import { ChevronLeftIcon, ChevronRightIcon, ShoppingCartIcon, EyeIcon, ShoppingBagIcon, FireIcon } from './Icons';
@@ -25,8 +25,62 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ productId, onBack }) => {
   const { products, addToCart } = useAppContext();
   const [quantity, setQuantity] = useState(1);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [fetchedProduct, setFetchedProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const product = useMemo(() => products.find(p => p.id === productId), [products, productId]);
+  // Try to find product in products array first, then use fetched product
+  const product = useMemo(() => {
+    const foundProduct = products.find(p => p.id === productId);
+    return foundProduct || fetchedProduct;
+  }, [products, productId, fetchedProduct]);
+
+  // Fetch product from API if not found in products array
+  useEffect(() => {
+    const foundInProducts = products.find(p => p.id === productId);
+
+    if (!foundInProducts && productId) {
+      setLoading(true);
+      setError(null);
+
+      fetch(`/api/products/${productId}`)
+        .then(res => {
+          if (!res.ok) throw new Error('Product not found');
+          return res.json();
+        })
+        .then(data => {
+          // Map the product data
+          const categoryId = data.category && (typeof data.category === 'object'
+            ? (data.category._id || data.category.id)
+            : data.category);
+
+          const mappedProduct: Product = {
+            id: data._id || data.id,
+            name: data.name,
+            price: data.price,
+            originalPrice: data.originalPrice ?? null,
+            description: data.description || '',
+            stockQuantity: data.stockQuantity ?? data.stock ?? 0,
+            categoryId: categoryId || '',
+            image: data.image || data.imageUrl || undefined,
+            images: data.images || undefined,
+            tags: data.tags || [],
+            viewCount: data.viewCount ?? undefined,
+            addToCartCount: data.addToCartCount ?? undefined,
+            soldLast24Hours: data.soldLast24Hours ?? undefined,
+          };
+
+          setFetchedProduct(mappedProduct);
+          setLoading(false);
+        })
+        .catch(err => {
+          console.error('Error fetching product:', err);
+          setError('Failed to load product');
+          setLoading(false);
+        });
+    }
+  }, [productId, products]);
+
   const productImages = useMemo(() => product ? getProductImages(product) : [], [product]);
 
   // Randomize stats if not provided
@@ -39,10 +93,18 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ productId, onBack }) => {
     };
   }, [product]);
 
-  if (!product) {
+  if (loading) {
     return (
-      <div className="text-center">
-        <h2 className="text-2xl font-bold mb-4">Product not found</h2>
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin h-12 w-12 border-4 border-indigo-500 border-t-transparent rounded-full"></div>
+      </div>
+    );
+  }
+
+  if (error || !product) {
+    return (
+      <div className="text-center py-20">
+        <h2 className="text-2xl font-bold mb-4">{error || 'Product not found'}</h2>
         <button onClick={onBack} className="text-indigo-600 hover:underline flex items-center gap-1 mx-auto">
           <ChevronLeftIcon /> Back to store
         </button>
@@ -156,8 +218,8 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ productId, onBack }) => {
                   key={index}
                   onClick={() => setCurrentImageIndex(index)}
                   className={`relative flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all ${index === currentImageIndex
-                      ? 'border-indigo-500 scale-105 shadow-lg'
-                      : 'border-gray-300 dark:border-gray-600 hover:border-indigo-300 dark:hover:border-indigo-700'
+                    ? 'border-indigo-500 scale-105 shadow-lg'
+                    : 'border-gray-300 dark:border-gray-600 hover:border-indigo-300 dark:hover:border-indigo-700'
                     }`}
                 >
                   <img

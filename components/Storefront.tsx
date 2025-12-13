@@ -320,7 +320,7 @@ const ProductGrid: React.FC<ProductGridProps> = React.memo(({
 ProductGrid.displayName = 'ProductGrid';
 
 const Storefront: React.FC<StorefrontProps> = ({ onProductClick, activeCategoryId, onCategorySelect, initialScroll = 0 }) => {
-  const { products, categories, cart, addToCart, updateCartQuantity } = useAppContext();
+  const { products, categories, cart, addToCart, updateCartQuantity, fetchProductsByCategory, fetchProductsBySearch, productsLoading } = useAppContext();
 
   // Restore scroll position on mount
   React.useEffect(() => {
@@ -329,38 +329,58 @@ const Storefront: React.FC<StorefrontProps> = ({ onProductClick, activeCategoryI
     }
   }, []); // Only runs on component mount
 
-  // activeCategoryId is now a prop
+  // State for search and pagination
   const [categorySearchTerm, setCategorySearchTerm] = useState('');
   const [globalSearchTerm, setGlobalSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
 
   const activeCategory = useMemo(() => {
     return categories.find(c => c.id === activeCategoryId);
   }, [categories, activeCategoryId]);
 
+  // Fetch products when category changes
+  React.useEffect(() => {
+    if (activeCategoryId) {
+      setCurrentPage(1);
+      fetchProductsByCategory(activeCategoryId, 1, 20).then(result => {
+        setHasMore(result.hasMore);
+      });
+    }
+  }, [activeCategoryId, fetchProductsByCategory]);
+
+  // Fetch products when global search changes (debounced)
+  React.useEffect(() => {
+    if (globalSearchTerm.trim()) {
+      const timer = setTimeout(() => {
+        setCurrentPage(1);
+        fetchProductsBySearch(globalSearchTerm, 1, 20).then(result => {
+          setHasMore(result.hasMore);
+        });
+      }, 300); // 300ms debounce
+      return () => clearTimeout(timer);
+    }
+  }, [globalSearchTerm, fetchProductsBySearch]);
+
+  // Category search is now client-side filtering (products already loaded for category)
   const categoryFilteredProducts = useMemo(() => {
     if (!activeCategoryId) return [];
 
-    // First get all products in this category
-    const categoryProducts = products.filter(p => p.categoryId === activeCategoryId);
-
-    // If search term is empty, return all category products
+    // Filter loaded products by search term
     if (!categorySearchTerm.trim()) {
-      return categoryProducts;
+      return products;
     }
 
-    // Otherwise, filter by search term
     const term = categorySearchTerm.trim().toLowerCase();
-    return categoryProducts.filter(product =>
+    return products.filter(product =>
       (product.name || '').toLowerCase().includes(term)
     );
   }, [products, categorySearchTerm, activeCategoryId]);
 
+  // Global search products (already loaded from API)
   const globalFilteredProducts = useMemo(() => {
-    if (!globalSearchTerm) return [];
-    return products.filter(product =>
-      product.name.toLowerCase().includes(globalSearchTerm.toLowerCase()) ||
-      product.description.toLowerCase().includes(globalSearchTerm.toLowerCase())
-    );
+    if (!globalSearchTerm.trim()) return [];
+    return products; // Products are already filtered by API
   }, [products, globalSearchTerm]);
 
   // Create a memoized map of cart items by product ID to ensure stable references
@@ -375,12 +395,55 @@ const Storefront: React.FC<StorefrontProps> = ({ onProductClick, activeCategoryI
   const handleSelectCategory = (categoryId: string) => {
     onCategorySelect(categoryId);
     setCategorySearchTerm('');
+    setGlobalSearchTerm(''); // Clear global search when selecting category
   };
 
   const handleBackToCategories = () => {
     onCategorySelect(null);
     setCategorySearchTerm('');
   };
+
+  // Infinite scroll - load more when sentinel element is visible
+  const loadMoreRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    if (!loadMoreRef.current || productsLoading || !hasMore) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (entry.isIntersecting && hasMore && !productsLoading) {
+          // Load next page
+          const nextPage = currentPage + 1;
+          setCurrentPage(nextPage);
+
+          if (activeCategoryId) {
+            fetchProductsByCategory(activeCategoryId, nextPage, 20).then(result => {
+              setHasMore(result.hasMore);
+            });
+          } else if (globalSearchTerm) {
+            fetchProductsBySearch(globalSearchTerm, nextPage, 20).then(result => {
+              setHasMore(result.hasMore);
+            });
+          }
+        }
+      },
+      {
+        root: null, // viewport
+        rootMargin: '200px', // Start loading 200px before reaching the sentinel
+        threshold: 0.1
+      }
+    );
+
+    observer.observe(loadMoreRef.current);
+
+    return () => {
+      if (loadMoreRef.current) {
+        observer.unobserve(loadMoreRef.current);
+      }
+    };
+  }, [activeCategoryId, globalSearchTerm, currentPage, hasMore, productsLoading, fetchProductsByCategory, fetchProductsBySearch]);
+
 
   // Memoized callbacks to prevent ProductCard re-renders
   const handleAddToCart = React.useCallback((product: Product) => {
@@ -395,7 +458,6 @@ const Storefront: React.FC<StorefrontProps> = ({ onProductClick, activeCategoryI
   const handleProductClick = React.useCallback((productId: string) => {
     onProductClick(productId);
   }, [onProductClick]);
-
 
 
   const renderCategoryView = () => (
@@ -482,6 +544,22 @@ const Storefront: React.FC<StorefrontProps> = ({ onProductClick, activeCategoryI
             onAddToCart={handleAddToCart}
             onUpdateQuantity={handleUpdateQuantity}
           />
+
+          {/* Loading indicator */}
+          {productsLoading && (
+            <div className="flex justify-center py-8">
+              <div className="animate-spin h-12 w-12 border-4 border-indigo-500 border-t-transparent rounded-full"></div>
+            </div>
+          )}
+
+          {/* Infinite scroll sentinel */}
+          {hasMore && globalFilteredProducts.length > 0 && (
+            <div ref={loadMoreRef} className="h-20 flex items-center justify-center">
+              {productsLoading && (
+                <p className="text-gray-500 text-sm">Loading more results...</p>
+              )}
+            </div>
+          )}
         </div>
       ) : (
         <div id="categories-grid" className="scroll-mt-24">
@@ -560,6 +638,22 @@ const Storefront: React.FC<StorefrontProps> = ({ onProductClick, activeCategoryI
         onAddToCart={handleAddToCart}
         onUpdateQuantity={handleUpdateQuantity}
       />
+
+      {/* Loading indicator */}
+      {productsLoading && (
+        <div className="flex justify-center py-8">
+          <div className="animate-spin h-12 w-12 border-4 border-indigo-500 border-t-transparent rounded-full"></div>
+        </div>
+      )}
+
+      {/* Infinite scroll sentinel */}
+      {hasMore && categoryFilteredProducts.length > 0 && (
+        <div ref={loadMoreRef} className="h-20 flex items-center justify-center">
+          {productsLoading && (
+            <p className="text-gray-500 text-sm">Loading more products...</p>
+          )}
+        </div>
+      )}
     </div>
   );
 

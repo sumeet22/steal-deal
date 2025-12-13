@@ -13,6 +13,12 @@ interface AppContextType {
   setCurrentUser: (user: User | null, token: string | null) => void;
   token: string | null;
   logout: () => void;
+
+  // Lazy loading functions
+  fetchProductsByCategory: (categoryId: string, page?: number, limit?: number) => Promise<{ products: Product[]; hasMore: boolean; total: number }>;
+  fetchProductsBySearch: (searchQuery: string, page?: number, limit?: number) => Promise<{ products: Product[]; hasMore: boolean; total: number }>;
+  fetchAllProductsForAdmin: () => Promise<void>; // For admin panel only
+
   addProduct: (product: Omit<Product, 'id'>) => void;
   updateProduct: (product: Product) => void;
   deleteProduct: (productId: string) => void;
@@ -32,6 +38,9 @@ interface AppContextType {
   setCategories: React.Dispatch<React.SetStateAction<Category[]>>;
   setOrders: React.Dispatch<React.SetStateAction<Order[]>>;
   setUsers: React.Dispatch<React.SetStateAction<User[]>>;
+
+  // Loading states
+  productsLoading: boolean;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -44,6 +53,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [orders, setOrders] = useState<Order[]>([]);
   const [currentUser, setCurrentUserInternal] = useLocalStorage<User | null>('currentUser', null);
   const [token, setToken] = useLocalStorage<string | null>('token', null);
+  const [productsLoading, setProductsLoading] = useState(false);
   const { showToast } = useToast();
 
   useEffect(() => {
@@ -63,35 +73,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
     };
 
-    const fetchProducts = async () => {
-      try {
-        const res = await fetch('/api/products');
-        if (!res.ok) throw new Error('Failed to fetch products');
-        const data = await res.json();
-        console.log('Raw products data:', data);
-        const mapped: Product[] = (data || []).map((p: any) => {
-          const categoryId = p.category && (typeof p.category === 'object' ? (p.category._id || p.category.id) : p.category);
-          return {
-            id: p._id || p.id,
-            name: p.name,
-            price: p.price,
-            originalPrice: p.originalPrice ?? null,
-            description: p.description || '',
-            stockQuantity: p.stockQuantity ?? p.stock ?? 0,
-            categoryId: categoryId || '',
-            image: p.image || p.imageUrl || undefined,
-            images: p.images || undefined,
-            tags: p.tags || [],
-            viewCount: p.viewCount ?? undefined,
-            addToCartCount: p.addToCartCount ?? undefined,
-            soldLast24Hours: p.soldLast24Hours ?? undefined,
-          } as Product;
-        });
-        setProducts(mapped);
-      } catch (err) {
-        showToast('Error', 'Failed to load products from server', 'error');
-      }
-    };
+    // NOTE: Products are NO LONGER loaded upfront
+    // They will be loaded lazily when:
+    // 1. User selects a category
+    // 2. User performs a search
+    // 3. Admin views product management
+    // This prevents loading 1000s of products on app start
 
     const fetchUsers = async () => {
       try {
@@ -134,7 +121,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     };
 
     fetchCategories();
-    fetchProducts();
+    // fetchProducts(); // REMOVED - load lazily instead
     fetchUsers();
     fetchOrders();
   }, [showToast]);
@@ -149,6 +136,128 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setToken(null);
     showToast('Success', 'Logged out successfully', 'success');
   }, [setCurrentUserInternal, setToken, showToast]);
+
+  // Helper function to map product data
+  const mapProductData = useCallback((p: any): Product => {
+    const categoryId = p.category && (typeof p.category === 'object' ? (p.category._id || p.category.id) : p.category);
+    return {
+      id: p._id || p.id,
+      name: p.name,
+      price: p.price,
+      originalPrice: p.originalPrice ?? null,
+      description: p.description || '',
+      stockQuantity: p.stockQuantity ?? p.stock ?? 0,
+      categoryId: categoryId || '',
+      image: p.image || p.imageUrl || undefined,
+      images: p.images || undefined,
+      tags: p.tags || [],
+      viewCount: p.viewCount ?? undefined,
+      addToCartCount: p.addToCartCount ?? undefined,
+      soldLast24Hours: p.soldLast24Hours ?? undefined,
+    } as Product;
+  }, []);
+
+  // Fetch products by category with pagination
+  const fetchProductsByCategory = useCallback(async (
+    categoryId: string,
+    page: number = 1,
+    limit: number = 20
+  ): Promise<{ products: Product[]; hasMore: boolean; total: number }> => {
+    setProductsLoading(true);
+    try {
+      const params = new URLSearchParams({
+        category: categoryId,
+        page: page.toString(),
+        limit: limit.toString()
+      });
+
+      const res = await fetch(`/api/products?${params}`);
+      if (!res.ok) throw new Error('Failed to fetch products');
+
+      const data = await res.json();
+      const mappedProducts = (data.products || []).map(mapProductData);
+
+      // Update products state (append for pagination or replace for new category)
+      if (page === 1) {
+        setProducts(mappedProducts);
+      } else {
+        setProducts(prev => [...prev, ...mappedProducts]);
+      }
+
+      return {
+        products: mappedProducts,
+        hasMore: data.pagination?.hasMore || false,
+        total: data.pagination?.total || 0
+      };
+    } catch (err) {
+      showToast('Error', 'Failed to load products', 'error');
+      return { products: [], hasMore: false, total: 0 };
+    } finally {
+      setProductsLoading(false);
+    }
+  }, [showToast, mapProductData]);
+
+  // Fetch products by search query with pagination
+  const fetchProductsBySearch = useCallback(async (
+    searchQuery: string,
+    page: number = 1,
+    limit: number = 20
+  ): Promise<{ products: Product[]; hasMore: boolean; total: number }> => {
+    setProductsLoading(true);
+    try {
+      const params = new URLSearchParams({
+        search: searchQuery,
+        page: page.toString(),
+        limit: limit.toString()
+      });
+
+      const res = await fetch(`/api/products?${params}`);
+      if (!res.ok) throw new Error('Failed to fetch products');
+
+      const data = await res.json();
+      const mappedProducts = (data.products || []).map(mapProductData);
+
+      // Update products state
+      if (page === 1) {
+        setProducts(mappedProducts);
+      } else {
+        setProducts(prev => [...prev, ...mappedProducts]);
+      }
+
+      return {
+        products: mappedProducts,
+        hasMore: data.pagination?.hasMore || false,
+        total: data.pagination?.total || 0
+      };
+    } catch (err) {
+      showToast('Error', 'Failed to search products', 'error');
+      return { products: [], hasMore: false, total: 0 };
+    } finally {
+      setProductsLoading(false);
+    }
+  }, [showToast, mapProductData]);
+
+  // Fetch ALL products for admin panel (no pagination)
+  const fetchAllProductsForAdmin = useCallback(async (): Promise<void> => {
+    setProductsLoading(true);
+    try {
+      const params = new URLSearchParams({
+        limit: '1000' // High limit for admin
+      });
+
+      const res = await fetch(`/api/products?${params}`);
+      if (!res.ok) throw new Error('Failed to fetch products');
+
+      const data = await res.json();
+      const mappedProducts = (data.products || []).map(mapProductData);
+
+      setProducts(mappedProducts);
+    } catch (err) {
+      showToast('Error', 'Failed to load products', 'error');
+    } finally {
+      setProductsLoading(false);
+    }
+  }, [showToast, mapProductData]);
 
   const addProduct = useCallback((productData: Omit<Product, 'id'>) => {
     (async () => {
@@ -517,6 +626,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setCurrentUser,
     token,
     logout,
+    fetchProductsByCategory,
+    fetchProductsBySearch,
+    fetchAllProductsForAdmin,
     addProduct,
     updateProduct,
     deleteProduct,
@@ -536,6 +648,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setCategories,
     setOrders,
     setUsers,
+    productsLoading,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

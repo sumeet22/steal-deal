@@ -1,0 +1,124 @@
+// Lazy Loading Functions for AppContext
+// Insert these after the logout function and before addProduct
+
+  // Helper function to map product data
+  const mapProductData = (p: any): Product => {
+    const categoryId = p.category && (typeof p.category === 'object' ? (p.category._id || p.category.id) : p.category);
+    return {
+      id: p._id || p.id,
+      name: p.name,
+      price: p.price,
+      originalPrice: p.originalPrice ?? null,
+      description: p.description || '',
+      stockQuantity: p.stockQuantity ?? p.stock ?? 0,
+      categoryId: categoryId || '',
+      image: p.image || p.imageUrl || undefined,
+      images: p.images || undefined,
+      tags: p.tags || [],
+      viewCount: p.viewCount ?? undefined,
+      addToCartCount: p.addToCartCount ?? undefined,
+      soldLast24Hours: p.soldLast24Hours ?? undefined,
+    } as Product;
+  };
+
+  // Fetch products by category with pagination
+  const fetchProductsByCategory = useCallback(async (
+    categoryId: string,
+    page: number = 1,
+    limit: number = 20
+  ): Promise<{ products: Product[]; hasMore: boolean; total: number }> => {
+    setProductsLoading(true);
+    try {
+      const params = new URLSearchParams({
+        category: categoryId,
+        page: page.toString(),
+        limit: limit.toString()
+      });
+      
+      const res = await fetch(`/api/products?${params}`);
+      if (!res.ok) throw new Error('Failed to fetch products');
+      
+      const data = await res.json();
+      const mappedProducts = (data.products || []).map(mapProductData);
+      
+      // Update products state (append for pagination or replace for new category)
+      if (page === 1) {
+        setProducts(mappedProducts);
+      } else {
+        setProducts(prev => [...prev, ...mappedProducts]);
+      }
+      
+      return {
+        products: mappedProducts,
+        hasMore: data.pagination?.hasMore || false,
+        total: data.pagination?.total || 0
+      };
+    } catch (err) {
+      showToast('Error', 'Failed to load products', 'error');
+      return { products: [], hasMore: false, total: 0 };
+    } finally {
+      setProductsLoading(false);
+    }
+  }, [showToast]);
+
+  // Fetch products by search query with pagination
+  const fetchProductsBySearch = useCallback(async (
+    searchQuery: string,
+    page: number = 1,
+    limit: number = 20
+  ): Promise<{ products: Product[]; hasMore: boolean; total: number }> => {
+    setProductsLoading(true);
+    try {
+      const params = new URLSearchParams({
+        search: searchQuery,
+        page: page.toString(),
+        limit: limit.toString()
+      });
+      
+      const res = await fetch(`/api/products?${params}`);
+      if (!res.ok) throw new Error('Failed to fetch products');
+      
+      const data = await res.json();
+      const mappedProducts = (data.products || []).map(mapProductData);
+      
+      // Update products state
+      if (page === 1) {
+        setProducts(mappedProducts);
+      } else {
+        setProducts(prev => [...prev, ...mappedProducts]);
+      }
+      
+      return {
+        products: mappedProducts,
+        hasMore: data.pagination?.hasMore || false,
+        total: data.pagination?.total || 0
+      };
+    } catch (err) {
+      showToast('Error', 'Failed to search products', 'error');
+      return { products: [], hasMore: false, total: 0 };
+    } finally {
+      setProductsLoading(false);
+    }
+  }, [showToast]);
+
+  // Fetch ALL products for admin panel (no pagination)
+  const fetchAllProductsForAdmin = useCallback(async (): Promise<void> => {
+    setProductsLoading(true);
+    try {
+      const params = new URLSearchParams({
+        limit: '1000' // High limit for admin
+      });
+      
+      const res = await fetch(`/api/products?${params}`);
+      if (!res.ok) throw new Error('Failed to fetch products');
+      
+      const data = await res.json();
+      const mappedProducts = (data.products || []).map(mapProductData);
+      
+      setProducts(mappedProducts);
+    } catch (err) {
+      showToast('Error', 'Failed to load products', 'error');
+    } finally {
+      setProductsLoading(false);
+    }
+  }, [showToast]);
