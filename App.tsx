@@ -2,8 +2,9 @@ import React, { useState, Suspense, useEffect } from 'react';
 import { HelmetProvider } from 'react-helmet-async';
 import { AnimatePresence, motion } from 'framer-motion';
 import { AppProvider, useAppContext } from './context/AppContext';
+import { WishlistProvider, useWishlist } from './context/WishlistContext';
 import { ToastProvider } from './context/ToastContext';
-import { HomeIcon, ShoppingCartIcon, SunIcon, MoonIcon, ClipboardListIcon, LoadingSpinner, UserCircleIcon } from './components/Icons';
+import { HomeIcon, ShoppingCartIcon, SunIcon, MoonIcon, ClipboardListIcon, LoadingSpinner, UserCircleIcon, HeartIcon } from './components/Icons';
 import CartDrawer from './components/CartDrawer';
 import ToastContainer from './components/ToastContainer';
 import useLocalStorage from './hooks/useLocalStorage';
@@ -18,6 +19,7 @@ const AdminDashboard = React.lazy(() => import('./components/AdminDashboard'));
 const Checkout = React.lazy(() => import('./components/Checkout'));
 const OrderHistory = React.lazy(() => import('./components/OrderHistory'));
 const ProductDetail = React.lazy(() => import('./components/ProductDetail'));
+const WishlistPage = React.lazy(() => import('./components/WishlistPage'));
 const Sidebar = React.lazy(() => import('./components/Sidebar'));
 const SearchOverlay = React.lazy(() => import('./components/SearchOverlay'));
 const TermsAndConditions = React.lazy(() => import('./components/InfoPages').then(module => ({ default: module.TermsAndConditions })));
@@ -27,8 +29,29 @@ const ShippingPolicy = React.lazy(() => import('./components/InfoPages').then(mo
 
 import { MenuIcon, SearchIcon, ShieldCheckIcon, CreditCardIcon, TruckIcon } from './components/Icons';
 
+// Separate component for wishlist button to use the hook safely
+const WishlistButton: React.FC<{ onNavigate: () => void }> = ({ onNavigate }) => {
+  const { wishlist } = useWishlist();
+  const wishlistItemCount = wishlist.length;
 
-type View = 'store' | 'checkout' | 'orders' | 'admin' | 'product' | 'auth' | 'terms' | 'privacy' | 'returns' | 'shipping';
+  return (
+    <div className="relative">
+      <button onClick={onNavigate} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-pink-500" aria-label="Wishlist">
+        <div className="relative">
+          <HeartIcon filled={wishlistItemCount > 0} />
+          {wishlistItemCount > 0 && (
+            <span className="absolute -top-2 -right-2 bg-pink-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full border-2 border-white dark:border-gray-800">
+              {wishlistItemCount}
+            </span>
+          )}
+        </div>
+      </button>
+    </div>
+  );
+};
+
+
+type View = 'store' | 'checkout' | 'orders' | 'admin' | 'product' | 'auth' | 'wishlist' | 'terms' | 'privacy' | 'returns' | 'shipping';
 
 const App: React.FC = () => {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -219,6 +242,8 @@ const App: React.FC = () => {
         return <Checkout onBackToStore={() => navigate('store')} />;
       case 'orders':
         return <OrderHistory />;
+      case 'wishlist':
+        return <WishlistPage onProductClick={handleProductClick} />;
       case 'admin':
         return <AdminDashboard />;
       case 'auth':
@@ -275,6 +300,8 @@ const App: React.FC = () => {
               <button onClick={() => setIsSearchOpen(true)} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300" aria-label="Search products">
                 <SearchIcon />
               </button>
+
+              <WishlistButton onNavigate={() => navigate('wishlist')} />
 
               <div className="relative">
                 <button onClick={() => setIsCartOpen(true)} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-red-500" aria-label="Cart">
@@ -372,11 +399,21 @@ const AppWrapper: React.FC = () => (
   <ToastProvider>
     <HelmetProvider>
       <AppProvider>
-        <App />
-        <ToastContainer />
+        <WishlistProviderWrapper />
       </AppProvider>
     </HelmetProvider>
   </ToastProvider>
 );
+
+const WishlistProviderWrapper: React.FC = () => {
+  const { currentUser } = useAppContext();
+
+  return (
+    <WishlistProvider currentUserId={currentUser?.id}>
+      <App />
+      <ToastContainer />
+    </WishlistProvider>
+  );
+};
 
 export default AppWrapper;

@@ -41,6 +41,7 @@ import productsRouter from './routes/products.js';
 import usersRouter from './routes/users.js';
 import ordersRouter from './routes/orders.js';
 import authRoutes from './routes/auth.js';
+import wishlistRouter from './routes/wishlist.js';
 
 import paymentRouter from './routes/payment.js';
 
@@ -49,6 +50,7 @@ app.use('/api/products', productsRouter);
 app.use('/api/users', usersRouter);
 app.use('/api/orders', ordersRouter);
 app.use('/api/auth', authRoutes);
+app.use('/api/wishlist', wishlistRouter);
 app.use('/api/payment', paymentRouter);
 
 app.get('/', (req, res) => {

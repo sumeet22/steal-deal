@@ -1,7 +1,8 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useAppContext } from '../context/AppContext';
-import { ChevronLeftIcon, ChevronRightIcon, ShoppingCartIcon, EyeIcon, ShoppingBagIcon, FireIcon } from './Icons';
+import { useWishlist } from '../context/WishlistContext';
+import { ChevronLeftIcon, ChevronRightIcon, ShoppingCartIcon, EyeIcon, ShoppingBagIcon, FireIcon, HeartIcon } from './Icons';
 import QuantityStepper from './shared/QuantityStepper';
 import { Product, ProductImage } from '../types';
 import PullToRefresh from './shared/PullToRefresh';
@@ -24,6 +25,7 @@ const getProductImages = (product: Product): ProductImage[] => {
 
 const ProductDetail: React.FC<ProductDetailProps> = ({ productId, onBack }) => {
   const { products, addToCart } = useAppContext();
+  const { isInWishlist, toggleWishlist } = useWishlist();
   const [quantity, setQuantity] = useState(1);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [fetchedProduct, setFetchedProduct] = useState<Product | null>(null);
@@ -343,17 +345,33 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ productId, onBack }) => {
                 </span>
               </div>
 
-              <button
-                onClick={handleAddToCart}
-                disabled={product.stockQuantity <= 0 || product.outOfStock}
-                className="w-full sm:w-auto relative overflow-hidden group bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold py-4 px-8 rounded-xl text-lg shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-none min-w-[200px]"
-              >
-                <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-indigo-500 to-purple-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                <span className="relative flex items-center justify-center gap-2 z-10 transition-colors group-hover:text-white">
-                  <ShoppingCartIcon />
-                  {(product.stockQuantity <= 0 || product.outOfStock) ? 'Out of Stock' : 'Add to Cart'}
-                </span>
-              </button>
+              <div className="flex gap-3">
+                <button
+                  onClick={handleAddToCart}
+                  disabled={product.stockQuantity <= 0 || product.outOfStock}
+                  className="flex-1 sm:flex-initial relative overflow-hidden group bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold py-4 px-8 rounded-xl text-lg shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-none min-w-[200px]"
+                >
+                  <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-indigo-500 to-purple-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  <span className="relative flex items-center justify-center gap-2 z-10 transition-colors group-hover:text-white">
+                    <ShoppingCartIcon />
+                    {(product.stockQuantity <= 0 || product.outOfStock) ? 'Out of Stock' : 'Add to Cart'}
+                  </span>
+                </button>
+
+                <button
+                  onClick={() => toggleWishlist(product)}
+                  className={`relative overflow-hidden group p-4 rounded-xl text-lg shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 ${isInWishlist(product.id)
+                      ? 'bg-red-500 text-white'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                    }`}
+                  title={isInWishlist(product.id) ? 'Remove from wishlist' : 'Add to wishlist'}
+                >
+                  <div className={`absolute inset-0 w-full h-full bg-gradient-to-r from-pink-500 to-red-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300`}></div>
+                  <span className="relative z-10 transition-colors group-hover:text-white">
+                    <HeartIcon filled={isInWishlist(product.id)} />
+                  </span>
+                </button>
+              </div>
             </div>
           </div>
         </div>

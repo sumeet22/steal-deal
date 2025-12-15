@@ -199,7 +199,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
       </div>
 
       <div className="mt-auto p-3 pt-0 space-y-2">
-        {product.stockQuantity > 0 ? (
+        {(product.stockQuantity > 0 && !product.outOfStock) ? (
           <>
             {/* Show ONLY quantity stepper if item is in cart */}
             {isInCart ? (
