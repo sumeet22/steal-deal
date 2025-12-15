@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { XIcon, HomeIcon, UserCircleIcon, ClipboardListIcon, LogoutIcon, ChevronDownIcon } from './Icons';
+import { XIcon, HomeIcon, UserCircleIcon, ClipboardListIcon, LogoutIcon, ChevronDownIcon, SparklesIcon } from './Icons';
 import { useAppContext } from '../context/AppContext';
 
 interface SidebarProps {
@@ -71,6 +71,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onNavigate }) => {
                                 <button onClick={() => handleNavigation('store')} className="w-full flex items-center px-6 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                                     <HomeIcon />
                                     <span className="ml-4 font-medium">Home</span>
+                                </button>
+
+                                <button onClick={() => handleNavigation('newarrivals')} className="w-full flex items-center px-6 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                                    <SparklesIcon className="text-purple-500" />
+                                    <span className="ml-4 font-medium">New Arrivals</span>
                                 </button>
 
                                 {currentUser && (

@@ -62,9 +62,72 @@ router.get('/', async (req: Request, res: Response) => {
   }
 });
 
+// GET /api/products/new-arrivals - Fetch new arrivals and limited editions with pagination
+router.get('/new-arrivals', async (req: Request, res: Response) => {
+  try {
+    const {
+      page = '1',
+      limit = '20',
+      search,
+      sort = '-createdAt' // Default: newest first
+    } = req.query;
+
+    const pageNum = parseInt(page as string, 10);
+    const limitNum = parseInt(limit as string, 10);
+    const skip = (pageNum - 1) * limitNum;
+
+    // Build query - products marked as new arrivals OR limited editions
+    const query: any = {
+      $or: [
+        { isNewArrival: true },
+        { isLimitedEdition: true }
+      ]
+    };
+
+    // Search filter (name and description)
+    if (search && typeof search === 'string' && search.trim()) {
+      query.$and = [
+        query.$or ? { $or: query.$or } : {},
+        {
+          $or: [
+            { name: { $regex: search.trim(), $options: 'i' } },
+            { description: { $regex: search.trim(), $options: 'i' } }
+          ]
+        }
+      ];
+      delete query.$or; // Remove the original $or since we're using $and
+    }
+
+    // Execute query with pagination
+    const [products, total] = await Promise.all([
+      Product.find(query)
+        .populate('category')
+        .sort(sort as string)
+        .skip(skip)
+        .limit(limitNum)
+        .lean(),
+      Product.countDocuments(query)
+    ]);
+
+    res.json({
+      products,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        totalPages: Math.ceil(total / limitNum),
+        hasMore: skip + products.length < total
+      }
+    });
+  } catch (error: any) {
+    console.error('Error fetching new arrivals:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
 router.post('/', async (req: Request, res: Response) => {
   try {
-    const { name, description, price, originalPrice, category: categoryId, image, imageUrl, images, stock, stockQuantity, tags, viewCount, addToCartCount, soldLast24Hours, outOfStock } = req.body;
+    const { name, description, price, originalPrice, category: categoryId, image, imageUrl, images, stock, stockQuantity, tags, viewCount, addToCartCount, soldLast24Hours, outOfStock, isNewArrival, isLimitedEdition } = req.body;
     if (!name || price == null || !categoryId) return res.status(400).json({ message: 'Missing required fields' });
     const category = await Category.findById(categoryId);
     if (!category) return res.status(400).json({ message: 'Invalid category' });
@@ -90,7 +153,9 @@ router.post('/', async (req: Request, res: Response) => {
       viewCount,
       addToCartCount,
       soldLast24Hours,
-      outOfStock: finalOutOfStock
+      outOfStock: finalOutOfStock,
+      isNewArrival,
+      isLimitedEdition
     });
     await product.save();
     res.status(201).json(product);
@@ -111,7 +176,7 @@ router.get('/:id', async (req: Request, res: Response) => {
 
 router.put('/:id', async (req: Request, res: Response) => {
   try {
-    const { name, description, price, originalPrice, category: categoryId, image, imageUrl, images, stock, stockQuantity, tags, viewCount, addToCartCount, soldLast24Hours, outOfStock } = req.body;
+    const { name, description, price, originalPrice, category: categoryId, image, imageUrl, images, stock, stockQuantity, tags, viewCount, addToCartCount, soldLast24Hours, outOfStock, isNewArrival, isLimitedEdition } = req.body;
     if (categoryId) {
       const category = await Category.findById(categoryId);
       if (!category) return res.status(400).json({ message: 'Invalid category' });
@@ -137,6 +202,8 @@ router.put('/:id', async (req: Request, res: Response) => {
     if (viewCount !== undefined) update.viewCount = viewCount;
     if (addToCartCount !== undefined) update.addToCartCount = addToCartCount;
     if (soldLast24Hours !== undefined) update.soldLast24Hours = soldLast24Hours;
+    if (isNewArrival !== undefined) update.isNewArrival = isNewArrival;
+    if (isLimitedEdition !== undefined) update.isLimitedEdition = isLimitedEdition;
 
     // Auto-set outOfStock if stockQuantity is 0 or less, unless explicitly provided
     if (outOfStock !== undefined) {

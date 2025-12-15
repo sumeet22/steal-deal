@@ -12,6 +12,7 @@ interface StorefrontProps {
   activeCategoryId: string | null;
   onCategorySelect: (categoryId: string | null) => void;
   initialScroll?: number;
+  onNavigateToNewArrivals?: () => void;
 }
 
 const containerVariants = {
@@ -320,7 +321,7 @@ const ProductGrid: React.FC<ProductGridProps> = React.memo(({
 
 ProductGrid.displayName = 'ProductGrid';
 
-const Storefront: React.FC<StorefrontProps> = ({ onProductClick, activeCategoryId, onCategorySelect, initialScroll = 0 }) => {
+const Storefront: React.FC<StorefrontProps> = ({ onProductClick, activeCategoryId, onCategorySelect, initialScroll = 0, onNavigateToNewArrivals }) => {
   const { products, categories, cart, addToCart, updateCartQuantity, fetchProductsByCategory, fetchProductsBySearch, productsLoading } = useAppContext();
 
   // Restore scroll position on mount
@@ -534,7 +535,10 @@ const Storefront: React.FC<StorefrontProps> = ({ onProductClick, activeCategoryI
             >
               Shop Now
             </button>
-            <button className="px-8 py-4 bg-transparent border-2 border-white/20 text-white rounded-full font-bold text-lg hover:bg-white/10 hover:border-white/40 transition-all backdrop-blur-sm">
+            <button
+              onClick={() => onNavigateToNewArrivals?.()}
+              className="px-8 py-4 bg-transparent border-2 border-white/20 text-white rounded-full font-bold text-lg hover:bg-white/10 hover:border-white/40 transition-all backdrop-blur-sm"
+            >
               View New Arrivals
             </button>
           </motion.div>

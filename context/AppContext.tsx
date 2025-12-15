@@ -17,6 +17,7 @@ interface AppContextType {
   // Lazy loading functions
   fetchProductsByCategory: (categoryId: string, page?: number, limit?: number) => Promise<{ products: Product[]; hasMore: boolean; total: number }>;
   fetchProductsBySearch: (searchQuery: string, page?: number, limit?: number) => Promise<{ products: Product[]; hasMore: boolean; total: number }>;
+  fetchNewArrivals: (page?: number, limit?: number, searchQuery?: string) => Promise<{ products: Product[]; hasMore: boolean; total: number }>;
   fetchAllProductsForAdmin: () => Promise<void>; // For admin panel only
 
   addProduct: (product: Omit<Product, 'id'>) => void;
@@ -155,6 +156,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       addToCartCount: p.addToCartCount ?? undefined,
       soldLast24Hours: p.soldLast24Hours ?? undefined,
       outOfStock: p.outOfStock ?? false,
+      isNewArrival: p.isNewArrival ?? false,
+      isLimitedEdition: p.isLimitedEdition ?? false,
     } as Product;
   }, []);
 
@@ -238,6 +241,49 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   }, [showToast, mapProductData]);
 
+  // Fetch new arrivals and limited editions with pagination
+  const fetchNewArrivals = useCallback(async (
+    page: number = 1,
+    limit: number = 20,
+    searchQuery?: string
+  ): Promise<{ products: Product[]; hasMore: boolean; total: number }> => {
+    setProductsLoading(true);
+    try {
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: limit.toString()
+      });
+
+      if (searchQuery && searchQuery.trim()) {
+        params.set('search', searchQuery.trim());
+      }
+
+      const res = await fetch(`/api/products/new-arrivals?${params}`);
+      if (!res.ok) throw new Error('Failed to fetch new arrivals');
+
+      const data = await res.json();
+      const mappedProducts = (data.products || []).map(mapProductData);
+
+      // Update products state
+      if (page === 1) {
+        setProducts(mappedProducts);
+      } else {
+        setProducts(prev => [...prev, ...mappedProducts]);
+      }
+
+      return {
+        products: mappedProducts,
+        hasMore: data.pagination?.hasMore || false,
+        total: data.pagination?.total || 0
+      };
+    } catch (err) {
+      showToast('Error', 'Failed to load new arrivals', 'error');
+      return { products: [], hasMore: false, total: 0 };
+    } finally {
+      setProductsLoading(false);
+    }
+  }, [showToast, mapProductData]);
+
   // Fetch ALL products for admin panel (no pagination)
   const fetchAllProductsForAdmin = useCallback(async (): Promise<void> => {
     setProductsLoading(true);
@@ -277,6 +323,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           addToCartCount: productData.addToCartCount,
           soldLast24Hours: productData.soldLast24Hours,
           outOfStock: productData.outOfStock,
+          isNewArrival: productData.isNewArrival,
+          isLimitedEdition: productData.isLimitedEdition,
         };
         const headers: any = { 'Content-Type': 'application/json' };
         if (token) headers.Authorization = `Bearer ${token}`;
@@ -299,6 +347,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           addToCartCount: p.addToCartCount ?? undefined,
           soldLast24Hours: p.soldLast24Hours ?? undefined,
           outOfStock: p.outOfStock ?? productData.outOfStock ?? false,
+          isNewArrival: p.isNewArrival ?? productData.isNewArrival ?? false,
+          isLimitedEdition: p.isLimitedEdition ?? productData.isLimitedEdition ?? false,
         } as Product;
         setProducts(prev => [...prev, mapped]);
         showToast('Success', 'Product added successfully', 'success');
@@ -325,6 +375,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           addToCartCount: updatedProduct.addToCartCount,
           soldLast24Hours: updatedProduct.soldLast24Hours,
           outOfStock: updatedProduct.outOfStock,
+          isNewArrival: updatedProduct.isNewArrival,
+          isLimitedEdition: updatedProduct.isLimitedEdition,
         };
         const headers: any = { 'Content-Type': 'application/json' };
         if (token) headers.Authorization = `Bearer ${token}`;
@@ -347,6 +399,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           addToCartCount: p.addToCartCount ?? undefined,
           soldLast24Hours: p.soldLast24Hours ?? undefined,
           outOfStock: p.outOfStock ?? updatedProduct.outOfStock ?? false,
+          isNewArrival: p.isNewArrival ?? updatedProduct.isNewArrival ?? false,
+          isLimitedEdition: p.isLimitedEdition ?? updatedProduct.isLimitedEdition ?? false,
         } as Product;
         setProducts(prev => prev.map(p => p.id === updatedProduct.id ? mapped : p));
         showToast('Success', 'Product updated successfully', 'success');
@@ -639,6 +693,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     logout,
     fetchProductsByCategory,
     fetchProductsBySearch,
+    fetchNewArrivals,
     fetchAllProductsForAdmin,
     addProduct,
     updateProduct,

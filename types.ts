@@ -25,6 +25,8 @@ export interface Product {
   addToCartCount?: number;
   soldLast24Hours?: number;
   outOfStock?: boolean; // Manual or automatic out of stock flag
+  isNewArrival?: boolean; // Mark product for New Arrivals page
+  isLimitedEdition?: boolean; // Mark product as limited edition
 }
 
 export interface CartItem extends Product {

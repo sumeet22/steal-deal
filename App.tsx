@@ -20,6 +20,7 @@ const Checkout = React.lazy(() => import('./components/Checkout'));
 const OrderHistory = React.lazy(() => import('./components/OrderHistory'));
 const ProductDetail = React.lazy(() => import('./components/ProductDetail'));
 const WishlistPage = React.lazy(() => import('./components/WishlistPage'));
+const NewArrivalsPage = React.lazy(() => import('./components/NewArrivalsPage'));
 const Sidebar = React.lazy(() => import('./components/Sidebar'));
 const SearchOverlay = React.lazy(() => import('./components/SearchOverlay'));
 const TermsAndConditions = React.lazy(() => import('./components/InfoPages').then(module => ({ default: module.TermsAndConditions })));
@@ -51,7 +52,7 @@ const WishlistButton: React.FC<{ onNavigate: () => void }> = ({ onNavigate }) =>
 };
 
 
-type View = 'store' | 'checkout' | 'orders' | 'admin' | 'product' | 'auth' | 'wishlist' | 'terms' | 'privacy' | 'returns' | 'shipping';
+type View = 'store' | 'checkout' | 'orders' | 'admin' | 'product' | 'auth' | 'wishlist' | 'newarrivals' | 'terms' | 'privacy' | 'returns' | 'shipping';
 
 const App: React.FC = () => {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -235,6 +236,7 @@ const App: React.FC = () => {
           activeCategoryId={selectedCategory}
           onCategorySelect={(id) => navigate('store', undefined, id)}
           initialScroll={selectedCategory ? categoryScrollPos.current : mainStoreScrollPos.current}
+          onNavigateToNewArrivals={() => navigate('newarrivals')}
         />;
       case 'product':
         return <ProductDetail productId={selectedProductId!} onBack={() => navigate('store')} />;
@@ -244,6 +246,8 @@ const App: React.FC = () => {
         return <OrderHistory />;
       case 'wishlist':
         return <WishlistPage onProductClick={handleProductClick} />;
+      case 'newarrivals':
+        return <NewArrivalsPage onProductClick={handleProductClick} onBack={() => navigate('store', undefined, null)} />;
       case 'admin':
         return <AdminDashboard />;
       case 'auth':
@@ -267,6 +271,7 @@ const App: React.FC = () => {
             activeCategoryId={selectedCategory}
             onCategorySelect={(id) => navigate('store', undefined, id)}
             initialScroll={selectedCategory ? categoryScrollPos.current : mainStoreScrollPos.current}
+            onNavigateToNewArrivals={() => navigate('newarrivals')}
           />
         );
     }

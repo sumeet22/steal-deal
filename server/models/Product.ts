@@ -20,6 +20,8 @@ export interface IProduct extends Document {
   addToCartCount?: number;
   soldLast24Hours?: number;
   outOfStock?: boolean; // Manual or automatic out of stock flag
+  isNewArrival?: boolean; // Mark product for New Arrivals page
+  isLimitedEdition?: boolean; // Mark product as limited edition
 }
 
 const ProductSchema = new Schema<IProduct>({
@@ -92,6 +94,14 @@ const ProductSchema = new Schema<IProduct>({
     default: 0,
   },
   outOfStock: {
+    type: Boolean,
+    default: false,
+  },
+  isNewArrival: {
+    type: Boolean,
+    default: false,
+  },
+  isLimitedEdition: {
     type: Boolean,
     default: false,
   },

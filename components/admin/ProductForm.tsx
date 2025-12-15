@@ -21,6 +21,8 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onClose }) => {
     categoryId: '',
     isNew: false,
     outOfStock: false,
+    isNewArrival: false,
+    isLimitedEdition: false,
     viewCount: '',
     addToCartCount: '',
     soldLast24Hours: '',
@@ -45,6 +47,8 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onClose }) => {
         categoryId: product.categoryId,
         isNew: product.tags?.includes('new') || false,
         outOfStock: product.outOfStock || false,
+        isNewArrival: product.isNewArrival || false,
+        isLimitedEdition: product.isLimitedEdition || false,
         viewCount: product.viewCount?.toString() || '',
         addToCartCount: product.addToCartCount?.toString() || '',
         soldLast24Hours: product.soldLast24Hours?.toString() || '',
@@ -62,6 +66,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onClose }) => {
     } else {
       setFormData({
         name: '', price: '', originalPrice: '', description: '', stockQuantity: '', categoryId: categories[0]?.id || '', isNew: false, outOfStock: false,
+        isNewArrival: false, isLimitedEdition: false,
         viewCount: '', addToCartCount: '', soldLast24Hours: '',
       });
       setImages([]);
@@ -200,6 +205,8 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onClose }) => {
       images: images,
       tags: tags,
       outOfStock: formData.outOfStock,
+      isNewArrival: formData.isNewArrival,
+      isLimitedEdition: formData.isLimitedEdition,
       viewCount: formData.viewCount ? parseInt(formData.viewCount, 10) : undefined,
       addToCartCount: formData.addToCartCount ? parseInt(formData.addToCartCount, 10) : undefined,
       soldLast24Hours: formData.soldLast24Hours ? parseInt(formData.soldLast24Hours, 10) : undefined,
@@ -354,6 +361,16 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onClose }) => {
           <div className="flex items-center gap-2">
             <input type="checkbox" name="outOfStock" id="outOfStock" checked={formData.outOfStock} onChange={handleChange} className="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500" />
             <label htmlFor="outOfStock" className="text-sm font-medium">Mark as 'Out of Stock' (prevents adding to cart)</label>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <input type="checkbox" name="isNewArrival" id="isNewArrival" checked={formData.isNewArrival} onChange={handleChange} className="h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500" />
+            <label htmlFor="isNewArrival" className="text-sm font-medium">Show in 'New Arrivals' page</label>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <input type="checkbox" name="isLimitedEdition" id="isLimitedEdition" checked={formData.isLimitedEdition} onChange={handleChange} className="h-4 w-4 rounded border-gray-300 text-yellow-600 focus:ring-yellow-500" />
+            <label htmlFor="isLimitedEdition" className="text-sm font-medium">Mark as 'Limited Edition'</label>
           </div>
 
           <div>
