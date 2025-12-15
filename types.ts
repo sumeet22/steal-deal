@@ -24,6 +24,7 @@ export interface Product {
   viewCount?: number;
   addToCartCount?: number;
   soldLast24Hours?: number;
+  outOfStock?: boolean; // Manual or automatic out of stock flag
 }
 
 export interface CartItem extends Product {

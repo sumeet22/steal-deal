@@ -20,6 +20,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onClose }) => {
     stockQuantity: '',
     categoryId: '',
     isNew: false,
+    outOfStock: false,
     viewCount: '',
     addToCartCount: '',
     soldLast24Hours: '',
@@ -43,6 +44,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onClose }) => {
         stockQuantity: product.stockQuantity.toString(),
         categoryId: product.categoryId,
         isNew: product.tags?.includes('new') || false,
+        outOfStock: product.outOfStock || false,
         viewCount: product.viewCount?.toString() || '',
         addToCartCount: product.addToCartCount?.toString() || '',
         soldLast24Hours: product.soldLast24Hours?.toString() || '',
@@ -59,7 +61,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onClose }) => {
       }
     } else {
       setFormData({
-        name: '', price: '', originalPrice: '', description: '', stockQuantity: '', categoryId: categories[0]?.id || '', isNew: false,
+        name: '', price: '', originalPrice: '', description: '', stockQuantity: '', categoryId: categories[0]?.id || '', isNew: false, outOfStock: false,
         viewCount: '', addToCartCount: '', soldLast24Hours: '',
       });
       setImages([]);
@@ -197,6 +199,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onClose }) => {
       image: mainImage.url, // For backward compatibility
       images: images,
       tags: tags,
+      outOfStock: formData.outOfStock,
       viewCount: formData.viewCount ? parseInt(formData.viewCount, 10) : undefined,
       addToCartCount: formData.addToCartCount ? parseInt(formData.addToCartCount, 10) : undefined,
       soldLast24Hours: formData.soldLast24Hours ? parseInt(formData.soldLast24Hours, 10) : undefined,
@@ -346,6 +349,11 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onClose }) => {
           <div className="flex items-center gap-2">
             <input type="checkbox" name="isNew" id="isNew" checked={formData.isNew} onChange={handleChange} className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500" />
             <label htmlFor="isNew" className="text-sm font-medium">Mark as 'New' product</label>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <input type="checkbox" name="outOfStock" id="outOfStock" checked={formData.outOfStock} onChange={handleChange} className="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500" />
+            <label htmlFor="outOfStock" className="text-sm font-medium">Mark as 'Out of Stock' (prevents adding to cart)</label>
           </div>
 
           <div>

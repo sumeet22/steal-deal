@@ -64,7 +64,7 @@ router.get('/', async (req: Request, res: Response) => {
 
 router.post('/', async (req: Request, res: Response) => {
   try {
-    const { name, description, price, originalPrice, category: categoryId, image, imageUrl, images, stock, stockQuantity, tags, viewCount, addToCartCount, soldLast24Hours } = req.body;
+    const { name, description, price, originalPrice, category: categoryId, image, imageUrl, images, stock, stockQuantity, tags, viewCount, addToCartCount, soldLast24Hours, outOfStock } = req.body;
     if (!name || price == null || !categoryId) return res.status(400).json({ message: 'Missing required fields' });
     const category = await Category.findById(categoryId);
     if (!category) return res.status(400).json({ message: 'Invalid category' });
@@ -74,6 +74,9 @@ router.post('/', async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Maximum 5 images allowed per product' });
     }
 
+    const finalStockQuantity = stockQuantity ?? stock ?? 0;
+    const finalOutOfStock = outOfStock !== undefined ? outOfStock : (finalStockQuantity <= 0);
+
     const product = new Product({
       name,
       description,
@@ -82,11 +85,12 @@ router.post('/', async (req: Request, res: Response) => {
       category: category._id,
       image: image || imageUrl, // Keep for backward compatibility
       images: images || undefined,
-      stockQuantity: stockQuantity ?? stock,
+      stockQuantity: finalStockQuantity,
       tags,
       viewCount,
       addToCartCount,
-      soldLast24Hours
+      soldLast24Hours,
+      outOfStock: finalOutOfStock
     });
     await product.save();
     res.status(201).json(product);
@@ -107,7 +111,7 @@ router.get('/:id', async (req: Request, res: Response) => {
 
 router.put('/:id', async (req: Request, res: Response) => {
   try {
-    const { name, description, price, originalPrice, category: categoryId, image, imageUrl, images, stock, stockQuantity, tags, viewCount, addToCartCount, soldLast24Hours } = req.body;
+    const { name, description, price, originalPrice, category: categoryId, image, imageUrl, images, stock, stockQuantity, tags, viewCount, addToCartCount, soldLast24Hours, outOfStock } = req.body;
     if (categoryId) {
       const category = await Category.findById(categoryId);
       if (!category) return res.status(400).json({ message: 'Invalid category' });
@@ -133,6 +137,14 @@ router.put('/:id', async (req: Request, res: Response) => {
     if (viewCount !== undefined) update.viewCount = viewCount;
     if (addToCartCount !== undefined) update.addToCartCount = addToCartCount;
     if (soldLast24Hours !== undefined) update.soldLast24Hours = soldLast24Hours;
+
+    // Auto-set outOfStock if stockQuantity is 0 or less, unless explicitly provided
+    if (outOfStock !== undefined) {
+      update.outOfStock = outOfStock;
+    } else if (update.stockQuantity !== undefined && update.stockQuantity <= 0) {
+      update.outOfStock = true;
+    }
+
     update.updatedAt = new Date();
 
     const product = await Product.findByIdAndUpdate(
@@ -142,8 +154,9 @@ router.put('/:id', async (req: Request, res: Response) => {
     );
     if (!product) return res.status(404).json({ message: 'Product not found' });
     res.json(product);
-  } catch (error) {
-    res.status(500).json({ message: 'Server error', error });
+  } catch (error: any) {
+    console.error('Error updating product:', error);
+    res.status(500).json({ message: 'Server error', error: error.message || error });
   }
 });
 

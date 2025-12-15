@@ -154,6 +154,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       viewCount: p.viewCount ?? undefined,
       addToCartCount: p.addToCartCount ?? undefined,
       soldLast24Hours: p.soldLast24Hours ?? undefined,
+      outOfStock: p.outOfStock ?? false,
     } as Product;
   }, []);
 
@@ -275,6 +276,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           viewCount: productData.viewCount,
           addToCartCount: productData.addToCartCount,
           soldLast24Hours: productData.soldLast24Hours,
+          outOfStock: productData.outOfStock,
         };
         const headers: any = { 'Content-Type': 'application/json' };
         if (token) headers.Authorization = `Bearer ${token}`;
@@ -296,6 +298,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           viewCount: p.viewCount ?? undefined,
           addToCartCount: p.addToCartCount ?? undefined,
           soldLast24Hours: p.soldLast24Hours ?? undefined,
+          outOfStock: p.outOfStock ?? productData.outOfStock ?? false,
         } as Product;
         setProducts(prev => [...prev, mapped]);
         showToast('Success', 'Product added successfully', 'success');
@@ -321,6 +324,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           viewCount: updatedProduct.viewCount,
           addToCartCount: updatedProduct.addToCartCount,
           soldLast24Hours: updatedProduct.soldLast24Hours,
+          outOfStock: updatedProduct.outOfStock,
         };
         const headers: any = { 'Content-Type': 'application/json' };
         if (token) headers.Authorization = `Bearer ${token}`;
@@ -342,6 +346,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           viewCount: p.viewCount ?? undefined,
           addToCartCount: p.addToCartCount ?? undefined,
           soldLast24Hours: p.soldLast24Hours ?? undefined,
+          outOfStock: p.outOfStock ?? updatedProduct.outOfStock ?? false,
         } as Product;
         setProducts(prev => prev.map(p => p.id === updatedProduct.id ? mapped : p));
         showToast('Success', 'Product updated successfully', 'success');
@@ -367,6 +372,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   }, [setProducts, showToast, token]);
 
   const addToCart = useCallback((product: Product, quantity: number) => {
+    // Check if product is marked as out of stock
+    if (product.outOfStock || product.stockQuantity <= 0) {
+      showToast('Error', 'This product is out of stock and cannot be added to cart.', 'error');
+      return;
+    }
+
     setCart(prev => {
       const existingItem = prev.find(item => item.id === product.id);
       if (existingItem) {

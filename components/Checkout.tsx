@@ -60,6 +60,15 @@ const Checkout: React.FC<CheckoutProps> = ({ onBackToStore }) => {
       return;
     }
 
+    // Check for out-of-stock items before payment
+    const outOfStockItems = cart.filter(item => item.outOfStock || item.stockQuantity <= 0);
+    if (outOfStockItems.length > 0) {
+      const itemNames = outOfStockItems.map(item => item.name).join(', ');
+      showToast('Error', `The following items are out of stock: ${itemNames}. Please remove them from your cart.`, 'error');
+      setIsProcessing(false);
+      return;
+    }
+
     try {
       const orderRes = await fetch('/api/payment/orders', {
         method: 'POST',
@@ -156,6 +165,14 @@ const Checkout: React.FC<CheckoutProps> = ({ onBackToStore }) => {
     }
     if (cart.length === 0) {
       showToast('Error', 'Your cart is empty.', 'error');
+      return;
+    }
+
+    // Check for out-of-stock items in cart
+    const outOfStockItems = cart.filter(item => item.outOfStock || item.stockQuantity <= 0);
+    if (outOfStockItems.length > 0) {
+      const itemNames = outOfStockItems.map(item => item.name).join(', ');
+      showToast('Error', `The following items are out of stock and cannot be ordered: ${itemNames}. Please remove them from your cart.`, 'error');
       return;
     }
 

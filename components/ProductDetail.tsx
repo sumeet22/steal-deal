@@ -69,6 +69,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ productId, onBack }) => {
             viewCount: data.viewCount ?? undefined,
             addToCartCount: data.addToCartCount ?? undefined,
             soldLast24Hours: data.soldLast24Hours ?? undefined,
+            outOfStock: data.outOfStock ?? false,
           };
 
           setFetchedProduct(mappedProduct);
@@ -124,6 +125,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ productId, onBack }) => {
         viewCount: data.viewCount ?? undefined,
         addToCartCount: data.addToCartCount ?? undefined,
         soldLast24Hours: data.soldLast24Hours ?? undefined,
+        outOfStock: data.outOfStock ?? false,
       };
 
       setFetchedProduct(mappedProduct);
@@ -336,20 +338,20 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ productId, onBack }) => {
                   setQuantity={setQuantity}
                   maxQuantity={product.stockQuantity}
                 />
-                <span className={`text-sm font-medium ${product.stockQuantity > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-500'}`}>
-                  {product.stockQuantity > 0 ? `${product.stockQuantity} pieces available` : 'Out of stock'}
+                <span className={`text-sm font-medium ${(product.stockQuantity > 0 && !product.outOfStock) ? 'text-green-600 dark:text-green-400' : 'text-red-500'}`}>
+                  {(product.stockQuantity > 0 && !product.outOfStock) ? `${product.stockQuantity} pieces available` : 'Out of stock'}
                 </span>
               </div>
 
               <button
                 onClick={handleAddToCart}
-                disabled={product.stockQuantity <= 0}
+                disabled={product.stockQuantity <= 0 || product.outOfStock}
                 className="w-full sm:w-auto relative overflow-hidden group bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold py-4 px-8 rounded-xl text-lg shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-none min-w-[200px]"
               >
                 <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-indigo-500 to-purple-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 <span className="relative flex items-center justify-center gap-2 z-10 transition-colors group-hover:text-white">
                   <ShoppingCartIcon />
-                  {product.stockQuantity > 0 ? 'Add to Cart' : 'Out of Stock'}
+                  {(product.stockQuantity <= 0 || product.outOfStock) ? 'Out of Stock' : 'Add to Cart'}
                 </span>
               </button>
             </div>
