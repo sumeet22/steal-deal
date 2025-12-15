@@ -32,8 +32,13 @@ const limiter = rateLimit({
 });
 app.use('/api', limiter); // Apply to all API routes
 
-mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27018/stealdeal')
-  .then(() => console.log('MongoDB connected'))
+mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27018/stealdeal', {
+  maxPoolSize: 10, // Maximum number of connections in the pool
+  minPoolSize: 2,  // Minimum number of connections to maintain
+  serverSelectionTimeoutMS: 5000, // Timeout for server selection
+  socketTimeoutMS: 45000, // Socket timeout
+})
+  .then(() => console.log('MongoDB connected with connection pooling'))
   .catch(err => console.error(err));
 
 import categoriesRouter from './routes/categories.js';

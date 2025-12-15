@@ -112,6 +112,13 @@ ProductSchema.index({ category: 1 });
 ProductSchema.index({ price: 1 });
 ProductSchema.index({ tags: 1 });
 
+// Critical indexes for performance optimization
+ProductSchema.index({ isNewArrival: 1, createdAt: -1 }); // For new arrivals page
+ProductSchema.index({ isLimitedEdition: 1, createdAt: -1 }); // For limited editions
+ProductSchema.index({ category: 1, createdAt: -1 }); // Compound for category + sorting
+ProductSchema.index({ outOfStock: 1 }); // For filtering in-stock items
+ProductSchema.index({ stockQuantity: 1 }); // For stock queries
+
 // Middleware to automatically set outOfStock when stockQuantity is 0
 // Note: Disabled due to TypeScript/Mongoose callback issues
 // Handling this logic in the application layer instead
