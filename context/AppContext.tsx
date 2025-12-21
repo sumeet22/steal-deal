@@ -1,5 +1,5 @@
 import React, { createContext, useContext, ReactNode, useCallback, useEffect, useState } from 'react';
-import { Product, Category, Order, CartItem, OrderStatus, User } from '../types';
+import { Product, Category, Order, CartItem, OrderStatus, User, Address } from '../types';
 import useLocalStorage from '../hooks/useLocalStorage';
 import { useToast } from './ToastContext';
 
@@ -29,6 +29,7 @@ interface AppContextType {
   addUser: (user: Omit<User, 'id'>) => void;
   updateUser: (user: User) => void;
   deleteUser: (userId: string) => void;
+  addAddress: (address: Omit<Address, 'id'>) => Promise<void>;
   addToCart: (product: Product, quantity: number) => void;
   removeFromCart: (productId: string) => void;
   updateCartQuantity: (productId: string, quantity: number) => void;
@@ -92,6 +93,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           name: u.username || u.name || u.username || 'Unknown',
           phone: u.phone || u.phoneNumber || '',
           role: u.isAdmin ? 'admin' : (u.role === 'admin' ? 'admin' : 'user'),
+          addresses: u.addresses || [],
         }));
         setUsers(mapped);
       } catch (err) {
@@ -141,6 +143,38 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     showToast('Success', 'Logged out successfully', 'success');
   }, [setCurrentUserInternal, setToken, showToast]);
 
+  const addAddress = useCallback(async (addressData: any) => {
+    if (!currentUser) return;
+
+    // Safety check for user ID
+    const userId = currentUser.id || (currentUser as any)._id; // Handle both id and _id
+
+    if (!userId) {
+      console.error('User ID missing in addAddress. Current User:', currentUser);
+      showToast('Error', 'User ID not found. Please log out and back in.', 'error');
+      return;
+    }
+
+    try {
+      const headers: any = { 'Content-Type': 'application/json' };
+      if (token) headers.Authorization = `Bearer ${token}`;
+      const res = await fetch(`/api/users/${userId}/addresses`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(addressData)
+      });
+      if (!res.ok) throw new Error('Failed to add address');
+      const updatedAddresses = await res.json();
+
+      // Update current user state with new addresses
+      setCurrentUserInternal(prev => prev ? { ...prev, addresses: updatedAddresses } : null);
+      showToast('Success', 'Address added successfully', 'success');
+    } catch (err) {
+      console.error(err);
+      showToast('Error', 'Failed to save address', 'error');
+    }
+  }, [currentUser, token, setCurrentUserInternal, showToast]);
+
   // Helper function to map product data
   const mapProductData = useCallback((p: any): Product => {
     const categoryId = p.category && (typeof p.category === 'object' ? (p.category._id || p.category.id) : p.category);
@@ -161,6 +195,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       outOfStock: p.outOfStock ?? false,
       isNewArrival: p.isNewArrival ?? false,
       isLimitedEdition: p.isLimitedEdition ?? false,
+      isActive: p.isActive ?? true,
     } as Product;
   }, []);
 
@@ -329,6 +364,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           outOfStock: productData.outOfStock,
           isNewArrival: productData.isNewArrival,
           isLimitedEdition: productData.isLimitedEdition,
+          isActive: productData.isActive,
         };
         const headers: any = { 'Content-Type': 'application/json' };
         if (token) headers.Authorization = `Bearer ${token}`;
@@ -353,6 +389,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           outOfStock: p.outOfStock ?? productData.outOfStock ?? false,
           isNewArrival: p.isNewArrival ?? productData.isNewArrival ?? false,
           isLimitedEdition: p.isLimitedEdition ?? productData.isLimitedEdition ?? false,
+          isActive: p.isActive ?? true,
         } as Product;
         setProducts(prev => [...prev, mapped]);
         showToast('Success', 'Product added successfully', 'success');
@@ -381,6 +418,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           outOfStock: updatedProduct.outOfStock,
           isNewArrival: updatedProduct.isNewArrival,
           isLimitedEdition: updatedProduct.isLimitedEdition,
+          isActive: updatedProduct.isActive,
         };
         const headers: any = { 'Content-Type': 'application/json' };
         if (token) headers.Authorization = `Bearer ${token}`;
@@ -405,6 +443,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           outOfStock: p.outOfStock ?? updatedProduct.outOfStock ?? false,
           isNewArrival: p.isNewArrival ?? updatedProduct.isNewArrival ?? false,
           isLimitedEdition: p.isLimitedEdition ?? updatedProduct.isLimitedEdition ?? false,
+          isActive: p.isActive ?? true,
         } as Product;
         setProducts(prev => prev.map(p => p.id === updatedProduct.id ? mapped : p));
         showToast('Success', 'Product updated successfully', 'success');
@@ -635,6 +674,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           name: u.username || u.name || userData.name,
           phone: (userData as any).phone || '',
           role: u.isAdmin ? 'admin' : (u.role === 'admin' ? 'admin' : 'user'),
+          addresses: u.addresses || [],
         } as User;
         setUsers(prev => [...prev, mapped]);
         showToast('Success', 'User added successfully', 'success');
@@ -664,6 +704,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           name: u.username || u.name || updatedUser.name,
           phone: updatedUser.phone || '',
           role: u.isAdmin ? 'admin' : (u.role === 'admin' ? 'admin' : 'user'),
+          addresses: u.addresses || [],
         } as User;
         setUsers(prev => prev.map(us => us.id === updatedUser.id ? mapped : us));
         showToast('Success', 'User updated successfully', 'success');
@@ -711,6 +752,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     addUser,
     updateUser,
     deleteUser,
+    addAddress,
     addToCart,
     removeFromCart,
     updateCartQuantity,

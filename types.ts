@@ -52,6 +52,12 @@ export interface ShippingAddress {
   country: string;
 }
 
+export interface Address extends ShippingAddress {
+  id: string;
+  isDefault: boolean;
+  type?: 'Home' | 'Work' | 'Other';
+}
+
 export interface Order {
   id: string;
   customerName: string;
@@ -74,6 +80,7 @@ export interface User {
   role: 'admin' | 'user';
   isBanned?: boolean;
   email?: string;
+  addresses?: Address[];
 }
 
 export interface WishlistItem {

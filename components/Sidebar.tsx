@@ -80,6 +80,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onNavigate }) => {
 
                                 {currentUser && (
                                     <>
+                                        <button onClick={() => handleNavigation('profile')} className="w-full flex items-center px-6 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                                            <UserCircleIcon />
+                                            <span className="ml-4 font-medium">My Profile</span>
+                                        </button>
+
                                         <button onClick={() => handleNavigation('orders')} className="w-full flex items-center px-6 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                                             <ClipboardListIcon />
                                             <span className="ml-4 font-medium">Order History</span>

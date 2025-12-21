@@ -13,21 +13,50 @@ const Register: React.FC<RegisterProps> = ({ onSwitchToLogin }) => {
     password: '',
     role: 'user',
   });
+  const [isLoading, setIsLoading] = useState(false);
   const { showToast } = useToast();
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+
+    // Only allow digits for phone and limit to 10 characters
+    if (name === 'phone') {
+      const digitsOnly = value.replace(/\D/g, '');
+      setFormData({ ...formData, [name]: digitsOnly.slice(0, 10) });
+    } else {
+      setFormData({ ...formData, [name]: value });
+    }
+  };
+
+  const validatePhoneNumber = (phone: string) => {
+    const phoneRegex = /^[0-9]{10}$/;
+    return phoneRegex.test(phone);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLoading) return;
+
+    // Validate phone number
+    if (!validatePhoneNumber(formData.phone)) {
+      showToast('Error', 'Please enter a valid 10-digit phone number.', 'error');
+      return;
+    }
+
+    setIsLoading(true);
     try {
+      // Prepend +91 to phone number before sending
+      const registrationData = {
+        ...formData,
+        phone: `+91${formData.phone}`
+      };
+
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(registrationData),
       });
 
       const data = await response.json();
@@ -41,6 +70,8 @@ const Register: React.FC<RegisterProps> = ({ onSwitchToLogin }) => {
     } catch (error) {
       console.error('Registration error:', error);
       showToast('Error', 'Server error during registration.', 'error');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -74,15 +105,27 @@ const Register: React.FC<RegisterProps> = ({ onSwitchToLogin }) => {
         </div>
         <div>
           <label htmlFor="phone" className="block text-sm font-medium mb-1">Phone Number</label>
-          <input
-            type="tel"
-            name="phone"
-            id="phone"
-            value={formData.phone}
-            onChange={handleChange}
-            required
-            className="w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600"
-          />
+          <div className="flex gap-2">
+            <select
+              className="p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600 text-gray-900 dark:text-white font-medium focus:ring-2 focus:ring-indigo-500 outline-none w-24"
+              value="+91"
+              disabled
+            >
+              <option value="+91">🇮🇳 +91</option>
+            </select>
+            <input
+              type="tel"
+              name="phone"
+              id="phone"
+              value={formData.phone}
+              onChange={handleChange}
+              required
+              maxLength={10}
+              className="flex-1 p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600 focus:ring-2 focus:ring-indigo-500 outline-none"
+              placeholder="9876543210"
+            />
+          </div>
+          <p className="text-xs text-gray-400 mt-1">10-digit mobile number</p>
         </div>
         <div>
           <label htmlFor="password" className="block text-sm font-medium mb-1">Password</label>
@@ -111,9 +154,16 @@ const Register: React.FC<RegisterProps> = ({ onSwitchToLogin }) => {
         </div> */}
         <button
           type="submit"
-          className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg transition-colors"
+          disabled={isLoading}
+          className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
-          Register
+          {isLoading && (
+            <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+          )}
+          {isLoading ? 'Registering...' : 'Register'}
         </button>
       </form>
       <p className="mt-4 text-center text-sm">

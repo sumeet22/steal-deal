@@ -3,7 +3,7 @@ import { Helmet } from 'react-helmet-async';
 import { motion } from 'framer-motion';
 import { useAppContext } from '../context/AppContext';
 import { useToast } from '../context/ToastContext';
-import { ShippingAddress } from '../types';
+import { ShippingAddress, Address } from '../types';
 
 interface CheckoutProps {
   onBackToStore: () => void;
@@ -25,7 +25,7 @@ const INDIAN_STATES = [
 ];
 
 const Checkout: React.FC<CheckoutProps> = ({ onBackToStore }) => {
-  const { cart, createOrder, currentUser } = useAppContext();
+  const { cart, createOrder, currentUser, addAddress } = useAppContext();
   const { showToast } = useToast();
 
   const [customerInfo, setCustomerInfo] = useState({
@@ -46,17 +46,36 @@ const Checkout: React.FC<CheckoutProps> = ({ onBackToStore }) => {
     country: 'India',
   });
 
+  const [selectedAddressId, setSelectedAddressId] = useState<string>('new');
   const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
     if (currentUser) {
+      // Strip +91 prefix from phone if present
+      const phoneNumber = currentUser.phone?.startsWith('+91')
+        ? currentUser.phone.slice(3)
+        : currentUser.phone || '';
+
       setCustomerInfo(prev => ({
         ...prev,
         customerName: currentUser.name,
-        customerPhone: currentUser.phone
+        customerPhone: phoneNumber
       }));
+
+      // Pre-select default address if available
+      if (currentUser.addresses && currentUser.addresses.length > 0) {
+        const defaultAddr = currentUser.addresses.find(a => a.isDefault) || currentUser.addresses[0];
+        setAddress(defaultAddr);
+        setSelectedAddressId(defaultAddr.id);
+        if (customerInfo.deliveryMethod === 'store_pickup') {
+          // Keep store pickup as default if set initially, or maybe switch to home delivery if they have an address?
+          // Let's not force switch delivery method, but if they switch to home delivery, the address will be ready.
+        } else {
+          // If already home delivery or undefined, ensure address is populated
+        }
+      }
     }
-  }, [currentUser]);
+  }, [currentUser]); // Run only on mount or user change
 
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
@@ -80,6 +99,41 @@ const Checkout: React.FC<CheckoutProps> = ({ onBackToStore }) => {
   const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setAddress(prev => ({ ...prev, [name]: value }));
+    if (selectedAddressId !== 'new') {
+      setSelectedAddressId('new'); // Switch to 'new' if user starts editing a saved address to avoid confusion, or keep it "editing"
+      // Better to treat any edit as a "potential new address" or just let them edit.
+      // For simplicity, if they edit, we treat it as "new" for saving purposes if it differs from the saved one. 
+      // But visually, let's keep it 'new' to imply it's not the saved one anymore.
+    }
+  };
+
+  const handleSavedAddressSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = e.target.value;
+    setSelectedAddressId(val);
+    if (val === 'new') {
+      setAddress({
+        addressLine1: '',
+        addressLine2: '',
+        landmark: '',
+        city: '',
+        state: 'Maharashtra',
+        pincode: '',
+        country: 'India',
+      });
+    } else {
+      const addr = currentUser?.addresses?.find(a => a.id === val);
+      if (addr) {
+        setAddress({
+          addressLine1: addr.addressLine1,
+          addressLine2: addr.addressLine2 || '',
+          landmark: addr.landmark || '',
+          city: addr.city,
+          state: addr.state,
+          pincode: addr.pincode,
+          country: addr.country,
+        });
+      }
+    }
   };
 
   const setDeliveryMethod = (method: 'store_pickup' | 'home_delivery') => {
@@ -89,28 +143,22 @@ const Checkout: React.FC<CheckoutProps> = ({ onBackToStore }) => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      // Security Measure 1: Strict File Size Limit (2MB)
       if (file.size > 2 * 1024 * 1024) {
         showToast('Error', 'File size too large. Please upload an image smaller than 2MB.', 'error');
-        e.target.value = ''; // Reset input to force re-selection of valid file
+        e.target.value = '';
         return;
       }
 
-      // Security Measure 2: Strict MIME Type Validation
       const allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
       if (!allowedTypes.includes(file.type)) {
         showToast('Error', 'Invalid file type. Only standard images (JPEG, PNG, WebP) are allowed.', 'error');
-        e.target.value = ''; // Reset input
+        e.target.value = '';
         return;
       }
 
       const reader = new FileReader();
       reader.onloadend = () => {
         const result = reader.result as string;
-
-        // Security Measure 3: Verify Image Integrity
-        // We attempt to load the base64 string into an actual Image object.
-        // If it fails to load, it's likely a corrupted file or a non-image file masked with an extension.
         const img = new Image();
         img.onload = () => {
           setCustomerInfo(prev => ({ ...prev, paymentProof: result }));
@@ -118,7 +166,7 @@ const Checkout: React.FC<CheckoutProps> = ({ onBackToStore }) => {
         img.onerror = () => {
           showToast('Error', 'The uploaded file does not appear to be a valid image.', 'error');
           setCustomerInfo(prev => ({ ...prev, paymentProof: '' }));
-          e.target.value = ''; // Reset
+          e.target.value = '';
         };
         img.src = result;
       };
@@ -139,7 +187,6 @@ const Checkout: React.FC<CheckoutProps> = ({ onBackToStore }) => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Basic User Info Validation
     if (!customerInfo.customerName.trim()) {
       showToast('Error', 'Please enter your Full Name.', 'error');
       return;
@@ -150,13 +197,11 @@ const Checkout: React.FC<CheckoutProps> = ({ onBackToStore }) => {
       return;
     }
 
-    // Strict Phone Validation (10 digits)
     if (!validatePhoneNumber(customerInfo.customerPhone)) {
       showToast('Error', 'Please enter a valid 10-digit Phone Number.', 'error');
       return;
     }
 
-    // Home Delivery Validation
     if (customerInfo.deliveryMethod === 'home_delivery') {
       if (!address.addressLine1.trim()) {
         showToast('Error', 'Please enter Address Line 1.', 'error');
@@ -175,7 +220,6 @@ const Checkout: React.FC<CheckoutProps> = ({ onBackToStore }) => {
         return;
       }
 
-      // Strict Pincode Validation
       if (!validatePincode(address.pincode)) {
         showToast('Error', 'Please enter a valid 6-digit Pincode.', 'error');
         return;
@@ -192,7 +236,6 @@ const Checkout: React.FC<CheckoutProps> = ({ onBackToStore }) => {
       return;
     }
 
-    // Check for out-of-stock items in cart
     const outOfStockItems = cart.filter(item => item.outOfStock || item.stockQuantity <= 0);
     if (outOfStockItems.length > 0) {
       const itemNames = outOfStockItems.map(item => item.name).join(', ');
@@ -202,7 +245,24 @@ const Checkout: React.FC<CheckoutProps> = ({ onBackToStore }) => {
 
     setIsProcessing(true);
 
-    // Initial Shipping Address for Store Pickup
+    // Save Address Logic
+    if (currentUser && customerInfo.deliveryMethod === 'home_delivery') {
+      // Check if this address is essentially new
+      const isNew = !currentUser.addresses?.some(a =>
+        a.addressLine1.toLowerCase() === address.addressLine1.toLowerCase() &&
+        a.pincode === address.pincode &&
+        a.city.toLowerCase() === address.city.toLowerCase()
+      );
+
+      if (isNew) {
+        // Automatically save the new address
+        await addAddress({
+          ...address,
+          isDefault: currentUser.addresses?.length === 0 // Make default if it's the first one
+        });
+      }
+    }
+
     const finalShippingAddress = customerInfo.deliveryMethod === 'store_pickup'
       ? {
         addressLine1: 'Store Pickup',
@@ -337,6 +397,25 @@ const Checkout: React.FC<CheckoutProps> = ({ onBackToStore }) => {
                 animate={{ opacity: 1, height: 'auto' }}
                 className="space-y-4 mt-4"
               >
+                {/* Saved Address Selector */}
+                {currentUser && currentUser.addresses && currentUser.addresses.length > 0 && (
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium mb-2">Select a Saved Address</label>
+                    <select
+                      value={selectedAddressId}
+                      onChange={handleSavedAddressSelect}
+                      className="w-full p-2 border rounded-lg bg-white dark:bg-gray-700 dark:border-gray-600 focus:ring-2 focus:ring-indigo-500"
+                    >
+                      {currentUser.addresses.map(addr => (
+                        <option key={addr.id} value={addr.id}>
+                          {addr.type || 'Home'} - {addr.addressLine1}, {addr.city}
+                        </option>
+                      ))}
+                      <option value="new">+ Add New Address</option>
+                    </select>
+                  </div>
+                )}
+
                 <h4 className="font-medium text-gray-900 dark:text-white">Shipping Address</h4>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

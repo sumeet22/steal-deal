@@ -27,6 +27,7 @@ const TermsAndConditions = React.lazy(() => import('./components/InfoPages').the
 const PrivacyPolicy = React.lazy(() => import('./components/InfoPages').then(module => ({ default: module.PrivacyPolicy })));
 const ReturnsPolicy = React.lazy(() => import('./components/InfoPages').then(module => ({ default: module.ReturnsPolicy })));
 const ShippingPolicy = React.lazy(() => import('./components/InfoPages').then(module => ({ default: module.ShippingPolicy })));
+const UserProfile = React.lazy(() => import('./components/UserProfile'));
 
 import { MenuIcon, SearchIcon, ShieldCheckIcon, CreditCardIcon, TruckIcon } from './components/Icons';
 
@@ -52,7 +53,7 @@ const WishlistButton: React.FC<{ onNavigate: () => void }> = ({ onNavigate }) =>
 };
 
 
-type View = 'store' | 'checkout' | 'orders' | 'admin' | 'product' | 'auth' | 'wishlist' | 'newarrivals' | 'terms' | 'privacy' | 'returns' | 'shipping';
+type View = 'store' | 'checkout' | 'orders' | 'admin' | 'product' | 'auth' | 'wishlist' | 'newarrivals' | 'terms' | 'privacy' | 'returns' | 'shipping' | 'profile';
 
 const App: React.FC = () => {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -220,6 +221,9 @@ const App: React.FC = () => {
       case 'admin':
         document.title = `Admin Dashboard | ${baseTitle}`;
         break;
+      case 'profile':
+        document.title = `My Profile | ${baseTitle}`;
+        break;
       case 'auth':
         document.title = `Authentication | ${baseTitle}`;
         break;
@@ -250,6 +254,8 @@ const App: React.FC = () => {
         return <NewArrivalsPage onProductClick={handleProductClick} onBack={() => navigate('store', undefined, null)} />;
       case 'admin':
         return <AdminDashboard />;
+      case 'profile':
+        return <UserProfile />;
       case 'auth':
         return authView === 'login' ? (
           <Login onSwitchToRegister={() => setAuthView('register')} />
