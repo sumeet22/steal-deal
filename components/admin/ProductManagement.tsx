@@ -5,7 +5,7 @@ import ProductForm from './ProductForm';
 import { PlusIcon, PencilIcon, TrashIcon } from '../Icons';
 
 const ProductManagement: React.FC = () => {
-  const { products, deleteProduct, categories, fetchAllProductsForAdmin } = useAppContext();
+  const { products, deleteProduct, updateProduct, categories, fetchAllProductsForAdmin } = useAppContext();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -37,6 +37,14 @@ const ProductManagement: React.FC = () => {
   const closeModal = () => {
     setIsModalOpen(false);
     setEditingProduct(null);
+  };
+
+  const toggleProductStatus = async (product: Product) => {
+    try {
+      await updateProduct({ ...product, isActive: !product.isActive });
+    } catch (error) {
+      console.error("Failed to toggle product status", error);
+    }
   };
 
   return (
@@ -78,12 +86,13 @@ const ProductManagement: React.FC = () => {
               <th scope="col" className="py-3 px-6">Product</th>
               <th scope="col" className="py-3 px-6">Price</th>
               <th scope="col" className="py-3 px-6">Stock</th>
+              <th scope="col" className="py-3 px-6 text-center">Status</th>
               <th scope="col" className="py-3 px-6 text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="grid md:table-row-group grid-cols-1 gap-4">
             {filteredProducts.map(product => (
-              <tr key={product.id} className="bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-lg shadow-md md:shadow-none md:border-b md:table-row flex flex-col p-4 md:p-0">
+              <tr key={product.id} className={`bg-white dark:bg-gray-800 border dark:border-gray-700 rounded-lg shadow-md md:shadow-none md:border-b md:table-row flex flex-col p-4 md:p-0 ${!product.isActive ? 'opacity-60 bg-gray-50 dark:bg-gray-900' : ''}`}>
                 <td className="py-2 md:py-4 md:px-6 font-medium text-gray-900 dark:text-white flex justify-between items-center md:table-cell">
                   <span className="md:hidden text-xs uppercase text-gray-500 font-bold">Product</span>
                   <div className="flex items-center gap-3">
@@ -99,7 +108,10 @@ const ProductManagement: React.FC = () => {
                       alt={product.name}
                       className="w-10 h-10 rounded-md object-cover"
                     />
-                    <span className="font-semibold">{product.name}</span>
+                    <div className="flex flex-col">
+                      <span className="font-semibold">{product.name}</span>
+                      {!product.isActive && <span className="text-xs text-red-500 font-bold md:hidden">(Inactive)</span>}
+                    </div>
                   </div>
                 </td>
                 <td className="py-2 md:py-4 md:px-6 flex justify-between items-center md:table-cell">
@@ -109,6 +121,18 @@ const ProductManagement: React.FC = () => {
                 <td className="py-2 md:py-4 md:px-6 flex justify-between items-center md:table-cell">
                   <span className="md:hidden text-xs uppercase text-gray-500 font-bold">Stock</span>
                   <span>{product.stockQuantity}</span>
+                </td>
+                <td className="py-2 md:py-4 md:px-6 flex justify-between items-center md:table-cell md:text-center">
+                  <span className="md:hidden text-xs uppercase text-gray-500 font-bold">Status</span>
+                  <button
+                    onClick={() => toggleProductStatus(product)}
+                    className={`px-3 py-1 rounded-full text-xs font-bold transition-colors ${product.isActive
+                        ? 'bg-green-100 text-green-800 hover:bg-green-200 dark:bg-green-900 dark:text-green-300'
+                        : 'bg-red-100 text-red-800 hover:bg-red-200 dark:bg-red-900 dark:text-red-300'
+                      }`}
+                  >
+                    {product.isActive ? 'Active' : 'Inactive'}
+                  </button>
                 </td>
                 <td className="py-2 md:py-4 md:px-6 md:text-right pt-4 mt-4 border-t md:border-0 dark:border-gray-700">
                   <div className="flex items-center space-x-2 justify-end">

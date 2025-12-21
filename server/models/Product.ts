@@ -22,6 +22,7 @@ export interface IProduct extends Document {
   outOfStock?: boolean; // Manual or automatic out of stock flag
   isNewArrival?: boolean; // Mark product for New Arrivals page
   isLimitedEdition?: boolean; // Mark product as limited edition
+  isActive?: boolean;
 }
 
 const ProductSchema = new Schema<IProduct>({
@@ -105,6 +106,10 @@ const ProductSchema = new Schema<IProduct>({
     type: Boolean,
     default: false,
   },
+  isActive: {
+    type: Boolean,
+    default: true,
+  }
 }, { timestamps: true });
 
 ProductSchema.index({ name: 'text', description: 'text' });
@@ -118,26 +123,6 @@ ProductSchema.index({ isLimitedEdition: 1, createdAt: -1 }); // For limited edit
 ProductSchema.index({ category: 1, createdAt: -1 }); // Compound for category + sorting
 ProductSchema.index({ outOfStock: 1 }); // For filtering in-stock items
 ProductSchema.index({ stockQuantity: 1 }); // For stock queries
-
-// Middleware to automatically set outOfStock when stockQuantity is 0
-// Note: Disabled due to TypeScript/Mongoose callback issues
-// Handling this logic in the application layer instead
-// ProductSchema.pre('save', function (next: CallbackWithoutResultAndOptionalError) {
-//   if ((this as any).stockQuantity <= 0) {
-//     (this as any).outOfStock = true;
-//   }
-//   next();
-// });
-
-// Middleware for findOneAndUpdate to automatically set outOfStock
-// Note: Disabled due to TypeScript/Mongoose callback issues
-// Handling this logic in the application layer instead
-// ProductSchema.pre('findOneAndUpdate', function (next: CallbackWithoutResultAndOptionalError) {
-//   const update: any = (this as any).getUpdate();
-//   if (update && update.stockQuantity !== undefined && update.stockQuantity <= 0) {
-//     update.outOfStock = true;
-//   }
-//   next();
-// });
+ProductSchema.index({ isActive: 1 }); // For filtering active products
 
 export default model<IProduct>('Product', ProductSchema);

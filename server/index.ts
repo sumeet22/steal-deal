@@ -15,7 +15,8 @@ const app = express();
 const PORT = Number(process.env.PORT) || 5000;
 
 // Basic Middleware
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cors());
 
 // Security Middleware

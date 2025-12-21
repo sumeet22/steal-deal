@@ -24,7 +24,7 @@ const getProductImages = (product: Product): ProductImage[] => {
 };
 
 const ProductDetail: React.FC<ProductDetailProps> = ({ productId, onBack }) => {
-  const { products, addToCart } = useAppContext();
+  const { products, addToCart, cart, updateCartQuantity } = useAppContext();
   const { isInWishlist, toggleWishlist } = useWishlist();
   const [quantity, setQuantity] = useState(1);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -37,6 +37,22 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ productId, onBack }) => {
     const foundProduct = products.find(p => p.id === productId);
     return foundProduct || fetchedProduct;
   }, [products, productId, fetchedProduct]);
+
+  // Sync quantity with cart
+  useEffect(() => {
+    if (productId) {
+      const cartItem = cart.find(item => item.id === productId);
+      if (cartItem) {
+        setQuantity(cartItem.quantity);
+      } else {
+        setQuantity(1);
+      }
+    }
+  }, [cart, productId]);
+
+  const itemInCart = useMemo(() => {
+    return cart.find(item => item.id === productId);
+  }, [cart, productId]);
 
   // Fetch product from API if not found in products array
   useEffect(() => {
@@ -165,7 +181,11 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ productId, onBack }) => {
 
   const handleAddToCart = () => {
     if (quantity > 0) {
-      addToCart(product, quantity);
+      if (itemInCart) {
+        updateCartQuantity(product.id, quantity);
+      } else {
+        addToCart(product, quantity);
+      }
     }
   };
 
@@ -181,17 +201,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ productId, onBack }) => {
 
   return (
     <PullToRefresh onRefresh={handleRefresh}>
-      <div className="bg-white dark:bg-gray-800 shadow-xl rounded-2xl p-6 sm:p-10 transition-all duration-300">
-        <button
-          onClick={onBack}
-          className="group text-indigo-600 dark:text-indigo-400 font-medium mb-8 flex items-center gap-2 hover:translate-x-[-4px] transition-transform duration-200"
-        >
-          <div className="p-1.5 rounded-full bg-indigo-50 dark:bg-indigo-900/30 group-hover:bg-indigo-100 dark:group-hover:bg-indigo-900/50 transition-colors">
-            <ChevronLeftIcon />
-          </div>
-          <span>Back to products</span>
-        </button>
-
+      <div className="max-w-7xl mx-auto animate-hero-fade-in pb-16 px-4 sm:px-6 lg:px-8">
         <Helmet>
           <title>{product.name} | Steal Deal</title>
           <meta name="description" content={product.description.substring(0, 160)} />
@@ -200,32 +210,58 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ productId, onBack }) => {
           {currentImage && <meta property="og:image" content={currentImage.url} />}
         </Helmet>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-10 lg:gap-16">
-          {/* Image Section with Carousel */}
-          <div className="space-y-4">
-            <div className="relative aspect-square bg-gray-100 dark:bg-gray-700/50 rounded-2xl flex items-center justify-center overflow-hidden shadow-sm group">
+        {/* Clean Breadcrumb Navigation */}
+        <nav className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400 mb-6 lg:mb-10">
+          <button
+            onClick={onBack}
+            className="hover:text-gray-900 dark:hover:text-white transition-colors"
+          >
+            Store
+          </button>
+          <ChevronRightIcon className="w-4 h-4" />
+          <span className="text-gray-900 dark:text-white font-medium truncate max-w-[200px]">{product.name}</span>
+        </nav>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 lg:gap-20">
+          {/* Left Column: Images */}
+          <div className="space-y-6">
+            <div className="relative aspect-square bg-white dark:bg-gray-800 rounded-3xl overflow-hidden group border border-gray-100 dark:border-gray-700">
               {currentImage ? (
                 <>
                   <img
                     src={currentImage.url}
                     alt={product.name}
                     loading="lazy"
-                    className="h-full w-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                    className="h-full w-full object-contain p-4 mix-blend-multiply dark:mix-blend-normal transition-transform duration-500 group-hover:scale-105"
                   />
 
-                  {/* Navigation Arrows - Only show if multiple images */}
+                  {/* Badges */}
+                  <div className="absolute top-4 left-4 flex flex-col gap-2">
+                    {isNew && (
+                      <span className="px-3 py-1 text-xs font-bold tracking-wider text-white bg-black dark:bg-white dark:text-black rounded-full shadow-lg">
+                        NEW
+                      </span>
+                    )}
+                    {isSale && (
+                      <span className="px-3 py-1 text-xs font-bold tracking-wider text-white bg-red-600 rounded-full shadow-lg">
+                        -{discount}%
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Navigation Arrows */}
                   {productImages.length > 1 && (
                     <>
                       <button
-                        onClick={handlePrevImage}
-                        className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-3 rounded-full transition-all opacity-0 group-hover:opacity-100"
+                        onClick={(e) => { e.stopPropagation(); handlePrevImage(); }}
+                        className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/90 dark:bg-black/80 hover:bg-white dark:hover:bg-black text-gray-800 dark:text-white p-3 rounded-full shadow-md backdrop-blur-sm transition-all opacity-0 group-hover:opacity-100"
                         aria-label="Previous image"
                       >
                         <ChevronLeftIcon />
                       </button>
                       <button
-                        onClick={handleNextImage}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-3 rounded-full transition-all opacity-0 group-hover:opacity-100"
+                        onClick={(e) => { e.stopPropagation(); handleNextImage(); }}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/90 dark:bg-black/80 hover:bg-white dark:hover:bg-black text-gray-800 dark:text-white p-3 rounded-full shadow-md backdrop-blur-sm transition-all opacity-0 group-hover:opacity-100"
                         aria-label="Next image"
                       >
                         <ChevronRightIcon />
@@ -234,145 +270,137 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ productId, onBack }) => {
                   )}
                 </>
               ) : (
-                <span className="text-gray-400 font-medium">No Image Available</span>
-              )}
-
-              <div className="absolute top-4 left-4 flex flex-col gap-2.5">
-                {isNew && (
-                  <span className="px-3 py-1 text-xs font-bold tracking-wider text-white bg-teal-500 rounded-full shadow-lg backdrop-blur-sm bg-opacity-90">
-                    NEW
-                  </span>
-                )}
-                {isSale && (
-                  <span className="px-3 py-1 text-xs font-bold tracking-wider text-white bg-red-500 rounded-full shadow-lg backdrop-blur-sm bg-opacity-90">
-                    -{discount}% OFF
-                  </span>
-                )}
-              </div>
-
-              {/* Image Counter */}
-              {productImages.length > 1 && (
-                <div className="absolute bottom-4 right-4 bg-black/70 text-white px-3 py-1.5 rounded-full text-sm font-medium">
-                  {currentImageIndex + 1} / {productImages.length}
+                <div className="w-full h-full flex items-center justify-center text-gray-400">
+                  No Image
                 </div>
               )}
             </div>
 
-            {/* Thumbnail Strip - Only show if multiple images */}
+            {/* Thumbnails */}
             {productImages.length > 1 && (
-              <div className="flex gap-2 overflow-x-auto pb-2">
+              <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
                 {productImages.map((img, index) => (
                   <button
                     key={index}
                     onClick={() => setCurrentImageIndex(index)}
-                    className={`relative flex-shrink-0 w-20 h-20 rounded-lg overflow-hidden border-2 transition-all ${index === currentImageIndex
-                      ? 'border-indigo-500 scale-105 shadow-lg'
-                      : 'border-gray-300 dark:border-gray-600 hover:border-indigo-300 dark:hover:border-indigo-700'
+                    className={`relative flex-shrink-0 w-24 h-24 rounded-2xl overflow-hidden transition-all duration-200 border ${index === currentImageIndex
+                        ? 'border-black dark:border-white ring-1 ring-black dark:ring-white scale-95'
+                        : 'border-transparent opacity-70 hover:opacity-100 hover:border-gray-200 dark:hover:border-gray-700'
                       }`}
                   >
                     <img
                       src={img.url}
-                      alt={`${product.name} ${index + 1}`}
+                      alt={`${product.name} view ${index + 1}`}
                       className="w-full h-full object-cover"
                     />
-                    {img.isMain && (
-                      <div className="absolute top-1 right-1 bg-yellow-500 rounded-full p-0.5">
-                        <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                        </svg>
-                      </div>
-                    )}
                   </button>
                 ))}
               </div>
             )}
           </div>
 
-          {/* Info Section */}
-          <div className="flex flex-col justify-center">
-            <div className="mb-6">
-              <h1 className="text-4xl sm:text-5xl font-extrabold text-gray-900 dark:text-white tracking-tight mb-3 leading-tight">
-                {product.name}
-              </h1>
-              <div className="w-20 h-1.5 bg-indigo-500 rounded-full"></div>
-            </div>
+          {/* Right Column: Details */}
+          <div className="flex flex-col pt-2">
 
-            <div className="flex items-baseline gap-4 mb-8">
-              <p className="text-4xl sm:text-5xl font-black text-indigo-600 dark:text-indigo-400">
-                ₹{product.price.toFixed(2)}
+            <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white tracking-tight mb-4 leading-tight">
+              {product.name}
+            </h1>
+
+            <div className="flex items-baseline gap-4 mb-6">
+              <p className="text-3xl font-medium text-gray-900 dark:text-white">
+                ₹{product.price.toLocaleString('en-IN')}
               </p>
               {isSale && (
-                <div className="flex flex-col">
-                  <p className="text-xl text-gray-400 font-medium line-through decoration-2 decoration-gray-400/50">
-                    ₹{product.originalPrice!.toFixed(2)}
-                  </p>
-                </div>
+                <p className="text-xl text-gray-500 line-through">
+                  ₹{product.originalPrice?.toLocaleString('en-IN')}
+                </p>
               )}
             </div>
 
-            {/* Stats Chips */}
-            <div className="flex flex-wrap gap-3 mb-8">
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-sm font-medium border border-blue-100 dark:border-blue-800">
-                <EyeIcon />
-                <span>{stats.viewCount} viewing</span>
+            {/* Stats Bar (Recently Sold Badge) */}
+            {(stats.viewCount > 20 || stats.soldLast24Hours > 5) && (
+              <div className="flex flex-wrap items-center gap-4 mb-8">
+                {stats.soldLast24Hours > 0 && (
+                  <div className="flex items-center gap-2 bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300 px-3 py-1.5 rounded-full text-sm font-medium border border-orange-100 dark:border-orange-900/30 animate-pulse-slow">
+                    <FireIcon />
+                    <span>{stats.soldLast24Hours} sold in last 24h</span>
+                  </div>
+                )}
+                <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 text-sm">
+                  <EyeIcon />
+                  <span>{stats.viewCount} people viewing</span>
+                </div>
               </div>
-              <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-sm font-medium border border-purple-100 dark:border-purple-800">
-                <ShoppingBagIcon />
-                <span>In {stats.addToCartCount} carts</span>
-              </div>
-              {(stats.soldLast24Hours > 0) && (
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 text-sm font-medium border border-orange-100 dark:border-orange-800 animate-pulse-slow">
-                  <FireIcon />
-                  <span>{stats.soldLast24Hours} sold recently</span>
+            )}
+
+            {/* Transactional Area: Quantity & Add to Cart */}
+            <div className="space-y-8 mb-10 pb-10 border-b border-gray-100 dark:border-gray-800">
+              {/* Quantity Helper */}
+              {product.stockQuantity > 0 && !product.outOfStock ? (
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center max-w-[200px]">
+                    <span className="text-sm font-medium text-gray-900 dark:text-white">Quantity</span>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <QuantityStepper
+                      quantity={quantity}
+                      setQuantity={setQuantity}
+                      maxQuantity={product.stockQuantity}
+                    />
+                    <span className="text-sm text-green-600 dark:text-green-400 font-medium bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded">
+                      {itemInCart ? `In Cart: ${quantity}` : 'In Stock'}
+                    </span>
+                  </div>
+                  {product.stockQuantity < 10 && (
+                    <p className="text-xs text-red-500 font-medium">
+                      Only {product.stockQuantity} left!
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg text-red-600 dark:text-red-400 font-medium border border-red-100 dark:border-red-900/30">
+                  Currently Out of Stock
                 </div>
               )}
-            </div>
 
-            <p className="text-lg text-gray-600 dark:text-gray-300 mb-8 leading-relaxed border-l-4 border-gray-200 dark:border-gray-700 pl-4 py-1">
-              {product.description}
-            </p>
-
-            <div className="space-y-6">
-              <div className="flex items-center gap-6">
-                <span className="text-gray-900 dark:text-white font-semibold text-lg">Quantity</span>
-                <QuantityStepper
-                  quantity={quantity}
-                  setQuantity={setQuantity}
-                  maxQuantity={product.stockQuantity}
-                />
-                <span className={`text-sm font-medium ${(product.stockQuantity > 0 && !product.outOfStock) ? 'text-green-600 dark:text-green-400' : 'text-red-500'}`}>
-                  {(product.stockQuantity > 0 && !product.outOfStock) ? `${product.stockQuantity} pieces available` : 'Out of stock'}
-                </span>
-              </div>
-
-              <div className="flex gap-3">
+              {/* Action Buttons */}
+              <div className="flex gap-4">
                 <button
                   onClick={handleAddToCart}
                   disabled={product.stockQuantity <= 0 || product.outOfStock}
-                  className="flex-1 sm:flex-initial relative overflow-hidden group bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold py-4 px-8 rounded-xl text-lg shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-none min-w-[200px]"
+                  className="flex-1 bg-black dark:bg-white text-white dark:text-black font-bold py-4 px-8 rounded-full text-lg hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
-                  <div className="absolute inset-0 w-full h-full bg-gradient-to-r from-indigo-500 to-purple-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                  <span className="relative flex items-center justify-center gap-2 z-10 transition-colors group-hover:text-white">
-                    <ShoppingCartIcon />
-                    {(product.stockQuantity <= 0 || product.outOfStock) ? 'Out of Stock' : 'Add to Cart'}
-                  </span>
+                  <ShoppingBagIcon />
+                  {product.stockQuantity <= 0 || product.outOfStock
+                    ? 'Out of Stock'
+                    : itemInCart
+                      ? 'Update Cart'
+                      : 'Add to Cart'
+                  }
                 </button>
 
                 <button
                   onClick={() => toggleWishlist(product)}
-                  className={`relative overflow-hidden group p-4 rounded-xl text-lg shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 ${isInWishlist(product.id)
-                      ? 'bg-red-500 text-white'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                  className={`p-4 rounded-full border transition-all duration-200 ${isInWishlist(product.id)
+                      ? 'border-red-200 bg-red-50 text-red-500 dark:bg-red-900/20 dark:border-red-900 hover:bg-red-100'
+                      : 'border-gray-200 hover:border-black dark:border-gray-700 dark:hover:border-white text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
                     }`}
-                  title={isInWishlist(product.id) ? 'Remove from wishlist' : 'Add to wishlist'}
+                  aria-label="Add to wishlist"
                 >
-                  <div className={`absolute inset-0 w-full h-full bg-gradient-to-r from-pink-500 to-red-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300`}></div>
-                  <span className="relative z-10 transition-colors group-hover:text-white">
-                    <HeartIcon filled={isInWishlist(product.id)} />
-                  </span>
+                  <HeartIcon filled={isInWishlist(product.id)} />
                 </button>
               </div>
             </div>
+
+            {/* Description Section (Rich Text) */}
+            <div className="prose prose-lg dark:prose-invert max-w-none">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Description</h3>
+              <div
+                className="rich-text text-gray-600 dark:text-gray-300 leading-relaxed whitespace-pre-wrap"
+                dangerouslySetInnerHTML={{ __html: product.description }}
+              />
+            </div>
+
           </div>
         </div>
       </div>

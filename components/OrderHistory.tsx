@@ -1,8 +1,28 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { useAppContext } from '../context/AppContext';
-import { Order, OrderStatus, CartItem } from '../types';
+import { Order, OrderStatus, CartItem, ShippingAddress } from '../types';
 import { ClipboardListIcon, ChevronDownIcon, UserCircleIcon } from './Icons';
 import PullToRefresh from './shared/PullToRefresh';
+
+const isStorePickup = (order: Order) => {
+  return order.deliveryMethod === 'store_pickup' ||
+    (typeof order.shippingAddress === 'object' && order.shippingAddress?.addressLine1 === 'Store Pickup');
+};
+
+const formatAddress = (order: Order) => {
+  if (isStorePickup(order)) {
+    return 'Store Pickup (Collect from store)';
+  }
+  const addr = order.shippingAddress;
+  if (!addr) return 'N/A';
+  if (typeof addr === 'string') return addr;
+  return `${addr.addressLine1}, ${addr.addressLine2 ? addr.addressLine2 + ', ' : ''}${addr.landmark ? 'Near ' + addr.landmark + ', ' : ''}${addr.city}, ${addr.state} - ${addr.pincode}, ${addr.country}`;
+};
+
+const normalizePhone = (phone: string) => {
+  // Remove non-digit characters and take the last 10 digits
+  return phone.replace(/\D/g, '').slice(-10);
+};
 
 const OrderHistory: React.FC = () => {
   const { orders, currentUser } = useAppContext();
@@ -16,8 +36,9 @@ const OrderHistory: React.FC = () => {
 
   const userOrders = useMemo(() => {
     if (!currentUser) return [];
+    const currentUserPhone = normalizePhone(currentUser.phone);
     return orders
-      .filter(order => order.customerPhone === currentUser.phone)
+      .filter(order => normalizePhone(order.customerPhone) === currentUserPhone)
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }, [orders, currentUser]);
 
@@ -69,7 +90,7 @@ const OrderHistory: React.FC = () => {
 
                     {/* Price, Status, and Chevron */}
                     <div className="flex items-center gap-3 sm:gap-4 flex-shrink-0">
-                      <p className="font-semibold text-lg whitespace-nowrap">${(order.total || 0).toFixed(2)}</p>
+                      <p className="font-semibold text-lg whitespace-nowrap">₹{(order.total || 0).toFixed(2)}</p>
                       <span className={`px-2.5 py-1 text-sm font-semibold rounded-full whitespace-nowrap ${getStatusColor(order.status)}`}>
                         {order.status}
                       </span>
@@ -84,12 +105,12 @@ const OrderHistory: React.FC = () => {
                           <li key={item.id} className="flex items-center gap-2">
                             <img src={item.image} alt={item.name} className="w-10 h-10 object-cover rounded" />
                             <span>{item.name} x <strong>{item.quantity}</strong></span>
-                            <span className="text-gray-600 dark:text-gray-400">${(item.price * item.quantity).toFixed(2)}</span>
+                            <span className="text-gray-600 dark:text-gray-400">₹{(item.price * item.quantity).toFixed(2)}</span>
                           </li>
                         ))}
                       </ul>
                       <div className="mt-4 pt-2 border-t dark:border-gray-600">
-                        <p><strong className="font-medium">Shipping Address:</strong> {order.shippingAddress}</p>
+                        <p><strong className="font-medium">{isStorePickup(order) ? 'Delivery Method:' : 'Shipping Address:'}</strong> {formatAddress(order)}</p>
                       </div>
                     </div>
                   )}

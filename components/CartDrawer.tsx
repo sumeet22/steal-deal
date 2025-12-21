@@ -13,9 +13,8 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose, onCheckout }) 
   const { cart, removeFromCart, updateCartQuantity } = useAppContext();
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
-  const drawerClasses = `fixed top-0 right-0 z-50 h-full w-full sm:max-w-sm bg-white dark:bg-gray-800 shadow-xl transform transition-transform duration-300 ease-in-out ${
-    isOpen ? 'translate-x-0' : 'translate-x-full'
-  }`;
+  const drawerClasses = `fixed top-0 right-0 z-50 h-full w-full sm:max-w-sm bg-white dark:bg-gray-800 shadow-xl transform transition-transform duration-300 ease-in-out ${isOpen ? 'translate-x-0' : 'translate-x-full'
+    }`;
 
   return (
     <>
@@ -42,7 +41,7 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose, onCheckout }) 
                   </div>
                   <div className="flex-grow">
                     <p className="font-semibold">{item.name}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">${item.price.toFixed(2)}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">₹{item.price.toFixed(2)}</p>
                     <div className="flex items-center justify-between mt-2">
                       <input
                         type="number"
@@ -66,7 +65,7 @@ const CartDrawer: React.FC<CartDrawerProps> = ({ isOpen, onClose, onCheckout }) 
           <div className="p-4 border-t dark:border-gray-700 mt-auto">
             <div className="flex justify-between items-center mb-4">
               <span className="text-lg font-semibold">Subtotal</span>
-              <span className="text-lg font-semibold">${subtotal.toFixed(2)}</span>
+              <span className="text-lg font-semibold">₹{subtotal.toFixed(2)}</span>
             </div>
             <button
               onClick={onCheckout}

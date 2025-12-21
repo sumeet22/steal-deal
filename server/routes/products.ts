@@ -12,7 +12,8 @@ router.get('/', async (req: Request, res: Response) => {
       limit = '20',
       category,
       search,
-      sort = '-createdAt' // Default: newest first
+      sort = '-createdAt', // Default: newest first
+      includeInactive // Admin flag
     } = req.query;
 
     const pageNum = parseInt(page as string, 10);
@@ -21,6 +22,11 @@ router.get('/', async (req: Request, res: Response) => {
 
     // Build query
     const query: any = {};
+
+    // Only show active products unless explicitly requested (e.g. by admin)
+    if (includeInactive !== 'true') {
+      query.isActive = true;
+    }
 
     // Category filter
     if (category && category !== 'all') {
@@ -77,7 +83,9 @@ router.get('/new-arrivals', async (req: Request, res: Response) => {
     const skip = (pageNum - 1) * limitNum;
 
     // Build query - products marked as new arrivals OR limited editions
+    // MUST BE ACTIVE
     const query: any = {
+      isActive: true,
       $or: [
         { isNewArrival: true },
         { isLimitedEdition: true }
@@ -127,7 +135,7 @@ router.get('/new-arrivals', async (req: Request, res: Response) => {
 
 router.post('/', async (req: Request, res: Response) => {
   try {
-    const { name, description, price, originalPrice, category: categoryId, image, imageUrl, images, stock, stockQuantity, tags, viewCount, addToCartCount, soldLast24Hours, outOfStock, isNewArrival, isLimitedEdition } = req.body;
+    const { name, description, price, originalPrice, category: categoryId, image, imageUrl, images, stock, stockQuantity, tags, viewCount, addToCartCount, soldLast24Hours, outOfStock, isNewArrival, isLimitedEdition, isActive } = req.body;
     if (!name || price == null || !categoryId) return res.status(400).json({ message: 'Missing required fields' });
     const category = await Category.findById(categoryId);
     if (!category) return res.status(400).json({ message: 'Invalid category' });
@@ -155,7 +163,8 @@ router.post('/', async (req: Request, res: Response) => {
       soldLast24Hours,
       outOfStock: finalOutOfStock,
       isNewArrival,
-      isLimitedEdition
+      isLimitedEdition,
+      isActive: isActive !== undefined ? isActive : true
     });
     await product.save();
     res.status(201).json(product);
@@ -176,7 +185,7 @@ router.get('/:id', async (req: Request, res: Response) => {
 
 router.put('/:id', async (req: Request, res: Response) => {
   try {
-    const { name, description, price, originalPrice, category: categoryId, image, imageUrl, images, stock, stockQuantity, tags, viewCount, addToCartCount, soldLast24Hours, outOfStock, isNewArrival, isLimitedEdition } = req.body;
+    const { name, description, price, originalPrice, category: categoryId, image, imageUrl, images, stock, stockQuantity, tags, viewCount, addToCartCount, soldLast24Hours, outOfStock, isNewArrival, isLimitedEdition, isActive } = req.body;
     if (categoryId) {
       const category = await Category.findById(categoryId);
       if (!category) return res.status(400).json({ message: 'Invalid category' });
@@ -204,6 +213,7 @@ router.put('/:id', async (req: Request, res: Response) => {
     if (soldLast24Hours !== undefined) update.soldLast24Hours = soldLast24Hours;
     if (isNewArrival !== undefined) update.isNewArrival = isNewArrival;
     if (isLimitedEdition !== undefined) update.isLimitedEdition = isLimitedEdition;
+    if (isActive !== undefined) update.isActive = isActive;
 
     // Auto-set outOfStock if stockQuantity is 0 or less, unless explicitly provided
     if (outOfStock !== undefined) {

@@ -113,6 +113,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           total: o.total,
           status: o.status,
           paymentMethod: o.paymentMethod,
+          deliveryMethod: o.deliveryMethod || 'home_delivery',
+          shippingCost: o.shippingCost || 0,
+          paymentProof: o.paymentProof,
           createdAt: o.createdAt,
         }));
         setOrders(mapped);
@@ -289,7 +292,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setProductsLoading(true);
     try {
       const params = new URLSearchParams({
-        limit: '1000' // High limit for admin
+        limit: '1000', // High limit for admin
+        includeInactive: 'true'
       });
 
       const res = await fetch(`/api/products?${params}`);
@@ -500,6 +504,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           total: newOrderData.total,
           status: newOrderData.status,
           paymentMethod: newOrderData.paymentMethod,
+          deliveryMethod: newOrderData.deliveryMethod,
+          shippingCost: newOrderData.shippingCost,
+          paymentProof: newOrderData.paymentProof,
           createdAt: newOrderData.createdAt,
         };
 

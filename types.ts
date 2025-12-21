@@ -27,6 +27,7 @@ export interface Product {
   outOfStock?: boolean; // Manual or automatic out of stock flag
   isNewArrival?: boolean; // Mark product for New Arrivals page
   isLimitedEdition?: boolean; // Mark product as limited edition
+  isActive?: boolean; // Controls global visibility
 }
 
 export interface CartItem extends Product {
@@ -41,15 +42,28 @@ export enum OrderStatus {
   Completed = 'Completed'
 }
 
+export interface ShippingAddress {
+  addressLine1: string;
+  addressLine2?: string;
+  landmark?: string;
+  city: string;
+  state: string;
+  pincode: string;
+  country: string;
+}
+
 export interface Order {
   id: string;
   customerName: string;
   customerPhone: string;
-  shippingAddress: string;
+  shippingAddress: ShippingAddress;
   items: CartItem[];
   total: number;
   status: OrderStatus;
-  paymentMethod: 'COD' | 'Bank Transfer';
+  deliveryMethod: 'store_pickup' | 'home_delivery';
+  shippingCost: number;
+  paymentMethod: 'COD' | 'Online Payment';
+  paymentProof?: string;
   createdAt: string;
 }
 
