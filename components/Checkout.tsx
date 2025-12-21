@@ -25,7 +25,7 @@ const INDIAN_STATES = [
 ];
 
 const Checkout: React.FC<CheckoutProps> = ({ onBackToStore }) => {
-  const { cart, createOrder, currentUser, addAddress } = useAppContext();
+  const { cart, createOrder, currentUser, addAddress, validateAndUpdateCart } = useAppContext();
   const { showToast } = useToast();
 
   const [customerInfo, setCustomerInfo] = useState({
@@ -76,6 +76,33 @@ const Checkout: React.FC<CheckoutProps> = ({ onBackToStore }) => {
       }
     }
   }, [currentUser]); // Run only on mount or user change
+
+  // Validate cart on mount and show notifications
+  useEffect(() => {
+    const validateCart = async () => {
+      const validation = await validateAndUpdateCart();
+
+      if (validation.hasChanges) {
+        // Show notifications for changes
+        if (validation.removedItems.length > 0) {
+          showToast('Warning', `Removed from cart: ${validation.removedItems.join(', ')}`, 'error');
+        }
+
+        if (validation.priceChanges.length > 0) {
+          const priceMsg = validation.priceChanges.map(pc =>
+            `${pc.name}: ₹${pc.oldPrice} → ₹${pc.newPrice}`
+          ).join(', ');
+          showToast('Info', `Price updated: ${priceMsg}`, 'info');
+        }
+
+        if (validation.stockIssues.length > 0 && validation.removedItems.length === 0) {
+          showToast('Warning', validation.stockIssues.join(', '), 'error');
+        }
+      }
+    };
+
+    validateCart();
+  }, [validateAndUpdateCart, showToast]);
 
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
@@ -186,6 +213,43 @@ const Checkout: React.FC<CheckoutProps> = ({ onBackToStore }) => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validate cart before proceeding with payment
+    setIsProcessing(true);
+    const validation = await validateAndUpdateCart();
+
+    if (validation.hasChanges) {
+      setIsProcessing(false);
+
+      let errorMessage = 'Cart has been updated. Please review before proceeding.\\n\\n';
+
+      if (validation.removedItems.length > 0) {
+        errorMessage += `Removed items: ${validation.removedItems.join(', ')}\\n`;
+      }
+
+      if (validation.priceChanges.length > 0) {
+        const priceChanges = validation.priceChanges.map(pc =>
+          `${pc.name}: ₹${pc.oldPrice} → ₹${pc.newPrice}`
+        ).join('\\n');
+        errorMessage += `Price changes:\\n${priceChanges}\\n`;
+      }
+
+      if (validation.stockIssues.length > 0) {
+        errorMessage += `Stock issues:\\n${validation.stockIssues.join('\\n')}`;
+      }
+
+      showToast('Error', errorMessage, 'error');
+      return;
+    }
+
+    // Check if cart is empty after validation
+    if (cart.length === 0) {
+      setIsProcessing(false);
+      showToast('Error', 'Your cart is empty.', 'error');
+      return;
+    }
+
+    setIsProcessing(false);
 
     if (!customerInfo.customerName.trim()) {
       showToast('Error', 'Please enter your Full Name.', 'error');

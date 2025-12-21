@@ -34,6 +34,7 @@ interface AppContextType {
   removeFromCart: (productId: string) => void;
   updateCartQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
+  validateAndUpdateCart: () => Promise<{ hasChanges: boolean; removedItems: string[]; priceChanges: Array<{ name: string; oldPrice: number; newPrice: number }>; stockIssues: string[] }>;
   createOrder: (order: Omit<Order, 'id' | 'createdAt' | 'status'>) => void;
   updateOrderStatus: (orderId: string, status: OrderStatus) => void;
   setProducts: React.Dispatch<React.SetStateAction<Product[]>>;
@@ -521,6 +522,84 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setCart([]);
   }, [setCart]);
 
+  // Validate cart items against current product data
+  const validateAndUpdateCart = useCallback(async () => {
+    const result = {
+      hasChanges: false,
+      removedItems: [] as string[],
+      priceChanges: [] as Array<{ name: string; oldPrice: number; newPrice: number }>,
+      stockIssues: [] as string[]
+    };
+
+    if (cart.length === 0) return result;
+
+    try {
+      // Fetch current product data for all cart items
+      const productIds = cart.map(item => item.id);
+      const productPromises = productIds.map(id =>
+        fetch(`/api/products/${id}`).then(res => res.ok ? res.json() : null)
+      );
+
+      const currentProducts = await Promise.all(productPromises);
+
+      const updatedCart = cart.map((cartItem, index) => {
+        const currentProduct = currentProducts[index];
+
+        // Product no longer exists or is inactive
+        if (!currentProduct || currentProduct.isActive === false) {
+          result.removedItems.push(cartItem.name);
+          result.hasChanges = true;
+          return null;
+        }
+
+        // Map current product data
+        const latestProduct = mapProductData(currentProduct);
+
+        // Check if out of stock
+        if (latestProduct.outOfStock || latestProduct.stockQuantity <= 0) {
+          result.removedItems.push(cartItem.name);
+          result.stockIssues.push(`${cartItem.name} is now out of stock`);
+          result.hasChanges = true;
+          return null;
+        }
+
+        // Check if quantity exceeds available stock
+        let adjustedQuantity = cartItem.quantity;
+        if (cartItem.quantity > latestProduct.stockQuantity) {
+          adjustedQuantity = latestProduct.stockQuantity;
+          result.stockIssues.push(`${cartItem.name} quantity reduced to ${latestProduct.stockQuantity} (available stock)`);
+          result.hasChanges = true;
+        }
+
+        // Check for price changes
+        if (cartItem.price !== latestProduct.price) {
+          result.priceChanges.push({
+            name: cartItem.name,
+            oldPrice: cartItem.price,
+            newPrice: latestProduct.price
+          });
+          result.hasChanges = true;
+        }
+
+        // Return updated cart item with latest data
+        return {
+          ...latestProduct,
+          quantity: adjustedQuantity
+        };
+      }).filter(item => item !== null) as CartItem[];
+
+      // Update cart if there are changes
+      if (result.hasChanges) {
+        setCart(updatedCart);
+      }
+
+      return result;
+    } catch (error) {
+      console.error('Error validating cart:', error);
+      return result;
+    }
+  }, [cart, setCart, mapProductData]);
+
   const createOrder = useCallback((orderData: Omit<Order, 'id' | 'createdAt' | 'status'>) => {
     (async () => {
       try {
@@ -757,6 +836,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     removeFromCart,
     updateCartQuantity,
     clearCart,
+    validateAndUpdateCart,
     createOrder,
     updateOrderStatus,
     setProducts,
