@@ -1,74 +1,76 @@
 import React, { useEffect, useState } from 'react';
 
 interface Snowflake {
-    id: number;
-    left: number;
-    animationDuration: number;
-    opacity: number;
-    size: number;
-    char: string;
+  id: number;
+  left: number;
+  animationDuration: number;
+  opacity: number;
+  size: number;
+  char: string;
 }
 
 const SnowfallEffect: React.FC = () => {
-    const [snowflakes, setSnowflakes] = useState<Snowflake[]>([]);
+  const [snowflakes, setSnowflakes] = useState<Snowflake[]>([]);
 
-    useEffect(() => {
-        // Generate snowflakes only on client side
-        const flakes: Snowflake[] = [];
-        const numberOfFlakes = 50; // Lightweight - only 50 flakes
-        const snowflakeChars = ['❄', '❅', '❆']; // Different snowflake characters
+  useEffect(() => {
+    // Generate snowflakes only on client side
+    const flakes: Snowflake[] = [];
+    // Reduce count on mobile for better performance
+    const isMobile = window.innerWidth < 768;
+    const numberOfFlakes = isMobile ? 30 : 50; // 30 on mobile, 50 on desktop
+    const snowflakeChars = ['❄', '❅', '❆']; // Different snowflake characters
 
-        for (let i = 0; i < numberOfFlakes; i++) {
-            flakes.push({
-                id: i,
-                left: Math.random() * 100, // Random horizontal position (%)
-                animationDuration: 10 + Math.random() * 20, // 10-30 seconds
-                opacity: 0.4 + Math.random() * 0.6, // 0.4-1.0 opacity
-                size: 10 + Math.random() * 15, // 10-25px size
-                char: snowflakeChars[Math.floor(Math.random() * snowflakeChars.length)],
-            });
-        }
+    for (let i = 0; i < numberOfFlakes; i++) {
+      flakes.push({
+        id: i,
+        left: Math.random() * 100, // Random horizontal position (%)
+        animationDuration: 10 + Math.random() * 20, // 10-30 seconds
+        opacity: 0.4 + Math.random() * 0.6, // 0.4-1.0 opacity
+        size: isMobile ? 8 + Math.random() * 10 : 10 + Math.random() * 15, // Smaller on mobile
+        char: snowflakeChars[Math.floor(Math.random() * snowflakeChars.length)],
+      });
+    }
 
-        setSnowflakes(flakes);
-    }, []);
+    setSnowflakes(flakes);
+  }, []);
 
-    return (
+  return (
+    <div
+      className="snowfall-container"
+      aria-hidden="true" // SEO: Hidden from screen readers
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        pointerEvents: 'none', // Don't block clicks
+        zIndex: 9999,
+        overflow: 'hidden',
+      }}
+    >
+      {snowflakes.map((flake) => (
         <div
-            className="snowfall-container"
-            aria-hidden="true" // SEO: Hidden from screen readers
-            style={{
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                width: '100%',
-                height: '100%',
-                pointerEvents: 'none', // Don't block clicks
-                zIndex: 9999,
-                overflow: 'hidden',
-            }}
+          key={flake.id}
+          className="snowflake"
+          style={{
+            position: 'absolute',
+            top: '-30px',
+            left: `${flake.left}%`,
+            fontSize: `${flake.size}px`,
+            color: 'white',
+            opacity: flake.opacity,
+            animation: `snowfall ${flake.animationDuration}s linear infinite`,
+            animationDelay: `${Math.random() * 5}s`,
+            textShadow: '0 0 5px rgba(255, 255, 255, 0.8)',
+            userSelect: 'none',
+          }}
         >
-            {snowflakes.map((flake) => (
-                <div
-                    key={flake.id}
-                    className="snowflake"
-                    style={{
-                        position: 'absolute',
-                        top: '-30px',
-                        left: `${flake.left}%`,
-                        fontSize: `${flake.size}px`,
-                        color: 'white',
-                        opacity: flake.opacity,
-                        animation: `snowfall ${flake.animationDuration}s linear infinite`,
-                        animationDelay: `${Math.random() * 5}s`,
-                        textShadow: '0 0 5px rgba(255, 255, 255, 0.8)',
-                        userSelect: 'none',
-                    }}
-                >
-                    {flake.char}
-                </div>
-            ))}
+          {flake.char}
+        </div>
+      ))}
 
-            <style>{`
+      <style>{`
         @keyframes snowfall {
           0% {
             transform: translateY(0) translateX(0) rotate(0deg);
@@ -94,16 +96,9 @@ const SnowfallEffect: React.FC = () => {
             display: none;
           }
         }
-
-        /* Hide on very small screens to save performance */
-        @media (max-width: 480px) {
-          .snowfall-container {
-            display: none;
-          }
-        }
       `}</style>
-        </div>
-    );
+    </div>
+  );
 };
 
 export default SnowfallEffect;

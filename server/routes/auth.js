@@ -335,7 +335,7 @@ router.get('/verify-email', async (req, res) => {
             </p>
           </div>
           
-          <a href="${process.env.BASE_URL?.replace(':5000', ':5173') || 'http://localhost:5173'}/?view=auth" class="btn">
+          <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/?view=auth" class="btn">
             Go to Login Now
           </a>
           
@@ -347,7 +347,7 @@ router.get('/verify-email', async (req, res) => {
         <script>
           let seconds = 5;
           const countdownEl = document.getElementById('countdown');
-          const redirectUrl = '${process.env.BASE_URL?.replace(':5000', ':5173') || 'http://localhost:5173'}/?view=auth';
+          const redirectUrl = '${process.env.FRONTEND_URL || 'http://localhost:5173'}/?view=auth';
           
           const interval = setInterval(() => {
             seconds--;

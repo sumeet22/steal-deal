@@ -19,6 +19,10 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cors());
 
+// Trust proxy - Required when behind reverse proxy (Railway, Render, nginx, etc.)
+// This allows express-rate-limit to correctly identify users by their real IP
+app.set('trust proxy', 1);
+
 // Security Middleware
 app.use(helmet()); // Secure HTTP headers
 // app.use(mongoSanitize()); // Data sanitization against NoSQL query injection (Incompatible with Express 5)
