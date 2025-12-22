@@ -15,7 +15,14 @@ interface ProductDetailProps {
 // Helper function to get sorted images with fallback to legacy image field
 const getProductImages = (product: Product): ProductImage[] => {
   if (product.images && product.images.length > 0) {
-    return [...product.images].sort((a, b) => a.order - b.order);
+    // Sort by isMain first (main image first), then by order
+    return [...product.images].sort((a, b) => {
+      // Main image always comes first
+      if (a.isMain && !b.isMain) return -1;
+      if (!a.isMain && b.isMain) return 1;
+      // If both or neither are main, sort by order
+      return a.order - b.order;
+    });
   } else if (product.image) {
     // Fallback to legacy single image
     return [{ url: product.image, order: 0, isMain: true }];
@@ -284,8 +291,8 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ productId, onBack }) => {
                     key={index}
                     onClick={() => setCurrentImageIndex(index)}
                     className={`relative flex-shrink-0 w-24 h-24 rounded-2xl overflow-hidden transition-all duration-200 border ${index === currentImageIndex
-                        ? 'border-black dark:border-white ring-1 ring-black dark:ring-white scale-95'
-                        : 'border-transparent opacity-70 hover:opacity-100 hover:border-gray-200 dark:hover:border-gray-700'
+                      ? 'border-black dark:border-white ring-1 ring-black dark:ring-white scale-95'
+                      : 'border-transparent opacity-70 hover:opacity-100 hover:border-gray-200 dark:hover:border-gray-700'
                       }`}
                   >
                     <img
@@ -382,8 +389,8 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ productId, onBack }) => {
                 <button
                   onClick={() => toggleWishlist(product)}
                   className={`p-4 rounded-full border transition-all duration-200 ${isInWishlist(product.id)
-                      ? 'border-red-200 bg-red-50 text-red-500 dark:bg-red-900/20 dark:border-red-900 hover:bg-red-100'
-                      : 'border-gray-200 hover:border-black dark:border-gray-700 dark:hover:border-white text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
+                    ? 'border-red-200 bg-red-50 text-red-500 dark:bg-red-900/20 dark:border-red-900 hover:bg-red-100'
+                    : 'border-gray-200 hover:border-black dark:border-gray-700 dark:hover:border-white text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
                     }`}
                   aria-label="Add to wishlist"
                 >

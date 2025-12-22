@@ -42,8 +42,15 @@ interface ProductCardProps {
 // Helper function to get sorted images with fallback to legacy image field
 const getProductImages = (product: Product): string[] => {
   if (product.images && product.images.length > 0) {
+    // Sort by isMain first (main image first), then by order
     return [...product.images]
-      .sort((a, b) => a.order - b.order)
+      .sort((a, b) => {
+        // Main image always comes first
+        if (a.isMain && !b.isMain) return -1;
+        if (!a.isMain && b.isMain) return 1;
+        // If both or neither are main, sort by order
+        return a.order - b.order;
+      })
       .map(img => img.url);
   } else if (product.image) {
     return [product.image];
