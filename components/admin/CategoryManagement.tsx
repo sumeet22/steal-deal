@@ -26,6 +26,39 @@ const CategoryManagement: React.FC = () => {
     }
   };
 
+
+  const handleToggleActive = async (categoryId: string) => {
+    if (!categoryId || categoryId === 'undefined') {
+      console.error('Invalid category ID:', categoryId);
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/categories/${categoryId}/toggle-active`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (response.ok) {
+        const updatedCategory = await response.json();
+        // Map the response to match frontend Category type
+        const mappedCategory = {
+          id: updatedCategory._id || updatedCategory.id,
+          name: updatedCategory.name,
+          image: updatedCategory.image,
+          order: updatedCategory.order,
+          isActive: updatedCategory.isActive,
+        };
+        updateCategory(mappedCategory);
+      } else {
+        console.error('Failed to toggle category status');
+      }
+    } catch (error) {
+      console.error('Error toggling category status:', error);
+    }
+  };
+
+
   const handleDragStart = (index: number) => {
     setDraggedIndex(index);
   };
@@ -146,9 +179,19 @@ const CategoryManagement: React.FC = () => {
                     </svg>
                   </div>
                   <img src={category.image || 'https://placehold.co/40x40?text=?'} alt={category.name} className="w-10 h-10 rounded object-cover bg-gray-200 dark:bg-gray-700" />
-                  <span>{category.name}</span>
+                  <span className={category.isActive === false ? 'opacity-50' : ''}>{category.name}</span>
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleToggleActive(category.id)}
+                    className={`px-3 py-1 rounded-lg text-xs font-semibold transition-colors ${category.isActive === false
+                      ? 'bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50'
+                      : 'bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/50'
+                      }`}
+                    title={category.isActive === false ? 'Enable category' : 'Disable category'}
+                  >
+                    {category.isActive === false ? 'Disabled' : 'Active'}
+                  </button>
                   <button onClick={() => setEditingCategory(category)} className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-200" title="Edit">
                     <PencilIcon />
                   </button>

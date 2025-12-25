@@ -93,6 +93,21 @@ router.post('/reorder', async (req: Request, res: Response) => {
   }
 });
 
+// Toggle category active status
+router.patch('/:id/toggle-active', async (req: Request, res: Response) => {
+  try {
+    const category = await Category.findById(req.params.id);
+    if (!category) return res.status(404).json({ message: 'Category not found' });
+
+    category.isActive = !category.isActive;
+    await category.save();
+
+    res.json(category);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error });
+  }
+});
+
 router.delete('/:id', async (req: Request, res: Response) => {
   try {
     const category = await Category.findByIdAndDelete(req.params.id);

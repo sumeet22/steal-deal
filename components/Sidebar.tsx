@@ -115,78 +115,82 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onNavigate }) => {
                                     <span className="ml-3 font-medium text-gray-700 dark:text-gray-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">Home</span>
                                 </button>
 
-                                <button onClick={() => handleNavigation('newarrivals')} className="w-full flex items-center px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors group">
-                                    <div className="w-6 h-6 flex items-center justify-center text-purple-500">
-                                        <SparklesIcon />
-                                    </div>
-                                    <span className="ml-3 font-medium text-gray-700 dark:text-gray-200 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">New Arrivals</span>
-                                </button>
+                                {categories.filter(cat => cat.isActive !== false).length > 0 && (
+                                    <button onClick={() => handleNavigation('newarrivals')} className="w-full flex items-center px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors group">
+                                        <div className="w-6 h-6 flex items-center justify-center text-purple-500">
+                                            <SparklesIcon />
+                                        </div>
+                                        <span className="ml-3 font-medium text-gray-700 dark:text-gray-200 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">New Arrivals</span>
+                                    </button>
+                                )}
 
                                 {/* Categories Section */}
-                                <div className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-800">
-                                    <button
-                                        onClick={() => setIsCategoriesOpen(!isCategoriesOpen)}
-                                        className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors"
-                                        aria-expanded={isCategoriesOpen}
-                                    >
-                                        <div className="flex items-center">
-                                            <div className="w-6 h-6 flex items-center justify-center text-gray-500 dark:text-gray-400">
-                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-                                                </svg>
-                                            </div>
-                                            <span className="ml-3 font-semibold text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                                                Categories ({categories.length})
-                                            </span>
-                                        </div>
-                                        <motion.div
-                                            animate={{ rotate: isCategoriesOpen ? 180 : 0 }}
-                                            transition={{ duration: 0.2 }}
-                                            className="text-gray-400"
+                                {categories.filter(cat => cat.isActive !== false).length > 0 && (
+                                    <div className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-800">
+                                        <button
+                                            onClick={() => setIsCategoriesOpen(!isCategoriesOpen)}
+                                            className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors"
+                                            aria-expanded={isCategoriesOpen}
                                         >
-                                            <ChevronDownIcon />
-                                        </motion.div>
-                                    </button>
-
-                                    <AnimatePresence>
-                                        {isCategoriesOpen && (
-                                            <motion.div
-                                                initial={{ height: 0, opacity: 0 }}
-                                                animate={{ height: "auto", opacity: 1 }}
-                                                exit={{ height: 0, opacity: 0 }}
-                                                transition={{ duration: 0.2 }}
-                                                className="overflow-hidden"
-                                            >
-                                                <div className="pb-2">
-                                                    {categories.map((category) => (
-                                                        <button
-                                                            key={category.id}
-                                                            onClick={(e) => {
-                                                                e.preventDefault();
-                                                                e.stopPropagation();
-                                                                onNavigate('store', undefined, category.id);
-                                                                onClose();
-                                                            }}
-                                                            className="w-full flex items-center px-4 py-2.5 text-left hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-colors group ml-2 border-l-2 border-transparent hover:border-indigo-500"
-                                                        >
-                                                            {category.image && (
-                                                                <img
-                                                                    src={category.image}
-                                                                    alt=""
-                                                                    className="w-6 h-6 rounded-md object-cover mr-3 pointer-events-none"
-                                                                    loading="lazy"
-                                                                />
-                                                            )}
-                                                            <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors pointer-events-none capitalize">
-                                                                {category.name}
-                                                            </span>
-                                                        </button>
-                                                    ))}
+                                            <div className="flex items-center">
+                                                <div className="w-6 h-6 flex items-center justify-center text-gray-500 dark:text-gray-400">
+                                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                                                    </svg>
                                                 </div>
+                                                <span className="ml-3 font-semibold text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                                                    Categories ({categories.filter(cat => cat.isActive !== false).length})
+                                                </span>
+                                            </div>
+                                            <motion.div
+                                                animate={{ rotate: isCategoriesOpen ? 180 : 0 }}
+                                                transition={{ duration: 0.2 }}
+                                                className="text-gray-400"
+                                            >
+                                                <ChevronDownIcon />
                                             </motion.div>
-                                        )}
-                                    </AnimatePresence>
-                                </div>
+                                        </button>
+
+                                        <AnimatePresence>
+                                            {isCategoriesOpen && (
+                                                <motion.div
+                                                    initial={{ height: 0, opacity: 0 }}
+                                                    animate={{ height: "auto", opacity: 1 }}
+                                                    exit={{ height: 0, opacity: 0 }}
+                                                    transition={{ duration: 0.2 }}
+                                                    className="overflow-hidden"
+                                                >
+                                                    <div className="pb-2">
+                                                        {categories.filter(cat => cat.isActive !== false).map((category) => (
+                                                            <button
+                                                                key={category.id}
+                                                                onClick={(e) => {
+                                                                    e.preventDefault();
+                                                                    e.stopPropagation();
+                                                                    onNavigate('store', undefined, category.id);
+                                                                    onClose();
+                                                                }}
+                                                                className="w-full flex items-center px-4 py-2.5 text-left hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded-lg transition-colors group ml-2 border-l-2 border-transparent hover:border-indigo-500"
+                                                            >
+                                                                {category.image && (
+                                                                    <img
+                                                                        src={category.image}
+                                                                        alt=""
+                                                                        className="w-6 h-6 rounded-md object-cover mr-3 pointer-events-none"
+                                                                        loading="lazy"
+                                                                    />
+                                                                )}
+                                                                <span className="text-sm font-medium text-gray-700 dark:text-gray-300 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors pointer-events-none capitalize">
+                                                                    {category.name}
+                                                                </span>
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
+                                    </div>
+                                )}
 
                                 {currentUser && currentUser.role === 'admin' && (
                                     <button onClick={() => handleNavigation('admin')} className="w-full flex items-center px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-colors group">

@@ -6,6 +6,7 @@ import { SearchIcon, ChevronLeftIcon, EyeIcon, FireIcon } from './Icons';
 import { Product, ProductImage } from '../types';
 import QuantityStepper from './shared/QuantityStepper';
 import PullToRefresh from './shared/PullToRefresh';
+import ComingSoon from './ComingSoon';
 
 interface StorefrontProps {
   onProductClick: (productId: string) => void;
@@ -496,154 +497,164 @@ const Storefront: React.FC<StorefrontProps> = ({ onProductClick, activeCategoryI
   }, [onProductClick]);
 
 
-  const renderCategoryView = () => (
-    <div key="categories" className="space-y-10 pb-10">
-      <Helmet>
-        <title>Steal Deal | Premium Anime Merchandise</title>
-        <meta name="description" content="Discover the best anime figures, keychains, and merchandise at unbeatable prices. Shop Naruto, One Piece, JJK, and more!" />
-        <meta property="og:title" content="Steal Deal | Premium Anime Merchandise" />
-        <meta property="og:description" content="Premium anime merchandise at unbeatable prices." />
-      </Helmet>
+  const renderCategoryView = () => {
+    // Check if there are any active categories
+    const activeCategories = categories.filter(cat => cat.isActive !== false);
 
-      {/* Hero Section */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.8 }}
-        className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-900 via-purple-900 to-indigo-900 shadow-2xl min-h-[400px] flex items-center justify-center text-center px-4"
-      >
-        <div className="absolute inset-0 opacity-30 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] mix-blend-overlay"></div>
-        <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-t from-black/60 to-transparent"></div>
+    // Show Coming Soon page if no active categories
+    if (activeCategories.length === 0) {
+      return <ComingSoon />;
+    }
 
-        {/* Animated Background Blobs */}
-        <div className="absolute top-10 left-10 w-64 h-64 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
-        <div className="absolute bottom-10 right-10 w-64 h-64 bg-indigo-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
+    return (
+      <div key="categories" className="space-y-10 pb-10">
+        <Helmet>
+          <title>Steal Deal | Premium Anime Merchandise</title>
+          <meta name="description" content="Discover the best anime figures, keychains, and merchandise at unbeatable prices. Shop Naruto, One Piece, JJK, and more!" />
+          <meta property="og:title" content="Steal Deal | Premium Anime Merchandise" />
+          <meta property="og:description" content="Premium anime merchandise at unbeatable prices." />
+        </Helmet>
 
-        <div className="relative z-10 max-w-4xl mx-auto space-y-6 p-6">
-          <motion.div
-            initial={{ y: 30, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.2, duration: 0.8 }}
-          >
-            <span className="inline-block py-1 px-3 rounded-full bg-indigo-500/30 border border-indigo-400/30 text-indigo-200 text-sm font-semibold mb-4 backdrop-blur-sm">
-              ✨ Premium Collection
-            </span>
-            <h1 className="text-4xl sm:text-6xl md:text-7xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-white via-indigo-100 to-indigo-200 mb-2 drop-shadow-sm">
-              Upgrade Your Collection
-            </h1>
-            <p className="text-lg sm:text-xl md:text-2xl text-indigo-100/90 max-w-2xl mx-auto font-light leading-relaxed">
-              Authentic figures, premium accessories, and exclusive merchandise from your favorite anime series.
-            </p>
-          </motion.div>
+        {/* Hero Section */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.8 }}
+          className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-900 via-purple-900 to-indigo-900 shadow-2xl min-h-[400px] flex items-center justify-center text-center px-4"
+        >
+          <div className="absolute inset-0 opacity-30 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] mix-blend-overlay"></div>
+          <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-t from-black/60 to-transparent"></div>
 
-          <motion.div
-            initial={{ y: 30, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.5, duration: 0.8 }}
-            className="flex flex-col sm:flex-row gap-4 justify-center mt-8"
-          >
-            <button
-              onClick={() => document.getElementById('categories-grid')?.scrollIntoView({ behavior: 'smooth' })}
-              className="px-8 py-4 bg-white text-indigo-900 rounded-full font-bold text-lg hover:bg-gray-50 hover:scale-105 transition-all shadow-xl hover:shadow-indigo-500/20"
+          {/* Animated Background Blobs */}
+          <div className="absolute top-10 left-10 w-64 h-64 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
+          <div className="absolute bottom-10 right-10 w-64 h-64 bg-indigo-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
+
+          <div className="relative z-10 max-w-4xl mx-auto space-y-6 p-6">
+            <motion.div
+              initial={{ y: 30, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.2, duration: 0.8 }}
             >
-              Shop Now
-            </button>
-            <button
-              onClick={() => onNavigateToNewArrivals?.()}
-              className="px-8 py-4 bg-transparent border-2 border-white/20 text-white rounded-full font-bold text-lg hover:bg-white/10 hover:border-white/40 transition-all backdrop-blur-sm"
-            >
-              View New Arrivals
-            </button>
-          </motion.div>
-        </div>
-      </motion.div>
+              <span className="inline-block py-1 px-3 rounded-full bg-indigo-500/30 border border-indigo-400/30 text-indigo-200 text-sm font-semibold mb-4 backdrop-blur-sm">
+                ✨ Premium Collection
+              </span>
+              <h1 className="text-4xl sm:text-6xl md:text-7xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-white via-indigo-100 to-indigo-200 mb-2 drop-shadow-sm">
+                Upgrade Your Collection
+              </h1>
+              <p className="text-lg sm:text-xl md:text-2xl text-indigo-100/90 max-w-2xl mx-auto font-light leading-relaxed">
+                Authentic figures, premium accessories, and exclusive merchandise from your favorite anime series.
+              </p>
+            </motion.div>
 
-      <div>
-        <div className="relative flex-grow max-w-2xl mx-auto">
-          <input
-            type="text"
-            placeholder="Search all products..."
-            value={globalSearchTerm}
-            onChange={(e) => setGlobalSearchTerm(e.target.value)}
-            className="w-full p-3 pl-10 border rounded-full bg-white dark:bg-gray-800 dark:border-gray-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
-          />
-          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
-            <SearchIcon />
+            <motion.div
+              initial={{ y: 30, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.5, duration: 0.8 }}
+              className="flex flex-col sm:flex-row gap-4 justify-center mt-8"
+            >
+              <button
+                onClick={() => document.getElementById('categories-grid')?.scrollIntoView({ behavior: 'smooth' })}
+                className="px-8 py-4 bg-white text-indigo-900 rounded-full font-bold text-lg hover:bg-gray-50 hover:scale-105 transition-all shadow-xl hover:shadow-indigo-500/20"
+              >
+                Shop Now
+              </button>
+              <button
+                onClick={() => onNavigateToNewArrivals?.()}
+                className="px-8 py-4 bg-transparent border-2 border-white/20 text-white rounded-full font-bold text-lg hover:bg-white/10 hover:border-white/40 transition-all backdrop-blur-sm"
+              >
+                View New Arrivals
+              </button>
+            </motion.div>
+          </div>
+        </motion.div>
+
+        <div>
+          <div className="relative flex-grow max-w-2xl mx-auto">
+            <input
+              type="text"
+              placeholder="Search all products..."
+              value={globalSearchTerm}
+              onChange={(e) => setGlobalSearchTerm(e.target.value)}
+              className="w-full p-3 pl-10 border rounded-full bg-white dark:bg-gray-800 dark:border-gray-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+            />
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
+              <SearchIcon />
+            </div>
           </div>
         </div>
+
+        {globalSearchTerm ? (
+          <div>
+            <h2 className="text-2xl font-bold mb-6">Search Results</h2>
+            <ProductGrid
+              productsList={globalFilteredProducts}
+              cartItemsMap={cartItemsMap}
+              onProductClick={handleProductClick}
+              onAddToCart={handleAddToCart}
+              onUpdateQuantity={handleUpdateQuantity}
+            />
+
+            {/* Loading indicator */}
+            {productsLoading && (
+              <div className="flex justify-center py-8">
+                <div className="animate-spin h-12 w-12 border-4 border-indigo-500 border-t-transparent rounded-full"></div>
+              </div>
+            )}
+
+            {/* Infinite scroll sentinel */}
+            {hasMore && globalFilteredProducts.length > 0 && (
+              <div ref={loadMoreRef} className="h-20 flex items-center justify-center">
+                {productsLoading && (
+                  <p className="text-gray-500 text-sm">Loading more results...</p>
+                )}
+              </div>
+            )}
+          </div>
+        ) : (
+          <div id="categories-grid" className="scroll-mt-24">
+            <h2 className="text-2xl font-bold mb-6">Shop by Category</h2>
+            {categories.filter(cat => cat.isActive !== false).length > 0 ? (
+              <motion.div
+                variants={containerVariants}
+                initial="hidden"
+                whileInView="show"
+                viewport={{ once: true }}
+                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8"
+              >
+                {categories.filter(cat => cat.isActive !== false).map(category => (
+                  <motion.div
+                    variants={itemVariants}
+                    key={category.id}
+                    onClick={() => handleSelectCategory(category.id)}
+                    className="group relative rounded-2xl overflow-hidden cursor-pointer shadow-lg hover:shadow-2xl transition-all duration-300 h-64 sm:h-80 md:h-96 bg-gray-900"
+                  >
+                    <img
+                      src={category.image || `https://placehold.co/600x400?text=${category.name}`}
+                      alt={category.name}
+                      loading="lazy"
+                      className="w-full h-full object-contain sm:object-cover group-hover:scale-105 sm:group-hover:scale-110 transition-transform duration-700"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-80 group-hover:opacity-90 transition-opacity"></div>
+                    <div className="absolute bottom-0 left-0 p-4 sm:p-6 md:p-8 w-full transform transition-transform duration-300 group-hover:translate-y-[-8px]">
+                      <h2 className="text-white text-xl sm:text-2xl md:text-3xl font-bold tracking-tight mb-2">{category.name}</h2>
+                      <div className="h-1 w-12 bg-indigo-500 rounded-full group-hover:w-24 transition-all duration-300"></div>
+                      <p className="text-gray-300 text-xs sm:text-sm mt-2 sm:mt-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform translate-y-4 group-hover:translate-y-0">
+                        Explore Collection →
+                      </p>
+                    </div>
+                  </motion.div>
+                ))}
+              </motion.div>
+            ) : (
+              <div className="text-center py-20 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-700">
+                <p className="text-xl text-gray-500 dark:text-gray-400">No categories found. Please check back soon!</p>
+              </div>
+            )}
+          </div>
+        )}
       </div>
-
-      {globalSearchTerm ? (
-        <div>
-          <h2 className="text-2xl font-bold mb-6">Search Results</h2>
-          <ProductGrid
-            productsList={globalFilteredProducts}
-            cartItemsMap={cartItemsMap}
-            onProductClick={handleProductClick}
-            onAddToCart={handleAddToCart}
-            onUpdateQuantity={handleUpdateQuantity}
-          />
-
-          {/* Loading indicator */}
-          {productsLoading && (
-            <div className="flex justify-center py-8">
-              <div className="animate-spin h-12 w-12 border-4 border-indigo-500 border-t-transparent rounded-full"></div>
-            </div>
-          )}
-
-          {/* Infinite scroll sentinel */}
-          {hasMore && globalFilteredProducts.length > 0 && (
-            <div ref={loadMoreRef} className="h-20 flex items-center justify-center">
-              {productsLoading && (
-                <p className="text-gray-500 text-sm">Loading more results...</p>
-              )}
-            </div>
-          )}
-        </div>
-      ) : (
-        <div id="categories-grid" className="scroll-mt-24">
-          <h2 className="text-2xl font-bold mb-6">Shop by Category</h2>
-          {categories.length > 0 ? (
-            <motion.div
-              variants={containerVariants}
-              initial="hidden"
-              whileInView="show"
-              viewport={{ once: true }}
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8"
-            >
-              {categories.map(category => (
-                <motion.div
-                  variants={itemVariants}
-                  key={category.id}
-                  onClick={() => handleSelectCategory(category.id)}
-                  className="group relative rounded-2xl overflow-hidden cursor-pointer shadow-lg hover:shadow-2xl transition-all duration-300 h-64 sm:h-80 md:h-96 bg-gray-900"
-                >
-                  <img
-                    src={category.image || `https://placehold.co/600x400?text=${category.name}`}
-                    alt={category.name}
-                    loading="lazy"
-                    className="w-full h-full object-contain sm:object-cover group-hover:scale-105 sm:group-hover:scale-110 transition-transform duration-700"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-80 group-hover:opacity-90 transition-opacity"></div>
-                  <div className="absolute bottom-0 left-0 p-4 sm:p-6 md:p-8 w-full transform transition-transform duration-300 group-hover:translate-y-[-8px]">
-                    <h2 className="text-white text-xl sm:text-2xl md:text-3xl font-bold tracking-tight mb-2">{category.name}</h2>
-                    <div className="h-1 w-12 bg-indigo-500 rounded-full group-hover:w-24 transition-all duration-300"></div>
-                    <p className="text-gray-300 text-xs sm:text-sm mt-2 sm:mt-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform translate-y-4 group-hover:translate-y-0">
-                      Explore Collection →
-                    </p>
-                  </div>
-                </motion.div>
-              ))}
-            </motion.div>
-          ) : (
-            <div className="text-center py-20 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-700">
-              <p className="text-xl text-gray-500 dark:text-gray-400">No categories found. Please check back soon!</p>
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
+    );
+  };
 
   const renderProductView = () => (
     <div key={activeCategory?.id} className="space-y-8">

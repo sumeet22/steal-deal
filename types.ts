@@ -3,6 +3,7 @@ export interface Category {
   name: string;
   image?: string;
   order?: number;
+  isActive?: boolean;
 }
 
 export interface ProductImage {

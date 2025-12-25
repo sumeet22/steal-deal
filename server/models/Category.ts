@@ -5,6 +5,7 @@ export interface ICategory extends Document {
   description?: string;
   image?: string;
   order?: number;
+  isActive?: boolean;
 }
 
 const CategorySchema = new Schema<ICategory>({
@@ -24,6 +25,10 @@ const CategorySchema = new Schema<ICategory>({
   order: {
     type: Number,
     default: 0,
+  },
+  isActive: {
+    type: Boolean,
+    default: true,
   },
 });
 

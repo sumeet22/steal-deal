@@ -71,6 +71,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           id: c._id || c.id,
           name: c.name,
           image: c.image || c.imageUrl || undefined,
+          order: c.order,
+          isActive: c.isActive,
         }));
         setCategories(mapped);
       } catch (err) {
@@ -736,6 +738,21 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   }, [setCategories, showToast, token]);
 
   const updateCategory = useCallback((updatedCategory: Category) => {
+    // If the category already has isActive defined, it means it's coming from a direct API response
+    // (like from toggle-active), so just update the state directly
+    if (updatedCategory.isActive !== undefined || updatedCategory.order !== undefined) {
+      const mapped: Category = {
+        id: updatedCategory.id,
+        name: updatedCategory.name,
+        image: updatedCategory.image,
+        order: updatedCategory.order,
+        isActive: updatedCategory.isActive,
+      };
+      setCategories(prev => prev.map(cat => cat.id === updatedCategory.id ? mapped : cat));
+      return;
+    }
+
+    // Otherwise, perform the traditional PUT update
     (async () => {
       try {
         const body = {
@@ -751,6 +768,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           id: c._id || c.id || updatedCategory.id,
           name: c.name || updatedCategory.name,
           image: c.image || c.imageUrl || updatedCategory.image || undefined,
+          order: c.order,
+          isActive: c.isActive,
         } as Category;
         setCategories(prev => prev.map(cat => cat.id === updatedCategory.id ? mapped : cat));
         showToast('Success', 'Category updated successfully', 'success');

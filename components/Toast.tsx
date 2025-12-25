@@ -16,11 +16,11 @@ const Toast: React.FC<ToastProps> = ({ message, onDismiss }) => {
 
     const timer = setTimeout(() => {
       handleDismiss();
-    }, 5000); // Auto-dismiss after 5 seconds
+    }, 1000); // Auto-dismiss after 1 second
 
     return () => clearTimeout(timer);
   }, []);
-  
+
   const handleDismiss = () => {
     setIsVisible(false);
     // Wait for animation to finish before removing from DOM

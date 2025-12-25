@@ -13,7 +13,7 @@ router.get('/', async (req: Request, res: Response) => {
       category,
       search,
       sort = '-createdAt', // Default: newest first
-      includeInactive // Admin flag
+      // includeInactive // Admin flag - removed as per new logic
     } = req.query;
 
     const pageNum = parseInt(page as string, 10);
@@ -23,13 +23,33 @@ router.get('/', async (req: Request, res: Response) => {
     // Build query
     const query: any = {};
 
-    // Only show active products unless explicitly requested (e.g. by admin)
-    if (includeInactive !== 'true') {
-      query.isActive = true;
+    // First, get all inactive category IDs
+    const inactiveCategories = await Category.find({ isActive: false }).select('_id').lean();
+    const inactiveCategoryIds = inactiveCategories.map(cat => cat._id.toString());
+
+    // Exclude products from inactive categories
+    if (inactiveCategoryIds.length > 0) {
+      query.category = { $nin: inactiveCategoryIds };
     }
 
     // Category filter
     if (category && category !== 'all') {
+      // Override the inactive category exclusion if specific category is requested
+      // But only if that category is active (checked separately below)
+      const requestedCategory = await Category.findById(category);
+      if (!requestedCategory || requestedCategory.isActive === false) {
+        // Category is inactive, return no products
+        return res.json({
+          products: [],
+          pagination: {
+            page: pageNum,
+            limit: limitNum,
+            total: 0,
+            totalPages: 0,
+            hasMore: false,
+          },
+        });
+      }
       query.category = category;
     }
 
