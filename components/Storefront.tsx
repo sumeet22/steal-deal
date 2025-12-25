@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { Helmet } from 'react-helmet-async';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAppContext } from '../context/AppContext';
 import { SearchIcon, ChevronLeftIcon, EyeIcon, FireIcon } from './Icons';
 import { Product, ProductImage } from '../types';
@@ -94,7 +94,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
     if (hasMultipleImages && !isHovering) {
       const interval = setInterval(() => {
         setCurrentImageIndex((prev) => (prev + 1) % productImages.length);
-      }, 3000); // Change image every 3 seconds
+      }, 5000); // Change image every 5 seconds for smoother experience
       return () => clearInterval(interval);
     }
   }, [hasMultipleImages, productImages.length, isHovering]);
@@ -144,13 +144,19 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
         <div className="h-40 sm:h-48 bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden relative">
           {currentImage ? (
             <>
-              <img
-                src={currentImage.replace('/products/', '/products_400/')}
-                alt={product.name}
-                loading="lazy"
-                className="h-full w-full object-cover transition-all duration-500 group-hover:scale-105"
-                key={currentImageIndex} // Force re-render on image change for smooth transition
-              />
+              <AnimatePresence initial={false}>
+                <motion.img
+                  key={currentImageIndex}
+                  src={currentImage.replace('/products/', '/products_400/')}
+                  alt={product.name}
+                  loading="lazy"
+                  className="absolute inset-0 h-full w-full object-cover group-hover:scale-105"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 1, ease: "easeInOut" }}
+                />
+              </AnimatePresence>
 
               {/* Image dots indicator - only show if multiple images */}
               {hasMultipleImages && (
@@ -603,21 +609,26 @@ const Storefront: React.FC<StorefrontProps> = ({ onProductClick, activeCategoryI
               initial="hidden"
               whileInView="show"
               viewport={{ once: true }}
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-8"
             >
               {categories.map(category => (
                 <motion.div
                   variants={itemVariants}
                   key={category.id}
                   onClick={() => handleSelectCategory(category.id)}
-                  className="group relative rounded-2xl overflow-hidden cursor-pointer shadow-lg hover:shadow-2xl transition-all duration-300 h-80 sm:h-96"
+                  className="group relative rounded-2xl overflow-hidden cursor-pointer shadow-lg hover:shadow-2xl transition-all duration-300 h-64 sm:h-80 md:h-96 bg-gray-900"
                 >
-                  <img src={category.image || `https://placehold.co/600x400?text=${category.name}`} alt={category.name} loading="lazy" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                  <img
+                    src={category.image || `https://placehold.co/600x400?text=${category.name}`}
+                    alt={category.name}
+                    loading="lazy"
+                    className="w-full h-full object-contain sm:object-cover group-hover:scale-105 sm:group-hover:scale-110 transition-transform duration-700"
+                  />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-80 group-hover:opacity-90 transition-opacity"></div>
-                  <div className="absolute bottom-0 left-0 p-8 w-full transform transition-transform duration-300 group-hover:translate-y-[-8px]">
-                    <h2 className="text-white text-3xl font-bold tracking-tight mb-2">{category.name}</h2>
+                  <div className="absolute bottom-0 left-0 p-4 sm:p-6 md:p-8 w-full transform transition-transform duration-300 group-hover:translate-y-[-8px]">
+                    <h2 className="text-white text-xl sm:text-2xl md:text-3xl font-bold tracking-tight mb-2">{category.name}</h2>
                     <div className="h-1 w-12 bg-indigo-500 rounded-full group-hover:w-24 transition-all duration-300"></div>
-                    <p className="text-gray-300 text-sm mt-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform translate-y-4 group-hover:translate-y-0">
+                    <p className="text-gray-300 text-xs sm:text-sm mt-2 sm:mt-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform translate-y-4 group-hover:translate-y-0">
                       Explore Collection →
                     </p>
                   </div>

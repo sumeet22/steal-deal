@@ -256,7 +256,7 @@ const App: React.FC = () => {
       case 'admin':
         return <AdminDashboard />;
       case 'profile':
-        return <UserProfile />;
+        return <UserProfile onNavigate={navigate} />;
       case 'auth':
         return authView === 'login' ? (
           <Login onSwitchToRegister={() => setAuthView('register')} />

@@ -13,7 +13,11 @@ const INDIAN_STATES = [
     "Ladakh", "Jammu and Kashmir"
 ];
 
-const UserProfile: React.FC = () => {
+interface UserProfileProps {
+    onNavigate: (view: string, productId?: string, categoryId?: string) => void;
+}
+
+const UserProfile: React.FC<UserProfileProps> = ({ onNavigate }) => {
     const { currentUser, setCurrentUser, addAddress, token } = useAppContext();
     const { showToast } = useToast();
     const [isAddingAddress, setIsAddingAddress] = useState(false);
@@ -183,6 +187,28 @@ const UserProfile: React.FC = () => {
                         </span>
                     </div>
                 </div>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm mb-8">
+                <h2 className="text-xl font-bold mb-4">Quick Actions</h2>
+                <button
+                    onClick={() => onNavigate('orders')}
+                    className="w-full flex items-center justify-between p-4 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white rounded-xl transition-all duration-300 shadow-md hover:shadow-lg"
+                >
+                    <div className="flex items-center gap-3">
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        </svg>
+                        <div className="text-left">
+                            <p className="font-semibold">Order History</p>
+                            <p className="text-sm text-white/80">View all your orders</p>
+                        </div>
+                    </div>
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                    </svg>
+                </button>
             </div>
 
             {/* Address Book */}
