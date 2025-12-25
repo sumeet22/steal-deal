@@ -50,6 +50,16 @@ body {
   background: #6b7280;
 }
 
+/* Logo filter for light mode - invert to make black bg white */
+.logo-filter {
+  filter: invert(1) hue-rotate(180deg);
+}
+
+/* Logo filter for dark mode - enhance contrast */
+.dark .logo-filter {
+  filter: contrast(130%) brightness(105%);
+}
+
 
 /* Hero Animations & Styles */
 @keyframes heroFloat {

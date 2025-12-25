@@ -240,6 +240,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ productId, onBack }) => {
                     alt={product.name}
                     loading="lazy"
                     className="h-full w-full object-contain p-4 mix-blend-multiply dark:mix-blend-normal transition-transform duration-500 group-hover:scale-105"
+                    style={{ touchAction: 'pinch-zoom', userSelect: 'none' }}
                   />
 
                   {/* Badges */}

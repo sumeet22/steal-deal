@@ -308,11 +308,7 @@ const App: React.FC = () => {
               >
                 <img
                   src="/logo.png"
-                  className={`h-16 sm:h-12 w-auto transition-all duration-300 hover:scale-105 ${theme === 'dark' ? 'mix-blend-screen' : 'rounded-lg shadow-md'
-                    }`}
-                  style={{
-                    filter: theme === 'dark' ? 'contrast(130%) brightness(105%)' : 'none'
-                  }}
+                  className="h-16 sm:h-12 w-auto transition-all duration-300 hover:scale-105 mix-blend-difference dark:mix-blend-screen logo-filter"
                   alt="Steal Deal"
                   loading="eager"
                 />
