@@ -72,39 +72,39 @@ const WishlistPage: React.FC<WishlistPageProps> = ({ onProductClick }) => {
                 <meta name="description" content={`You have ${displayProducts.length} items in your wishlist`} />
             </Helmet>
 
-            <div className="max-w-7xl mx-auto">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 {/* Header */}
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+                <div className="flex flex-col sm:flex-row justify-between items-center gap-6 mb-10 pb-6 border-b border-gray-100 dark:border-gray-800">
                     <div>
-                        <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
-                            <HeartIcon filled className="text-pink-500" />
+                        <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white flex items-center gap-3">
+                            <HeartIcon filled className="text-pink-500 w-8 h-8" />
                             My Wishlist
                         </h1>
-                        <p className="text-gray-600 dark:text-gray-400 mt-2">
-                            {displayProducts.length} {displayProducts.length === 1 ? 'item' : 'items'}
+                        <p className="text-gray-500 dark:text-gray-400 mt-2 font-medium">
+                            {displayProducts.length} {displayProducts.length === 1 ? 'item' : 'items'} saved for later
                         </p>
                     </div>
 
-                    <div className="flex gap-3">
+                    <div className="flex gap-4 w-full sm:w-auto">
                         <button
                             onClick={handleMoveAllToCart}
-                            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-lg transition-colors duration-200 flex items-center gap-2"
+                            className="flex-1 sm:flex-none justify-center bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold py-2.5 px-6 rounded-xl shadow-lg hover:shadow-indigo-500/30 transition-all duration-300 transform hover:-translate-y-0.5 flex items-center gap-2"
                         >
-                            <ShoppingCartIcon />
-                            Add All to Cart
+                            <ShoppingCartIcon className="w-5 h-5" />
+                            Add All
                         </button>
                         <button
                             onClick={clearWishlist}
-                            className="bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-6 rounded-lg transition-colors duration-200 flex items-center gap-2"
+                            className="flex-1 sm:flex-none justify-center bg-white dark:bg-gray-800 border-2 border-red-100 dark:border-red-900/30 text-red-500 font-bold py-2.5 px-6 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-300 flex items-center gap-2"
                         >
-                            <TrashIcon />
-                            Clear All
+                            <TrashIcon className="w-5 h-5" />
+                            Clear
                         </button>
                     </div>
                 </div>
 
                 {/* Wishlist Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
                     {displayProducts.map((product) => {
                         if (!product) return null;
 
@@ -115,73 +115,75 @@ const WishlistPage: React.FC<WishlistPageProps> = ({ onProductClick }) => {
                         return (
                             <div
                                 key={product.id}
-                                className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden hover:shadow-2xl transition-all duration-300 group relative"
+                                className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm hover:shadow-2xl transition-all duration-300 group relative border border-gray-100 dark:border-gray-800 hover:-translate-y-1"
                             >
                                 {/* Remove Button */}
                                 <button
-                                    onClick={() => removeFromWishlist(product.id)}
-                                    className="absolute top-3 right-3 z-10 bg-white dark:bg-gray-800 p-2 rounded-full shadow-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors duration-200"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        removeFromWishlist(product.id);
+                                    }}
+                                    className="absolute top-4 right-4 z-10 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm p-2 rounded-full shadow-sm hover:bg-red-50 dark:hover:bg-red-900/30 text-gray-400 hover:text-red-500 transition-all duration-200 opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0"
                                     title="Remove from wishlist"
                                 >
-                                    <TrashIcon />
+                                    <TrashIcon className="w-5 h-5" />
                                 </button>
 
                                 {/* Product Image */}
                                 <div
-                                    className="relative h-64 overflow-hidden cursor-pointer"
+                                    className="relative aspect-square overflow-hidden cursor-pointer rounded-t-2xl bg-gray-50 dark:bg-gray-800"
                                     onClick={() => onProductClick(product.id)}
                                 >
                                     <img
                                         src={imageUrl}
                                         alt={product.name}
-                                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                                         loading="lazy"
                                     />
                                     {isOutOfStock && (
-                                        <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
-                                            <span className="bg-red-500 text-white px-4 py-2 rounded-lg font-bold">
+                                        <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] flex items-center justify-center">
+                                            <span className="bg-red-500 text-white px-4 py-2 rounded-full font-bold text-sm tracking-wider shadow-lg transform -rotate-3">
                                                 OUT OF STOCK
                                             </span>
                                         </div>
                                     )}
                                     {product.tags?.includes('sale') && !isOutOfStock && (
-                                        <div className="absolute top-3 left-3 bg-red-500 text-white px-3 py-1 rounded-full text-sm font-bold">
+                                        <div className="absolute top-4 left-4 bg-gradient-to-r from-red-500 to-pink-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-md">
                                             SALE
-                                        </div>
-                                    )}
-                                    {product.tags?.includes('new') && !isOutOfStock && (
-                                        <div className="absolute top-3 left-3 bg-green-500 text-white px-3 py-1 rounded-full text-sm font-bold">
-                                            NEW
                                         </div>
                                     )}
                                 </div>
 
                                 {/* Product Info */}
-                                <div className="p-4">
-                                    <h3
-                                        className="font-bold text-lg mb-2 text-gray-900 dark:text-white cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors line-clamp-2"
-                                        onClick={() => onProductClick(product.id)}
-                                    >
-                                        {product.name}
-                                    </h3>
-
-                                    <div className="flex items-center gap-2 mb-3">
-                                        <span className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
-                                            ₹{product.price.toFixed(2)}
-                                        </span>
-                                        {product.originalPrice && product.originalPrice > product.price && (
-                                            <span className="text-sm text-gray-500 line-through">
-                                                ₹{product.originalPrice.toFixed(2)}
+                                <div className="p-5">
+                                    <div className="mb-4">
+                                        <h3
+                                            className="font-bold text-lg text-gray-900 dark:text-white cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors line-clamp-1 mb-1"
+                                            onClick={() => onProductClick(product.id)}
+                                        >
+                                            {product.name}
+                                        </h3>
+                                        <div className="flex items-baseline gap-2">
+                                            <span className="text-xl font-bold text-indigo-600 dark:text-indigo-400">
+                                                ₹{product.price.toFixed(2)}
                                             </span>
-                                        )}
+                                            {product.originalPrice && product.originalPrice > product.price && (
+                                                <span className="text-sm text-gray-400 line-through">
+                                                    ₹{product.originalPrice.toFixed(2)}
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
 
                                     <button
-                                        onClick={() => handleAddToCart(product)}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleAddToCart(product);
+                                        }}
                                         disabled={isOutOfStock}
-                                        className="w-full bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold py-3 px-4 rounded-lg hover:bg-gray-800 dark:hover:bg-gray-100 transition-colors duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="w-full bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-bold py-3 px-4 rounded-xl hover:bg-black dark:hover:bg-gray-100 hover:shadow-lg active:scale-95 transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-none disabled:active:scale-100"
                                     >
-                                        <ShoppingCartIcon />
+                                        <ShoppingCartIcon className="w-5 h-5" />
                                         {isOutOfStock ? 'Out of Stock' : 'Add to Cart'}
                                     </button>
                                 </div>

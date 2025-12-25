@@ -303,7 +303,14 @@ const App: React.FC = () => {
             {/* Center: Logo (Absolute) */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <span className="font-bold text-xl cursor-pointer pointer-events-auto" onClick={() => { navigate('store', undefined, null); window.scrollTo(0, 0); }}>
-                <img src="/logo.jpg" className="h-16 sm:h-12 w-auto mix-blend-screen rounded-lg" style={{ filter: 'contrast(140%) brightness(90%)' }} alt="Steal Deal" width="64" height="64" loading="eager" />
+                <img
+                  src="/logo.png"
+                  className="h-16 sm:h-12 w-auto rounded-lg transition-all duration-300 transform hover:scale-105"
+                  alt="Steal Deal"
+                  width="64"
+                  height="64"
+                  loading="eager"
+                />
               </span>
             </div>
 

@@ -78,6 +78,53 @@ export const WishlistProvider: React.FC<{ children: ReactNode; currentUserId?: s
         }
     };
 
+    // Hydrate wishlist products for guest users (localStorage has IDs but no products)
+    useEffect(() => {
+        if (!currentUserId && wishlist.length > 0 && wishlistProducts.length === 0) {
+            const fetchGuestWishlistProducts = async () => {
+                setWishlistLoading(true);
+                try {
+                    const params = new URLSearchParams();
+                    params.append('ids', wishlist.join(','));
+                    params.append('limit', '100'); // Ensure we get all items
+
+                    const res = await fetch(`/api/products?${params.toString()}`);
+                    if (!res.ok) throw new Error('Failed to fetch wishlist products');
+
+                    const data = await res.json();
+
+                    // Map the raw product data
+                    const products = (data.products || []).map((p: any) => ({
+                        id: p._id || p.id,
+                        name: p.name,
+                        price: p.price,
+                        originalPrice: p.originalPrice ?? null,
+                        description: p.description || '',
+                        stockQuantity: p.stockQuantity ?? p.stock ?? 0,
+                        categoryId: (p.category && typeof p.category === 'object') ? (p.category._id || p.category.id) : (p.category || ''),
+                        image: p.image || p.imageUrl || undefined,
+                        images: p.images || undefined,
+                        tags: p.tags || [],
+                        viewCount: p.viewCount ?? undefined,
+                        addToCartCount: p.addToCartCount ?? undefined,
+                        soldLast24Hours: p.soldLast24Hours ?? undefined,
+                        outOfStock: p.outOfStock ?? false,
+                        isNewArrival: p.isNewArrival ?? false,
+                        isLimitedEdition: p.isLimitedEdition ?? false,
+                        isActive: p.isActive ?? true,
+                    } as Product));
+
+                    setWishlistProducts(products);
+                } catch (error) {
+                    console.error('Failed to hydrate guest wishlist:', error);
+                } finally {
+                    setWishlistLoading(false);
+                }
+            };
+            fetchGuestWishlistProducts();
+        }
+    }, [currentUserId, wishlist.length]); // Only run if wishlist length changes (e.g. initial load) and strict checks pass
+
     const isInWishlist = useCallback((productId: string): boolean => {
         return wishlist.includes(productId);
     }, [wishlist]);

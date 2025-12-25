@@ -41,6 +41,20 @@ router.get('/', async (req: Request, res: Response) => {
       ];
     }
 
+    // Filter by specific IDs (comma separated)
+    // STRICT FILTERING: If 'ids' param is present, we MUST filter by it.
+    // Do not fall back to showing all products if the list is empty.
+    if (req.query.ids !== undefined) {
+      const idsParam = String(req.query.ids); // ensure string
+      console.log('Filtering by IDs:', idsParam);
+      const idsArray = idsParam.split(',').map(id => id.trim()).filter(id => id.length > 0);
+
+      // Check if IDs are valid ObjectIds to prevent casting errors
+      // (Optional: mongo might handle string IDs if they are valid 24-char hex)
+
+      query._id = { $in: idsArray };
+    }
+
     // Execute query with pagination
     // Sort by categoryOrder first (for category views), then by specified sort
     const sortQuery: any = category ? { categoryOrder: 1 } : {};
