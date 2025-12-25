@@ -2,6 +2,7 @@ export interface Category {
   id: string;
   name: string;
   image?: string;
+  order?: number;
 }
 
 export interface ProductImage {
@@ -28,6 +29,7 @@ export interface Product {
   isNewArrival?: boolean; // Mark product for New Arrivals page
   isLimitedEdition?: boolean; // Mark product as limited edition
   isActive?: boolean; // Controls global visibility
+  categoryOrder?: number; // Order within category
 }
 
 export interface CartItem extends Product {

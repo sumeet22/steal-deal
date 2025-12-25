@@ -4,6 +4,7 @@ export interface ICategory extends Document {
   name: string;
   description?: string;
   image?: string;
+  order?: number;
 }
 
 const CategorySchema = new Schema<ICategory>({
@@ -19,6 +20,10 @@ const CategorySchema = new Schema<ICategory>({
   },
   image: {
     type: String,
+  },
+  order: {
+    type: Number,
+    default: 0,
   },
 });
 

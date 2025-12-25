@@ -23,6 +23,7 @@ export interface IProduct extends Document {
   isNewArrival?: boolean; // Mark product for New Arrivals page
   isLimitedEdition?: boolean; // Mark product as limited edition
   isActive?: boolean;
+  categoryOrder?: number; // Order within category
 }
 
 const ProductSchema = new Schema<IProduct>({
@@ -109,6 +110,10 @@ const ProductSchema = new Schema<IProduct>({
   isActive: {
     type: Boolean,
     default: true,
+  },
+  categoryOrder: {
+    type: Number,
+    default: 0,
   }
 }, { timestamps: true });
 
@@ -120,7 +125,7 @@ ProductSchema.index({ tags: 1 });
 // Critical indexes for performance optimization
 ProductSchema.index({ isNewArrival: 1, createdAt: -1 }); // For new arrivals page
 ProductSchema.index({ isLimitedEdition: 1, createdAt: -1 }); // For limited editions
-ProductSchema.index({ category: 1, createdAt: -1 }); // Compound for category + sorting
+ProductSchema.index({ category: 1, categoryOrder: 1, createdAt: -1 }); // Compound for category + custom order + sorting
 ProductSchema.index({ outOfStock: 1 }); // For filtering in-stock items
 ProductSchema.index({ stockQuantity: 1 }); // For stock queries
 ProductSchema.index({ isActive: 1 }); // For filtering active products

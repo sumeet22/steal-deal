@@ -2,14 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../../context/AppContext';
 import { Product } from '../../types';
 import ProductForm from './ProductForm';
+import ProductReorderModal from './ProductReorderModal';
 import { PlusIcon, PencilIcon, TrashIcon } from '../Icons';
 
+
 const ProductManagement: React.FC = () => {
-  const { products, deleteProduct, updateProduct, categories, fetchAllProductsForAdmin } = useAppContext();
+  const { products, deleteProduct, updateProduct, categories, fetchAllProductsForAdmin, reorderProducts } = useAppContext();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | 'all'>('all');
+  const [isReorderModalOpen, setIsReorderModalOpen] = useState(false);
+  const [reorderCategoryId, setReorderCategoryId] = useState<string>('');
 
   // Fetch all products when component mounts (admin needs to see all products)
   useEffect(() => {
@@ -71,6 +75,20 @@ const ProductManagement: React.FC = () => {
               </option>
             ))}
           </select>
+          {selectedCategory !== 'all' && (
+            <button
+              onClick={() => {
+                setReorderCategoryId(selectedCategory);
+                setIsReorderModalOpen(true);
+              }}
+              className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors"
+            >
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M7 2a2 2 0 1 0 .001 4.001A2 2 0 0 0 7 2zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 7 8zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 7 14zm6-8a2 2 0 1 0-.001-4.001A2 2 0 0 0 13 6zm0 2a2 2 0 1 0 .001 4.001A2 2 0 0 0 13 8zm0 6a2 2 0 1 0 .001 4.001A2 2 0 0 0 13 14z"></path>
+              </svg>
+              Reorder
+            </button>
+          )}
           <button
             onClick={openAddModal}
             className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg flex items-center justify-center gap-2 transition-colors"
@@ -127,8 +145,8 @@ const ProductManagement: React.FC = () => {
                   <button
                     onClick={() => toggleProductStatus(product)}
                     className={`px-3 py-1 rounded-full text-xs font-bold transition-colors ${product.isActive
-                        ? 'bg-green-100 text-green-800 hover:bg-green-200 dark:bg-green-900 dark:text-green-300'
-                        : 'bg-red-100 text-red-800 hover:bg-red-200 dark:bg-red-900 dark:text-red-300'
+                      ? 'bg-green-100 text-green-800 hover:bg-green-200 dark:bg-green-900 dark:text-green-300'
+                      : 'bg-red-100 text-red-800 hover:bg-red-200 dark:bg-red-900 dark:text-red-300'
                       }`}
                   >
                     {product.isActive ? 'Active' : 'Inactive'}
@@ -150,8 +168,20 @@ const ProductManagement: React.FC = () => {
         </table>
       </div>
 
+
       {isModalOpen && (
         <ProductForm product={editingProduct} onClose={closeModal} />
+      )}
+
+      {isReorderModalOpen && (
+        <ProductReorderModal
+          isOpen={isReorderModalOpen}
+          onClose={() => setIsReorderModalOpen(false)}
+          products={filteredProducts}
+          categoryId={reorderCategoryId}
+          categoryName={categories.find(c => c.id === reorderCategoryId)?.name || ''}
+          onReorder={reorderProducts}
+        />
       )}
     </div>
   );

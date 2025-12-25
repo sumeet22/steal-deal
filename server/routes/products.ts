@@ -42,10 +42,18 @@ router.get('/', async (req: Request, res: Response) => {
     }
 
     // Execute query with pagination
+    // Sort by categoryOrder first (for category views), then by specified sort
+    const sortQuery: any = category ? { categoryOrder: 1 } : {};
+    if (sort && typeof sort === 'string') {
+      const sortField = sort.startsWith('-') ? sort.substring(1) : sort;
+      const sortDirection = sort.startsWith('-') ? -1 : 1;
+      sortQuery[sortField] = sortDirection;
+    }
+
     const [products, total] = await Promise.all([
       Product.find(query)
         .populate('category')
-        .sort(sort as string)
+        .sort(sortQuery)
         .skip(skip)
         .limit(limitNum)
         .lean(), // Use lean() for better performance
@@ -242,6 +250,34 @@ router.delete('/:id', async (req: Request, res: Response) => {
     const product = await Product.findByIdAndDelete(req.params.id);
     if (!product) return res.status(404).json({ message: 'Product not found' });
     res.json({ message: 'Product deleted' });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error });
+  }
+});
+
+// Reorder products within a category
+router.post('/reorder', async (req: Request, res: Response) => {
+  try {
+    const { productIds, categoryId } = req.body; // Array of product IDs in new order, categoryId for validation
+
+    if (!Array.isArray(productIds)) {
+      return res.status(400).json({ message: 'productIds must be an array' });
+    }
+
+    // Update categoryOrder for each product
+    const updatePromises = productIds.map((id, index) =>
+      Product.findByIdAndUpdate(id, { categoryOrder: index }, { new: true })
+    );
+
+    await Promise.all(updatePromises);
+
+    // Return updated products in new order
+    const query: any = {};
+    if (categoryId) {
+      query.category = categoryId;
+    }
+    const products = await Product.find(query).sort({ categoryOrder: 1, createdAt: -1 }).populate('category');
+    res.json(products);
   } catch (error) {
     res.status(500).json({ message: 'Server error', error });
   }

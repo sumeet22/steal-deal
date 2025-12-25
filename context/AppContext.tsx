@@ -23,9 +23,11 @@ interface AppContextType {
   addProduct: (product: Omit<Product, 'id'>) => void;
   updateProduct: (product: Product) => void;
   deleteProduct: (productId: string) => void;
+  reorderProducts: (productIds: string[], categoryId?: string) => void;
   addCategory: (category: Omit<Category, 'id'>) => void;
   updateCategory: (category: Category) => void;
   deleteCategory: (categoryId: string) => void;
+  reorderCategories: (categoryIds: string[]) => void;
   addUser: (user: Omit<User, 'id'>) => void;
   updateUser: (user: User) => void;
   deleteUser: (userId: string) => void;
@@ -469,6 +471,46 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     })();
   }, [setProducts, showToast, token]);
 
+  const reorderProducts = useCallback((productIds: string[], categoryId?: string) => {
+    (async () => {
+      try {
+        const headers: any = { 'Content-Type': 'application/json' };
+        if (token) headers.Authorization = `Bearer ${token}`;
+        const res = await fetch('/api/products/reorder', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ productIds, categoryId })
+        });
+        if (!res.ok) throw new Error('Failed to reorder products');
+        const updatedProducts = await res.json();
+        const mapped: Product[] = (updatedProducts || []).map((p: any) => ({
+          id: p._id || p.id,
+          name: p.name,
+          price: p.price,
+          originalPrice: p.originalPrice ?? null,
+          description: p.description || '',
+          stockQuantity: p.stockQuantity ?? p.stock ?? 0,
+          categoryId: (p.category && typeof p.category === 'object') ? (p.category._id || p.category.id) : (p.category || ''),
+          image: p.image || p.imageUrl || undefined,
+          images: p.images || undefined,
+          tags: p.tags || [],
+          viewCount: p.viewCount ?? undefined,
+          addToCartCount: p.addToCartCount ?? undefined,
+          soldLast24Hours: p.soldLast24Hours ?? undefined,
+          outOfStock: p.outOfStock ?? false,
+          isNewArrival: p.isNewArrival ?? false,
+          isLimitedEdition: p.isLimitedEdition ?? false,
+          isActive: p.isActive ?? true,
+          categoryOrder: p.categoryOrder ?? 0,
+        }));
+        setProducts(mapped);
+        showToast('Success', 'Products reordered successfully', 'success');
+      } catch (err) {
+        showToast('Error', 'Failed to reorder products', 'error');
+      }
+    })();
+  }, [setProducts, showToast, token]);
+
   const addToCart = useCallback((product: Product, quantity: number) => {
     // Check if product is marked as out of stock
     if (product.outOfStock || product.stockQuantity <= 0) {
@@ -718,6 +760,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     })();
   }, [setCategories, showToast, token]);
 
+
   const deleteCategory = useCallback((categoryId: string) => {
     (async () => {
       try {
@@ -729,6 +772,32 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         showToast('Success', 'Category deleted successfully', 'success');
       } catch (err) {
         showToast('Error', 'Failed to delete category', 'error');
+      }
+    })();
+  }, [setCategories, showToast, token]);
+
+  const reorderCategories = useCallback((categoryIds: string[]) => {
+    (async () => {
+      try {
+        const headers: any = { 'Content-Type': 'application/json' };
+        if (token) headers.Authorization = `Bearer ${token}`;
+        const res = await fetch('/api/categories/reorder', {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({ categoryIds })
+        });
+        if (!res.ok) throw new Error('Failed to reorder categories');
+        const updatedCategories = await res.json();
+        const mapped: Category[] = (updatedCategories || []).map((c: any) => ({
+          id: c._id || c.id,
+          name: c.name,
+          image: c.image || c.imageUrl || undefined,
+          order: c.order || 0,
+        }));
+        setCategories(mapped);
+        showToast('Success', 'Categories reordered successfully', 'success');
+      } catch (err) {
+        showToast('Error', 'Failed to reorder categories', 'error');
       }
     })();
   }, [setCategories, showToast, token]);
@@ -825,9 +894,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     addProduct,
     updateProduct,
     deleteProduct,
+    reorderProducts,
     addCategory,
     updateCategory,
     deleteCategory,
+    reorderCategories,
     addUser,
     updateUser,
     deleteUser,
