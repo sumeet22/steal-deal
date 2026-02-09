@@ -520,14 +520,14 @@ const Storefront: React.FC<StorefrontProps> = ({ onProductClick, activeCategoryI
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.8 }}
-          className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-900 via-purple-900 to-indigo-900 shadow-2xl min-h-[400px] flex items-center justify-center text-center px-4"
+          className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-rose-900 via-red-900 to-rose-900 shadow-2xl min-h-[400px] flex items-center justify-center text-center px-4"
         >
           <div className="absolute inset-0 opacity-30 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] mix-blend-overlay"></div>
           <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-t from-black/60 to-transparent"></div>
 
           {/* Animated Background Blobs */}
-          <div className="absolute top-10 left-10 w-64 h-64 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
-          <div className="absolute bottom-10 right-10 w-64 h-64 bg-indigo-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
+          <div className="absolute top-10 left-10 w-64 h-64 bg-rose-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
+          <div className="absolute bottom-10 right-10 w-64 h-64 bg-red-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
 
           <div className="relative z-10 max-w-4xl mx-auto space-y-6 p-6">
             <motion.div
@@ -535,13 +535,13 @@ const Storefront: React.FC<StorefrontProps> = ({ onProductClick, activeCategoryI
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.2, duration: 0.8 }}
             >
-              <span className="inline-block py-1 px-3 rounded-full bg-indigo-500/30 border border-indigo-400/30 text-indigo-200 text-sm font-semibold mb-4 backdrop-blur-sm">
+              <span className="inline-block py-1 px-3 rounded-full bg-rose-500/30 border border-rose-400/30 text-rose-200 text-sm font-semibold mb-4 backdrop-blur-sm">
                 ✨ Premium Collection
               </span>
-              <h1 className="text-4xl sm:text-6xl md:text-7xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-white via-indigo-100 to-indigo-200 mb-2 drop-shadow-sm">
+              <h1 className="text-4xl sm:text-6xl md:text-7xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-white via-rose-100 to-red-200 mb-2 drop-shadow-sm">
                 Upgrade Your Collection
               </h1>
-              <p className="text-lg sm:text-xl md:text-2xl text-indigo-100/90 max-w-2xl mx-auto font-light leading-relaxed">
+              <p className="text-lg sm:text-xl md:text-2xl text-rose-100/90 max-w-2xl mx-auto font-light leading-relaxed">
                 Authentic figures, premium accessories, and exclusive merchandise from your favorite anime series.
               </p>
             </motion.div>
@@ -554,7 +554,7 @@ const Storefront: React.FC<StorefrontProps> = ({ onProductClick, activeCategoryI
             >
               <button
                 onClick={() => document.getElementById('categories-grid')?.scrollIntoView({ behavior: 'smooth' })}
-                className="px-8 py-4 bg-white text-indigo-900 rounded-full font-bold text-lg hover:bg-gray-50 hover:scale-105 transition-all shadow-xl hover:shadow-indigo-500/20"
+                className="px-8 py-4 bg-white text-red-900 rounded-full font-bold text-lg hover:bg-gray-50 hover:scale-105 transition-all shadow-xl hover:shadow-rose-500/20"
               >
                 Shop Now
               </button>

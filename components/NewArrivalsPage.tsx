@@ -117,14 +117,14 @@ const NewArrivalsPage: React.FC<NewArrivalsPageProps> = ({ onProductClick, onBac
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.6 }}
-                className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-purple-900 via-indigo-900 to-purple-900 shadow-2xl min-h-[300px] flex items-center justify-center text-center px-4"
+                className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-red-900 via-rose-900 to-red-900 shadow-2xl min-h-[300px] flex items-center justify-center text-center px-4"
             >
                 <div className="absolute inset-0 opacity-30 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] mix-blend-overlay"></div>
                 <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-t from-black/60 to-transparent"></div>
 
                 {/* Animated Background Blobs */}
-                <div className="absolute top-10 left-10 w-64 h-64 bg-purple-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
-                <div className="absolute bottom-10 right-10 w-64 h-64 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
+                <div className="absolute top-10 left-10 w-64 h-64 bg-rose-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
+                <div className="absolute bottom-10 right-10 w-64 h-64 bg-red-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
 
                 <div className="relative z-10 max-w-4xl mx-auto space-y-4 p-6">
                     <motion.div
@@ -132,14 +132,14 @@ const NewArrivalsPage: React.FC<NewArrivalsPageProps> = ({ onProductClick, onBac
                         animate={{ y: 0, opacity: 1 }}
                         transition={{ delay: 0.2, duration: 0.6 }}
                     >
-                        <span className="inline-flex items-center gap-2 py-1 px-3 rounded-full bg-purple-500/30 border border-purple-400/30 text-purple-200 text-sm font-semibold mb-4 backdrop-blur-sm">
+                        <span className="inline-flex items-center gap-2 py-1 px-3 rounded-full bg-rose-500/30 border border-rose-400/30 text-rose-200 text-sm font-semibold mb-4 backdrop-blur-sm">
                             <SparklesIcon />
                             Latest Collection
                         </span>
-                        <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-white via-purple-100 to-pink-200 mb-2 drop-shadow-sm">
+                        <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-white via-rose-100 to-red-200 mb-2 drop-shadow-sm">
                             New Arrivals & Limited Editions
                         </h1>
-                        <p className="text-lg sm:text-xl text-purple-100/90 max-w-2xl mx-auto font-light leading-relaxed">
+                        <p className="text-lg sm:text-xl text-rose-100/90 max-w-2xl mx-auto font-light leading-relaxed">
                             Discover the latest anime merchandise and exclusive limited edition collectibles before they're gone!
                         </p>
                     </motion.div>
@@ -153,7 +153,7 @@ const NewArrivalsPage: React.FC<NewArrivalsPageProps> = ({ onProductClick, onBac
                     placeholder="Search new arrivals..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full p-3 pl-10 border rounded-full bg-white dark:bg-gray-800 dark:border-gray-700 focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none"
+                    className="w-full p-3 pl-10 border rounded-full bg-white dark:bg-gray-800 dark:border-gray-700 focus:ring-2 focus:ring-rose-500 focus:border-rose-500 outline-none"
                 />
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
                     <SearchIcon />
@@ -194,7 +194,7 @@ const NewArrivalsPage: React.FC<NewArrivalsPageProps> = ({ onProductClick, onBac
                     {/* Loading indicator */}
                     {productsLoading && (
                         <div className="flex justify-center py-8">
-                            <div className="animate-spin h-12 w-12 border-4 border-purple-500 border-t-transparent rounded-full"></div>
+                            <div className="animate-spin h-12 w-12 border-4 border-rose-500 border-t-transparent rounded-full"></div>
                         </div>
                     )}
 

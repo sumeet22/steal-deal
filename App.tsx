@@ -28,7 +28,7 @@ const PrivacyPolicy = React.lazy(() => import('./components/InfoPages').then(mod
 const ReturnsPolicy = React.lazy(() => import('./components/InfoPages').then(module => ({ default: module.ReturnsPolicy })));
 const ShippingPolicy = React.lazy(() => import('./components/InfoPages').then(module => ({ default: module.ShippingPolicy })));
 const UserProfile = React.lazy(() => import('./components/UserProfile'));
-const SnowfallEffect = React.lazy(() => import('./components/effects/SnowfallEffect'));
+const HeartsEffect = React.lazy(() => import('./components/effects/HeartsEffect'));
 
 import { MenuIcon, SearchIcon, ShieldCheckIcon, CreditCardIcon, TruckIcon } from './components/Icons';
 
@@ -414,7 +414,7 @@ const App: React.FC = () => {
 
       {/* Snow Effect - Lazy loaded and SEO-friendly */}
       <Suspense fallback={null}>
-        <SnowfallEffect />
+        <HeartsEffect />
       </Suspense>
     </div >
   );
