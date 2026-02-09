@@ -22,7 +22,7 @@ const ComingSoon: React.FC = () => {
                     break;
                 case 9:
                     setDayName("Chocolate Day");
-                    setWish("Adding some sweetness to your day! 🍫");
+                    setWish("Adding some sweetness to your day! 🍫 Follow us @stealdeals.co");
                     break;
                 case 10:
                     setDayName("Teddy Day");
@@ -133,7 +133,7 @@ const ComingSoon: React.FC = () => {
                     transition={{ delay: 0.8, duration: 1 }}
                     className="mt-16 text-gray-400 dark:text-gray-500 text-sm font-sans"
                 >
-                    <p>Mumbai, India</p>
+                    <p>Steal Deal, Mumbai</p>
                 </motion.div>
             </div>
         </div>
