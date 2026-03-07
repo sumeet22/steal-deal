@@ -33,7 +33,7 @@ const INDIAN_STATES = [
 ];
 
 const Checkout: React.FC<CheckoutProps> = ({ onBackToStore }) => {
-  const { cart, createOrder, currentUser, addAddress, validateAndUpdateCart } = useAppContext();
+  const { cart, createOrder, currentUser, addAddress, validateAndUpdateCart, shippingFee, freeShippingThreshold } = useAppContext();
   const { showToast } = useToast();
 
   const [customerInfo, setCustomerInfo] = useState({
@@ -99,12 +99,12 @@ const Checkout: React.FC<CheckoutProps> = ({ onBackToStore }) => {
         if (validation.priceChanges.length > 0) {
           const priceMsg = validation.priceChanges.map(pc =>
             `${pc.name}: ₹${pc.oldPrice} → ₹${pc.newPrice}`
-          ).join(', ');
-          showToast('Info', `Price updated: ${priceMsg}`, 'info');
+          ).join('\n');
+          showToast('Price Update', `Some prices in your cart have changed:\n${priceMsg}`, 'info');
         }
 
-        if (validation.stockIssues.length > 0 && validation.removedItems.length === 0) {
-          showToast('Warning', validation.stockIssues.join(', '), 'error');
+        if (validation.stockIssues.length > 0) {
+          showToast('Stock Issue', `Some items have limited stock: ${validation.stockIssues.join(', ')}`, 'warning');
         }
       }
     };
@@ -115,10 +115,8 @@ const Checkout: React.FC<CheckoutProps> = ({ onBackToStore }) => {
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
   // Calculate Shipping
-  let shippingCost = 0;
-  if (customerInfo.deliveryMethod === 'home_delivery') {
-    shippingCost = subtotal > 799 ? 0 : 150;
-  }
+  const isFreeShipping = freeShippingThreshold > 0 && subtotal >= freeShippingThreshold;
+  const shippingCost = (customerInfo.deliveryMethod === 'home_delivery' && !isFreeShipping) ? shippingFee : 0;
 
   // Calculate Discount (5% on subtotal, excluding shipping)
   const discount = customerInfo.paymentMethod === 'Online Payment' ? subtotal * 0.05 : 0;
@@ -674,8 +672,13 @@ const Checkout: React.FC<CheckoutProps> = ({ onBackToStore }) => {
             <span className="text-gray-600 dark:text-gray-400">Shipping</span>
             {customerInfo.deliveryMethod === 'store_pickup' ? (
               <span className="text-green-600 font-medium">Free (Pickup)</span>
+            ) : isFreeShipping ? (
+              <div className="text-right">
+                <span className="text-green-600 font-black block text-sm">FREE SHIPPING</span>
+                <span className="text-[10px] text-gray-400">Order above ₹{freeShippingThreshold}</span>
+              </div>
             ) : (
-              shippingCost === 0 ? <span className="text-green-600 font-medium">Free</span> : <span>₹{shippingCost.toFixed(2)}</span>
+              <span>₹{shippingCost.toFixed(2)}</span>
             )}
           </div>
 

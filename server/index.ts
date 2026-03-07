@@ -55,6 +55,7 @@ import wishlistRouter from './routes/wishlist.js';
 import paymentRouter from './routes/payment.js';
 
 import contactRouter from './routes/contact.js';
+import settingsRouter from './routes/settings.js';
 
 app.use('/api/categories', categoriesRouter);
 app.use('/api/products', productsRouter);
@@ -64,6 +65,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/wishlist', wishlistRouter);
 app.use('/api/payment', paymentRouter);
 app.use('/api/contact', contactRouter);
+app.use('/api/settings', settingsRouter);
 
 app.get('/', (req, res) => {
   res.send('API is running...');

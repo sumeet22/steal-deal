@@ -30,7 +30,6 @@ const ShippingPolicy = React.lazy(() => import('./components/InfoPages').then(mo
 const ContactUs = React.lazy(() => import('./components/InfoPages').then(module => ({ default: module.ContactUs })));
 const UserProfile = React.lazy(() => import('./components/UserProfile'));
 const PaymentVerification = React.lazy(() => import('./components/PaymentVerification'));
-const HeartsEffect = React.lazy(() => import('./components/effects/HeartsEffect'));
 
 import { MenuIcon, SearchIcon, ShieldCheckIcon, CreditCardIcon, TruckIcon } from './components/Icons';
 
@@ -41,11 +40,11 @@ const WishlistButton: React.FC<{ onNavigate: () => void }> = ({ onNavigate }) =>
 
   return (
     <div className="relative">
-      <button onClick={onNavigate} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-pink-500" aria-label="Wishlist">
+      <button onClick={onNavigate} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-indigo-500" aria-label="Wishlist">
         <div className="relative">
           <HeartIcon filled={wishlistItemCount > 0} />
           {wishlistItemCount > 0 && (
-            <span className="absolute -top-2 -right-2 bg-pink-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full border-2 border-white dark:border-gray-800">
+            <span className="absolute -top-2 -right-2 bg-indigo-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full border-2 border-white dark:border-gray-800">
               {wishlistItemCount}
             </span>
           )}
@@ -339,11 +338,11 @@ const App: React.FC = () => {
               <WishlistButton onNavigate={() => navigate('wishlist')} />
 
               <div className="relative">
-                <button onClick={() => setIsCartOpen(true)} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-red-500" aria-label="Cart">
+                <button onClick={() => setIsCartOpen(true)} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-indigo-600 dark:text-indigo-400" aria-label="Cart">
                   <div className="relative">
                     <ShoppingCartIcon />
                     {cartItemCount > 0 && (
-                      <span className="absolute -top-2 -right-2 bg-red-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full border-2 border-white dark:border-gray-800">
+                      <span className="absolute -top-2 -right-2 bg-indigo-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full border-2 border-white dark:border-gray-800">
                         {cartItemCount}
                       </span>
                     )}
@@ -427,10 +426,6 @@ const App: React.FC = () => {
         }}
       />
 
-      {/* Snow Effect - Lazy loaded and SEO-friendly */}
-      <Suspense fallback={null}>
-        <HeartsEffect />
-      </Suspense>
     </div >
   );
 };

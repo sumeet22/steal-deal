@@ -16,7 +16,7 @@ router.get('/', async (req: Request, res: Response) => {
 
 router.post('/', async (req: Request, res: Response) => {
   try {
-    const { customerName, customerPhone, shippingAddress, items, total, paymentMethod, paymentId } = req.body;
+    const { customerName, customerPhone, shippingAddress, items, total, paymentMethod, paymentId, deliveryMethod, shippingCost } = req.body;
 
     if (!items || items.length === 0) {
       return res.status(400).json({ message: 'No items in order' });
@@ -30,6 +30,8 @@ router.post('/', async (req: Request, res: Response) => {
       total,
       paymentMethod,
       paymentId: paymentId || undefined,
+      deliveryMethod: deliveryMethod || 'home_delivery',
+      shippingCost: shippingCost || 0,
       status: req.body.status || 'New'
     });
 

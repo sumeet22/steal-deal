@@ -35,7 +35,6 @@ const WishlistSchema = new Schema<IWishlist>({
 }, { timestamps: true });
 
 // Index for faster queries
-WishlistSchema.index({ userId: 1 });
 WishlistSchema.index({ 'items.productId': 1 });
 
 export default model<IWishlist>('Wishlist', WishlistSchema);

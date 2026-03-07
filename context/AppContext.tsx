@@ -42,6 +42,10 @@ interface AppContextType {
   getDisplayPrice: (price: number) => number;
   pricePercentage: number;
   setPricePercentage: (val: number) => void;
+  shippingFee: number;
+  setShippingFee: (val: number) => void;
+  freeShippingThreshold: number;
+  setFreeShippingThreshold: (val: number) => void;
   setProducts: React.Dispatch<React.SetStateAction<Product[]>>;
   setCategories: React.Dispatch<React.SetStateAction<Category[]>>;
   setOrders: React.Dispatch<React.SetStateAction<Order[]>>;
@@ -61,7 +65,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [orders, setOrders] = useState<Order[]>([]);
   const [currentUser, setCurrentUserInternal] = useLocalStorage<User | null>('currentUser', null);
   const [token, setToken] = useLocalStorage<string | null>('token', null);
-  const [pricePercentage, setPricePercentage] = useLocalStorage<number>('pricePercentage', 100);
+  const [pricePercentage, setPricePercentageInternal] = useState<number>(100);
+  const [shippingFee, setShippingFeeInternal] = useState<number>(0);
+  const [freeShippingThreshold, setFreeShippingThresholdInternal] = useState<number>(0);
   const [productsLoading, setProductsLoading] = useState(false);
   const { showToast } = useToast();
 
@@ -135,11 +141,52 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
     };
 
+    const fetchSettings = async () => {
+      try {
+        const res = await fetch('/api/settings');
+        if (!res.ok) throw new Error('Failed to fetch settings');
+        const data = await res.json();
+        setPricePercentageInternal(data.pricePercentage || 100);
+        setShippingFeeInternal(data.shippingFee || 0);
+        setFreeShippingThresholdInternal(data.freeShippingThreshold || 0);
+      } catch (err) {
+        console.error('Settings fetch error:', err);
+      }
+    };
+
     fetchCategories();
-    // fetchProducts(); // REMOVED - load lazily instead
     fetchUsers();
     fetchOrders();
+    fetchSettings();
   }, [showToast]);
+
+  const updateSettings = useCallback(async (newSettings: { pricePercentage?: number, shippingFee?: number, freeShippingThreshold?: number }) => {
+    try {
+      const headers: any = { 'Content-Type': 'application/json' };
+      if (token) headers.Authorization = `Bearer ${token}`;
+
+      const res = await fetch('/api/settings', {
+        method: 'PUT',
+        headers,
+        body: JSON.stringify(newSettings),
+      });
+
+      if (!res.ok) throw new Error('Failed to update settings');
+
+      const data = await res.json();
+      if (data.pricePercentage !== undefined) setPricePercentageInternal(data.pricePercentage);
+      if (data.shippingFee !== undefined) setShippingFeeInternal(data.shippingFee);
+      if (data.freeShippingThreshold !== undefined) setFreeShippingThresholdInternal(data.freeShippingThreshold);
+
+      showToast('Success', 'Settings updated successfully', 'success');
+    } catch (err) {
+      showToast('Error', 'Failed to update settings', 'error');
+    }
+  }, [token, showToast]);
+
+  const setPricePercentage = (val: number) => updateSettings({ pricePercentage: val });
+  const setShippingFee = (val: number) => updateSettings({ shippingFee: val });
+  const setFreeShippingThreshold = (val: number) => updateSettings({ freeShippingThreshold: val });
 
   const setCurrentUser = useCallback((user: User | null, newToken: string | null) => {
     setCurrentUserInternal(user);
@@ -935,6 +982,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     getDisplayPrice,
     pricePercentage,
     setPricePercentage,
+    shippingFee,
+    setShippingFee,
+    freeShippingThreshold,
+    setFreeShippingThreshold,
     setProducts,
     setCategories,
     setOrders,

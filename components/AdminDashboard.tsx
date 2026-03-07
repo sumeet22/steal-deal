@@ -12,7 +12,7 @@ type AdminView = 'products' | 'categories' | 'orders' | 'users' | 'csv-upload' |
 const AdminDashboard: React.FC = () => {
   const [view, setView] = useState<AdminView>('products');
 
-  const { pricePercentage, setPricePercentage, getDisplayPrice } = useAppContext();
+  const { pricePercentage, setPricePercentage, getDisplayPrice, shippingFee, setShippingFee, freeShippingThreshold, setFreeShippingThreshold } = useAppContext();
 
   const renderView = () => {
     switch (view) {
@@ -56,6 +56,37 @@ const AdminDashboard: React.FC = () => {
                 </div>
               </div>
 
+              <div className="space-y-3 pt-6 border-t border-indigo-50 dark:border-indigo-900/30">
+                <label className="text-xs font-black uppercase text-gray-400 tracking-widest">Fixed Shipping Fee (₹)</label>
+                <div className="flex items-center gap-4">
+                  <div className="relative flex-grow">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">₹</span>
+                    <input
+                      type="number"
+                      value={shippingFee}
+                      onChange={(e) => setShippingFee(Math.max(0, parseInt(e.target.value) || 0))}
+                      className="w-full p-3 pl-8 bg-gray-50 dark:bg-gray-900 border-2 border-indigo-100 dark:border-indigo-900 rounded-2xl font-black focus:ring-4 ring-indigo-500/20 outline-none"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-3 pt-6 border-t border-indigo-50 dark:border-indigo-900/30">
+                <label className="text-xs font-black uppercase text-gray-400 tracking-widest">Free Shipping Above (₹) <span className="normal-case text-[10px] text-indigo-400">(0 to disable)</span></label>
+                <div className="flex items-center gap-4">
+                  <div className="relative flex-grow">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">₹</span>
+                    <input
+                      type="number"
+                      value={freeShippingThreshold}
+                      onChange={(e) => setFreeShippingThreshold(Math.max(0, parseInt(e.target.value) || 0))}
+                      className="w-full p-3 pl-8 bg-gray-50 dark:bg-gray-900 border-2 border-indigo-100 dark:border-indigo-900 rounded-2xl font-black focus:ring-4 ring-indigo-500/20 outline-none"
+                      placeholder="e.g. 799"
+                    />
+                  </div>
+                </div>
+              </div>
+
               <div className="bg-indigo-50 dark:bg-indigo-900/20 p-6 rounded-[2rem] border border-indigo-100 dark:border-indigo-900/30">
                 <h3 className="text-xs font-black uppercase text-indigo-400 mb-4 tracking-widest">Live Example</h3>
                 <div className="flex justify-between items-center bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-sm border border-indigo-50 dark:border-white/5">
@@ -67,9 +98,33 @@ const AdminDashboard: React.FC = () => {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
                   </svg>
                 </div>
-                <div className="flex justify-between items-center bg-indigo-600 p-4 rounded-2xl shadow-lg shadow-indigo-500/20 text-white">
-                  <span className="text-sm font-black uppercase">Store Display Price</span>
-                  <span className="text-xl font-black">₹{getDisplayPrice(1000).toFixed(2)}</span>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-sm border border-indigo-50 dark:border-white/5">
+                    <span className="text-sm font-medium text-indigo-600">Product Hiked Price</span>
+                    <span className="font-bold">₹{getDisplayPrice(1000).toFixed(2)}</span>
+                  </div>
+
+                  {freeShippingThreshold > 0 && getDisplayPrice(1000) >= freeShippingThreshold ? (
+                    <div className="flex justify-between items-center bg-green-50 dark:bg-green-900/20 p-4 rounded-2xl border border-green-100 dark:border-green-900/30 text-green-700 dark:text-green-300">
+                      <span className="text-sm font-black uppercase">Shipping Fee</span>
+                      <span className="text-sm font-black line-through opacity-50">₹{shippingFee.toFixed(2)}</span>
+                      <span className="font-black text-xs bg-green-500 text-white px-2 py-1 rounded-lg">FREE (Above ₹{freeShippingThreshold})</span>
+                    </div>
+                  ) : (
+                    <div className="flex justify-between items-center bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-sm border border-indigo-50 dark:border-white/5">
+                      <span className="text-sm font-medium text-gray-500">Shipping Fee</span>
+                      <span className="font-bold">₹{shippingFee.toFixed(2)}</span>
+                    </div>
+                  )}
+
+                  <div className="flex justify-between items-center bg-indigo-600 p-4 rounded-2xl shadow-lg shadow-indigo-500/20 text-white">
+                    <span className="text-sm font-black uppercase">Final Total</span>
+                    <span className="text-xl font-black">
+                      ₹{((freeShippingThreshold > 0 && getDisplayPrice(1000) >= freeShippingThreshold)
+                        ? getDisplayPrice(1000)
+                        : (getDisplayPrice(1000) + shippingFee)).toFixed(2)}
+                    </span>
+                  </div>
                 </div>
               </div>
 
@@ -120,7 +175,7 @@ const AdminDashboard: React.FC = () => {
             Data Management
           </button>
           <button onClick={() => setView('price-settings')} className={getTabClass('price-settings')}>
-            💰 Pricing
+            💰 Pricing & Shipping
           </button>
         </nav>
       </div>
