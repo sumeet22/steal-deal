@@ -19,7 +19,7 @@ declare global {
 let cashfree: any;
 if (typeof window !== 'undefined' && window.Cashfree) {
   cashfree = window.Cashfree({
-    mode: "sandbox", // Use "production" for live
+    mode: (import.meta as any).env.VITE_CASHFREE_MODE === 'production' ? "production" : "sandbox",
   });
 }
 
