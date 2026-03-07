@@ -16,26 +16,116 @@ router.get('/', async (req: Request, res: Response) => {
 
 router.post('/', async (req: Request, res: Response) => {
   try {
-    const { customerName, customerPhone, shippingAddress, items, total, paymentMethod, paymentId, deliveryMethod, shippingCost } = req.body;
+    const {
+      customerName,
+      customerPhone,
+      shippingAddress,
+      items,
+      paymentMethod,
+      paymentId,
+      deliveryMethod,
+      appliedCoupon
+    } = req.body;
 
     if (!items || items.length === 0) {
       return res.status(400).json({ message: 'No items in order' });
     }
 
+    // --- SERVER SIDE PRICE VALIDATION ---
+    const Product = (await import('../models/Product.js')).default;
+    const Settings = (await import('../models/Settings.js')).default;
+    const Coupon = (await import('../models/Coupon.js')).default;
+
+    const settings = await Settings.findOne() || { shippingFee: 0, freeShippingThreshold: 0 };
+
+    let dbSubtotal = 0;
+    const validatedItems = [];
+
+    for (const item of items) {
+      const product = await Product.findById(item.id || item._id);
+      if (!product) {
+        return res.status(400).json({ message: `Product not found: ${item.name}` });
+      }
+
+      if (product.stockQuantity < item.quantity) {
+        return res.status(400).json({ message: `Insufficient stock for ${product.name}. Available: ${product.stockQuantity}` });
+      }
+
+      const itemTotal = product.price * item.quantity;
+      dbSubtotal += itemTotal;
+      validatedItems.push({
+        id: product._id,
+        name: product.name,
+        quantity: item.quantity,
+        price: product.price,
+        image: product.image || (product.images && product.images[0]?.url)
+      });
+    }
+
+    // Calculate Discounts 
+    let onlineDiscount = 0;
+    if (paymentMethod === 'Online Payment') {
+      onlineDiscount = dbSubtotal * 0.05;
+    }
+
+    let couponDiscount = 0;
+    let finalAppliedCoupon = undefined;
+
+    if (appliedCoupon && appliedCoupon.code) {
+      const coupon = await Coupon.findOne({ code: appliedCoupon.code.toUpperCase(), isActive: true });
+      const now = new Date();
+
+      if (coupon && now <= coupon.expiryDate && dbSubtotal >= coupon.minOrderAmount) {
+        couponDiscount = (dbSubtotal * (coupon.discountPercentage / 100));
+        finalAppliedCoupon = {
+          code: coupon.code,
+          discountAmount: couponDiscount
+        };
+        // Increment usage
+        await Coupon.findByIdAndUpdate(coupon._id, { $inc: { usageCount: 1 } });
+      }
+    }
+
+    // Shipping
+    const isFreeShipping = settings.freeShippingThreshold > 0 && dbSubtotal >= settings.freeShippingThreshold;
+    const dbShippingCost = (deliveryMethod === 'home_delivery' && !isFreeShipping) ? settings.shippingFee : 0;
+
+    const finalTotal = Number((dbSubtotal + dbShippingCost - onlineDiscount - couponDiscount).toFixed(2));
+
     const order = new Order({
       customerName,
       customerPhone,
       shippingAddress,
-      items,
-      total,
+      items: validatedItems,
+      total: finalTotal,
       paymentMethod,
       paymentId: paymentId || undefined,
       deliveryMethod: deliveryMethod || 'home_delivery',
-      shippingCost: shippingCost || 0,
+      shippingCost: dbShippingCost,
+      appliedCoupon: finalAppliedCoupon,
       status: req.body.status || 'New'
     });
 
     const createdOrder = await order.save();
+
+    // --- STOCK MANAGEMENT (COD only) ---
+    // For COD, we decrement stock immediately because the order is "live".
+    // For Online, we decrement after payment verification to avoid stock-locking attacks.
+    if (paymentMethod === 'COD') {
+      for (const item of validatedItems) {
+        await Product.findByIdAndUpdate(item.id, {
+          $inc: { stockQuantity: -item.quantity },
+          $set: { outOfStock: false } // Safety reset
+        });
+
+        // Final check to mark as outOfStock if it hit zero
+        const updated = await Product.findById(item.id);
+        if (updated && updated.stockQuantity <= 0) {
+          await Product.findByIdAndUpdate(item.id, { outOfStock: true, stockQuantity: 0 });
+        }
+      }
+    }
+
     res.status(201).json(createdOrder);
   } catch (error) {
     console.error('Create order error:', error);

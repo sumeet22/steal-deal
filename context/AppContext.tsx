@@ -1,5 +1,5 @@
 import React, { createContext, useContext, ReactNode, useCallback, useEffect, useState } from 'react';
-import { Product, Category, Order, CartItem, OrderStatus, User, Address } from '../types';
+import { Product, Category, Order, CartItem, OrderStatus, User, Address, Coupon } from '../types';
 import useLocalStorage from '../hooks/useLocalStorage';
 import { useToast } from './ToastContext';
 
@@ -46,6 +46,11 @@ interface AppContextType {
   setShippingFee: (val: number) => void;
   freeShippingThreshold: number;
   setFreeShippingThreshold: (val: number) => void;
+  coupons: Coupon[];
+  fetchCoupons: () => Promise<void>;
+  validateCoupon: (code: string, amount: number) => Promise<Coupon>;
+  addCoupon: (coupon: Omit<Coupon, 'id' | 'usageCount'>) => Promise<void>;
+  deleteCoupon: (id: string) => Promise<void>;
   setProducts: React.Dispatch<React.SetStateAction<Product[]>>;
   setCategories: React.Dispatch<React.SetStateAction<Category[]>>;
   setOrders: React.Dispatch<React.SetStateAction<Order[]>>;
@@ -68,8 +73,64 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [pricePercentage, setPricePercentageInternal] = useState<number>(100);
   const [shippingFee, setShippingFeeInternal] = useState<number>(0);
   const [freeShippingThreshold, setFreeShippingThresholdInternal] = useState<number>(0);
+  const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [productsLoading, setProductsLoading] = useState(false);
   const { showToast } = useToast();
+
+  const mapProductData = useCallback((p: any): Product => {
+    const categoryId = p.category && (typeof p.category === 'object' ? (p.category._id || p.category.id) : p.category);
+    return {
+      id: p._id || p.id,
+      name: p.name,
+      price: p.price,
+      originalPrice: p.originalPrice ?? null,
+      description: p.description || '',
+      stockQuantity: p.stockQuantity ?? p.stock ?? 0,
+      categoryId: categoryId || '',
+      image: p.image || p.imageUrl || undefined,
+      images: p.images || undefined,
+      tags: p.tags || [],
+      viewCount: p.viewCount ?? undefined,
+      addToCartCount: p.addToCartCount ?? undefined,
+      soldLast24Hours: p.soldLast24Hours ?? undefined,
+      outOfStock: p.outOfStock ?? false,
+      isNewArrival: p.isNewArrival ?? false,
+      isLimitedEdition: p.isLimitedEdition ?? false,
+      isActive: p.isActive ?? true,
+      categoryOrder: p.categoryOrder ?? 0,
+    };
+  }, []);
+
+  const mapOrderData = useCallback((o: any): Order => ({
+    id: o._id || o.id,
+    customerName: o.customerName,
+    customerPhone: o.customerPhone,
+    shippingAddress: o.shippingAddress,
+    items: (o.items || []).map((item: any) => ({
+      ...mapProductData(item),
+      quantity: item.quantity
+    })),
+    total: o.total,
+    status: o.status,
+    paymentMethod: o.paymentMethod,
+    deliveryMethod: o.deliveryMethod || 'home_delivery',
+    shippingCost: o.shippingCost || 0,
+    appliedCoupon: o.appliedCoupon,
+    paymentProof: o.paymentProof,
+    createdAt: o.createdAt,
+  }), [mapProductData]);
+
+  const mapCouponData = useCallback((c: any): Coupon => ({
+    id: c._id || c.id,
+    code: c.code || '',
+    description: c.description || '',
+    discountPercentage: c.discountPercentage || 0,
+    minOrderAmount: c.minOrderAmount || 0,
+    expiryDate: c.expiryDate || '',
+    isActive: c.isActive !== false,
+    usageCount: c.usageCount || 0,
+    isPublic: c.isPublic !== false,
+  }), []);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -121,20 +182,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         const res = await fetch('/api/orders');
         if (!res.ok) throw new Error('Failed to fetch orders');
         const data = await res.json();
-        const mapped: Order[] = (data || []).map((o: any) => ({
-          id: o._id || o.id,
-          customerName: o.customerName,
-          customerPhone: o.customerPhone,
-          shippingAddress: o.shippingAddress,
-          items: o.items || [],
-          total: o.total,
-          status: o.status,
-          paymentMethod: o.paymentMethod,
-          deliveryMethod: o.deliveryMethod || 'home_delivery',
-          shippingCost: o.shippingCost || 0,
-          paymentProof: o.paymentProof,
-          createdAt: o.createdAt,
-        }));
+        const mapped: Order[] = (data || []).map(mapOrderData);
         setOrders(mapped);
       } catch (err) {
         showToast('Error', 'Failed to load orders from server', 'error');
@@ -154,11 +202,25 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
     };
 
+    const fetchCoupons = async () => {
+      try {
+        const headers: any = {};
+        if (token) headers.Authorization = `Bearer ${token}`;
+        const res = await fetch('/api/coupons', { headers }); // Admin fetches all
+        if (!res.ok) throw new Error('Failed to fetch coupons');
+        const data = await res.json();
+        setCoupons((data || []).map(mapCouponData));
+      } catch (err) {
+        console.error('Coupons fetch error:', err);
+      }
+    };
+
     fetchCategories();
     fetchUsers();
     fetchOrders();
     fetchSettings();
-  }, [showToast]);
+    fetchCoupons();
+  }, [showToast, token]);
 
   const updateSettings = useCallback(async (newSettings: { pricePercentage?: number, shippingFee?: number, freeShippingThreshold?: number }) => {
     try {
@@ -187,6 +249,62 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const setPricePercentage = (val: number) => updateSettings({ pricePercentage: val });
   const setShippingFee = (val: number) => updateSettings({ shippingFee: val });
   const setFreeShippingThreshold = (val: number) => updateSettings({ freeShippingThreshold: val });
+
+  const fetchCoupons = useCallback(async () => {
+    try {
+      const headers: any = {};
+      if (token) headers.Authorization = `Bearer ${token}`;
+      const res = await fetch('/api/coupons', { headers });
+      if (!res.ok) throw new Error('Failed to fetch');
+      const data = await res.json();
+      setCoupons((data || []).map(mapCouponData));
+    } catch (err) {
+      showToast('Error', 'Failed to reload coupons', 'error');
+    }
+  }, [token, showToast]);
+
+  const validateCoupon = useCallback(async (code: string, amount: number): Promise<Coupon> => {
+    const res = await fetch('/api/coupons/validate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code, cartAmount: amount })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.message || 'Invalid coupon');
+    }
+    return mapCouponData(data);
+  }, [mapCouponData]);
+
+  const addCoupon = useCallback(async (couponData: Omit<Coupon, 'id' | 'usageCount'>) => {
+    try {
+      const headers: any = { 'Content-Type': 'application/json' };
+      if (token) headers.Authorization = `Bearer ${token}`;
+      const res = await fetch('/api/coupons', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(couponData)
+      });
+      if (!res.ok) throw new Error('Failed to save coupon');
+      showToast('Success', 'Coupon created successfully', 'success');
+      fetchCoupons();
+    } catch (err: any) {
+      showToast('Error', err.message, 'error');
+    }
+  }, [token, showToast, fetchCoupons]);
+
+  const deleteCoupon = useCallback(async (id: string) => {
+    try {
+      const headers: any = {};
+      if (token) headers.Authorization = `Bearer ${token}`;
+      const res = await fetch(`/api/coupons/${id}`, { method: 'DELETE', headers });
+      if (!res.ok) throw new Error('Failed to delete');
+      showToast('Success', 'Coupon deleted', 'success');
+      fetchCoupons();
+    } catch (err) {
+      showToast('Error', 'Failed to delete coupon', 'error');
+    }
+  }, [token, showToast, fetchCoupons]);
 
   const setCurrentUser = useCallback((user: User | null, newToken: string | null) => {
     setCurrentUserInternal(user);
@@ -234,30 +352,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const getDisplayPrice = useCallback((basePrice: number) => {
     return (basePrice * pricePercentage) / 100;
   }, [pricePercentage]);
-
-  // Helper function to map product data
-  const mapProductData = useCallback((p: any): Product => {
-    const categoryId = p.category && (typeof p.category === 'object' ? (p.category._id || p.category.id) : p.category);
-    return {
-      id: p._id || p.id,
-      name: p.name,
-      price: p.price,
-      originalPrice: p.originalPrice ?? null,
-      description: p.description || '',
-      stockQuantity: p.stockQuantity ?? p.stock ?? 0,
-      categoryId: categoryId || '',
-      image: p.image || p.imageUrl || undefined,
-      images: p.images || undefined,
-      tags: p.tags || [],
-      viewCount: p.viewCount ?? undefined,
-      addToCartCount: p.addToCartCount ?? undefined,
-      soldLast24Hours: p.soldLast24Hours ?? undefined,
-      outOfStock: p.outOfStock ?? false,
-      isNewArrival: p.isNewArrival ?? false,
-      isLimitedEdition: p.isLimitedEdition ?? false,
-      isActive: p.isActive ?? true,
-    } as Product;
-  }, []);
 
   // Fetch products by category with pagination
   const fetchProductsByCategory = useCallback(async (
@@ -986,6 +1080,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setShippingFee,
     freeShippingThreshold,
     setFreeShippingThreshold,
+    coupons,
+    fetchCoupons,
+    validateCoupon,
+    addCoupon,
+    deleteCoupon,
     setProducts,
     setCategories,
     setOrders,

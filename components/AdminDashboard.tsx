@@ -6,8 +6,9 @@ import OrderManagement from './admin/OrderManagement';
 import CsvUpload from './admin/CsvUpload';
 import DataManagement from './admin/DataManagement';
 import UserManagement from './admin/UserManagement';
+import CouponManagement from './admin/CouponManagement';
 
-type AdminView = 'products' | 'categories' | 'orders' | 'users' | 'csv-upload' | 'data-management' | 'price-settings';
+type AdminView = 'products' | 'categories' | 'orders' | 'users' | 'csv-upload' | 'data-management' | 'price-settings' | 'coupons';
 
 const AdminDashboard: React.FC = () => {
   const [view, setView] = useState<AdminView>('products');
@@ -28,6 +29,8 @@ const AdminDashboard: React.FC = () => {
         return <CsvUpload />;
       case 'data-management':
         return <DataManagement />;
+      case 'coupons':
+        return <CouponManagement />;
       case 'price-settings':
         return (
           <div className="bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-xl border border-indigo-50 dark:border-indigo-900/30">
@@ -173,6 +176,9 @@ const AdminDashboard: React.FC = () => {
           </button>
           <button onClick={() => setView('data-management')} className={getTabClass('data-management')}>
             Data Management
+          </button>
+          <button onClick={() => setView('coupons')} className={getTabClass('coupons')}>
+            🎟️ Coupons
           </button>
           <button onClick={() => setView('price-settings')} className={getTabClass('price-settings')}>
             💰 Pricing & Shipping

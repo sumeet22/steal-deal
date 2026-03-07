@@ -33,7 +33,7 @@ const INDIAN_STATES = [
 ];
 
 const Checkout: React.FC<CheckoutProps> = ({ onBackToStore }) => {
-  const { cart, createOrder, currentUser, addAddress, validateAndUpdateCart, shippingFee, freeShippingThreshold } = useAppContext();
+  const { cart, createOrder, currentUser, addAddress, validateAndUpdateCart, shippingFee, freeShippingThreshold, validateCoupon } = useAppContext();
   const { showToast } = useToast();
 
   const [customerInfo, setCustomerInfo] = useState({
@@ -56,6 +56,10 @@ const Checkout: React.FC<CheckoutProps> = ({ onBackToStore }) => {
 
   const [selectedAddressId, setSelectedAddressId] = useState<string>('new');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [couponCode, setCouponCode] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discountPercentage: number; discountAmount: number } | null>(null);
+  const [availableCoupons, setAvailableCoupons] = useState<any[]>([]);
+  const [isCheckingCoupon, setIsCheckingCoupon] = useState(false);
 
   useEffect(() => {
     if (currentUser) {
@@ -110,19 +114,45 @@ const Checkout: React.FC<CheckoutProps> = ({ onBackToStore }) => {
     };
 
     validateCart();
+
+    // Fetch public coupons
+    const fetchPublicCoupons = async () => {
+      try {
+        const res = await fetch('/api/coupons/public');
+        if (res.ok) {
+          const data = await res.json();
+          setAvailableCoupons((data || []).map((c: any) => ({
+            id: c._id || c.id,
+            ...c
+          })));
+        }
+      } catch (err) {
+        console.error('Failed to fetch public coupons');
+      }
+    };
+    fetchPublicCoupons();
   }, [validateAndUpdateCart, showToast]);
 
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+
+  // Calculate Market Price (Sum of original prices)
+  const marketPrice = cart.reduce((sum, item) => sum + (item.originalPrice || item.price) * item.quantity, 0);
 
   // Calculate Shipping
   const isFreeShipping = freeShippingThreshold > 0 && subtotal >= freeShippingThreshold;
   const shippingCost = (customerInfo.deliveryMethod === 'home_delivery' && !isFreeShipping) ? shippingFee : 0;
 
   // Calculate Discount (5% on subtotal, excluding shipping)
-  const discount = customerInfo.paymentMethod === 'Online Payment' ? subtotal * 0.05 : 0;
+  const onlineDiscount = customerInfo.paymentMethod === 'Online Payment' ? subtotal * 0.05 : 0;
+
+  // Calculate Coupon Discount
+  const couponDiscount = appliedCoupon ? (subtotal * (appliedCoupon.discountPercentage / 100)) : 0;
 
   // Final Total
-  const total = subtotal + shippingCost - discount;
+  const total = subtotal + shippingCost - onlineDiscount - couponDiscount;
+
+  // Total Savings Calculation
+  const totalSavings = marketPrice - total;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -138,6 +168,33 @@ const Checkout: React.FC<CheckoutProps> = ({ onBackToStore }) => {
       // For simplicity, if they edit, we treat it as "new" for saving purposes if it differs from the saved one. 
       // But visually, let's keep it 'new' to imply it's not the saved one anymore.
     }
+  };
+
+  const handleApplyCoupon = async (codeToApply?: string) => {
+    const code = codeToApply || couponCode;
+    if (!code) return;
+
+    setIsCheckingCoupon(true);
+    try {
+      const coupon = await validateCoupon(code, subtotal);
+      const discountVal = (subtotal * (coupon.discountPercentage / 100));
+      setAppliedCoupon({
+        code: coupon.code,
+        discountPercentage: coupon.discountPercentage,
+        discountAmount: discountVal
+      });
+      setCouponCode('');
+      showToast('Coupon Applied!', `${coupon.code} applied successfully`, 'success');
+    } catch (err: any) {
+      showToast('Invalid Coupon', err.message, 'error');
+    } finally {
+      setIsCheckingCoupon(false);
+    }
+  };
+
+  const removeCoupon = () => {
+    setAppliedCoupon(null);
+    showToast('Coupon Removed', '', 'info');
   };
 
   const handleSavedAddressSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -354,6 +411,7 @@ const Checkout: React.FC<CheckoutProps> = ({ onBackToStore }) => {
           total: total,
           paymentMethod: customerInfo.paymentMethod as any,
           status: 'Pending',
+          appliedCoupon: appliedCoupon ? { code: appliedCoupon.code, discountAmount: appliedCoupon.discountAmount } : undefined,
         } as any);
 
         if (!pendingOrder) throw new Error('Order creation failed');
@@ -421,6 +479,7 @@ const Checkout: React.FC<CheckoutProps> = ({ onBackToStore }) => {
         total: total,
         paymentMethod: customerInfo.paymentMethod as any,
         status: 'New',
+        appliedCoupon: appliedCoupon ? { code: appliedCoupon.code, discountAmount: appliedCoupon.discountAmount } : undefined,
       } as any);
 
       setIsProcessing(false);
@@ -616,7 +675,7 @@ const Checkout: React.FC<CheckoutProps> = ({ onBackToStore }) => {
               <div className="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl border border-gray-100 dark:border-gray-700 space-y-4">
                 <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg border border-green-100 dark:border-green-800 text-center animate-pulse-slow">
                   <p className="text-green-700 dark:text-green-300 font-bold text-sm">
-                    🎉 You saved ₹{discount.toFixed(2)} using Online Payment!
+                    🎉 You saved ₹{onlineDiscount.toFixed(2)} using Online Payment!
                   </p>
                 </div>
 
@@ -625,7 +684,6 @@ const Checkout: React.FC<CheckoutProps> = ({ onBackToStore }) => {
                     You will be redirected to our secure payment gateway to complete your transaction.
                   </p>
                   <div className="flex justify-center gap-4 mt-4 opacity-70 grayscale">
-                    {/* Payment Logos Placeholder */}
                     <span className="text-xs">UPI • Cards • NetBanking</span>
                   </div>
                 </div>
@@ -647,7 +705,32 @@ const Checkout: React.FC<CheckoutProps> = ({ onBackToStore }) => {
         transition={{ delay: 0.2 }}
         className="bg-white dark:bg-gray-800 shadow-lg rounded-2xl p-6 sm:p-8 order-1 lg:order-2 h-fit"
       >
-        <h2 className="text-2xl font-bold mb-6">Order Summary</h2>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-2xl font-bold">Order Summary</h2>
+          {totalSavings > 0 && (
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="bg-green-500 text-white px-3 py-1 rounded-full text-xs font-black uppercase tracking-tighter shadow-lg shadow-green-500/20"
+            >
+              Total Savings: ₹{totalSavings.toFixed(0)}
+            </motion.div>
+          )}
+        </div>
+
+        {/* Market Price Excitement Bar */}
+        {marketPrice > total && (
+          <div className="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-2xl mb-6 border-2 border-dashed border-indigo-200 dark:border-indigo-800 flex items-center gap-4">
+            <div className="text-3xl">🚀</div>
+            <div>
+              <p className="text-xs font-black uppercase text-indigo-400 tracking-widest">You're Getting a Steal Deal!</p>
+              <p className="text-sm font-bold text-gray-600 dark:text-gray-300">
+                Market Price: <span className="line-through text-gray-400">₹{marketPrice.toFixed(0)}</span>
+                <span className="ml-2 text-indigo-600 dark:text-indigo-400">Your Deal: ₹{total.toFixed(0)}</span>
+              </p>
+            </div>
+          </div>
+        )}
         <div className="space-y-4 mb-6">
           {cart.map(item => (
             <div key={item.id} className="flex justify-between items-center border-b border-gray-100 dark:border-gray-700 pb-4 last:border-0 last:pb-0">
@@ -658,10 +741,73 @@ const Checkout: React.FC<CheckoutProps> = ({ onBackToStore }) => {
                   <p className="text-sm text-gray-500">Qty: {item.quantity}</p>
                 </div>
               </div>
-              <span className="font-medium">₹{(item.price * item.quantity).toFixed(2)}</span>
+              <div className="text-right">
+                {item.originalPrice && item.originalPrice > item.price && (
+                  <span className="text-[10px] text-gray-400 line-through block italic">
+                    MRP ₹{(item.originalPrice * item.quantity).toFixed(0)}
+                  </span>
+                )}
+                <span className="font-bold text-indigo-600 dark:text-indigo-400">₹{(item.price * item.quantity).toFixed(2)}</span>
+              </div>
             </div>
           ))}
         </div>
+
+        {/* Coupon Code Section */}
+        <div className="mb-6 space-y-4">
+          <h3 className="text-sm font-black uppercase text-gray-400 tracking-widest px-1">Have a Coupon?</h3>
+          {appliedCoupon ? (
+            <div className="flex items-center justify-between bg-green-50 dark:bg-green-900/20 p-4 rounded-2xl border-2 border-green-200 dark:border-green-800">
+              <div className="flex items-center gap-3 text-green-700 dark:text-green-300">
+                <span className="font-black tracking-tighter">{appliedCoupon.code}</span>
+                <span className="text-xs font-bold bg-green-200 dark:bg-green-800 px-2 py-0.5 rounded-lg">-{appliedCoupon.discountPercentage}%</span>
+              </div>
+              <button onClick={removeCoupon} className="text-xs font-black text-red-500 uppercase hover:underline">Remove</button>
+            </div>
+          ) : (
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="PROMO CODE"
+                value={couponCode}
+                onChange={e => setCouponCode(e.target.value.toUpperCase())}
+                className="flex-1 bg-gray-50 dark:bg-gray-700 p-3 rounded-xl font-black tracking-tighter border-2 border-transparent focus:border-indigo-500 outline-none transition-all uppercase"
+              />
+              <button
+                type="button"
+                onClick={() => handleApplyCoupon()}
+                disabled={isCheckingCoupon || !couponCode}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 rounded-xl font-bold transition-all disabled:opacity-50"
+              >
+                {isCheckingCoupon ? '...' : 'Apply'}
+              </button>
+            </div>
+          )}
+
+          {/* Available Coupons List */}
+          {!appliedCoupon && availableCoupons.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-[10px] font-black uppercase text-gray-400 tracking-widest px-1">Available Coupons</p>
+              <div className="flex flex-wrap gap-2">
+                {availableCoupons.map(coupon => (
+                  <button
+                    key={coupon.id}
+                    type="button"
+                    onClick={() => handleApplyCoupon(coupon.code)}
+                    className="group bg-white dark:bg-gray-700 border border-indigo-100 dark:border-indigo-800 px-3 py-2 rounded-xl text-left hover:border-indigo-500 transition-all shadow-sm"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-black tracking-tighter text-indigo-600">{coupon.code}</span>
+                      <span className="text-[10px] font-bold text-gray-400">({coupon.discountPercentage}%)</span>
+                    </div>
+                    <p className="text-[9px] text-gray-400 leading-tight mt-1">{coupon.description}</p>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
         <div className="border-t pt-6 dark:border-gray-700">
           <div className="flex justify-between text-base mb-2">
             <span className="text-gray-600 dark:text-gray-400">Subtotal</span>
@@ -682,10 +828,17 @@ const Checkout: React.FC<CheckoutProps> = ({ onBackToStore }) => {
             )}
           </div>
 
-          {discount > 0 && (
+          {onlineDiscount > 0 && (
             <div className="flex justify-between text-base mb-2 text-green-600 dark:text-green-400 font-medium">
               <span>Online Discount (5%)</span>
-              <span>-₹{discount.toFixed(2)}</span>
+              <span>-₹{onlineDiscount.toFixed(2)}</span>
+            </div>
+          )}
+
+          {appliedCoupon && (
+            <div className="flex justify-between text-base mb-2 text-green-600 dark:text-green-400 font-medium">
+              <span>Coupon Discount ({appliedCoupon.code})</span>
+              <span>-₹{couponDiscount.toFixed(2)}</span>
             </div>
           )}
 

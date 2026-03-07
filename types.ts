@@ -62,6 +62,11 @@ export interface Address extends ShippingAddress {
   type?: 'Home' | 'Work' | 'Other';
 }
 
+export interface AppliedCoupon {
+  code: string;
+  discountAmount: number;
+}
+
 export interface Order {
   id: string;
   customerName: string;
@@ -73,8 +78,21 @@ export interface Order {
   deliveryMethod: 'store_pickup' | 'home_delivery';
   shippingCost: number;
   paymentMethod: 'COD' | 'Online Payment';
+  appliedCoupon?: AppliedCoupon;
   paymentProof?: string;
   createdAt: string;
+}
+
+export interface Coupon {
+  id: string;
+  code: string;
+  description: string;
+  discountPercentage: number;
+  minOrderAmount: number;
+  expiryDate: string;
+  isActive: boolean;
+  usageCount: number;
+  isPublic: boolean;
 }
 
 export interface User {

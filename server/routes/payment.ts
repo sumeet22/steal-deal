@@ -28,13 +28,19 @@ router.post('/orders', async (req, res) => {
             return res.status(500).json({ message: 'Server configuration error' });
         }
 
-        if (!order_amount) {
-            return res.status(400).json({ message: 'Amount is required' });
+        if (!order_id) {
+            return res.status(400).json({ message: 'Order ID is required' });
         }
 
-        // Cashfree minimum amount is 1.00 INR
-        const finalAmount = Math.max(1, Number(order_amount));
-        const sanitizedPhone = (customer_details?.customer_phone || '9999999999').replace(/\D/g, '').slice(-10);
+        // --- SECURITY: Fetch amount from OUR database ---
+        const localOrder = await Order.findById(order_id);
+        if (!localOrder) {
+            return res.status(404).json({ message: 'Local order not found' });
+        }
+
+        // Use the validated total from our DB
+        const finalAmount = Math.max(1, localOrder.total);
+        const sanitizedPhone = (customer_details?.customer_phone || localOrder.customerPhone || '9999999999').replace(/\D/g, '').slice(-10);
 
         const data = {
             order_amount: finalAmount,
@@ -114,7 +120,33 @@ router.post('/verify', async (req, res) => {
                 return res.status(404).json({ message: "Local order record not found in database." });
             }
 
-            console.log(`[Verify] Local order ${trimmedOrderId} updated to 'New'.`);
+            // --- STOCK MANAGEMENT (Online Payment) ---
+            // Only decrement stock if the order was actually 'Pending' 
+            // (prevents double decrementing on duplicate notifications)
+            if (localOrder.status === 'Pending') {
+                const Product = (await import('../models/Product.js')).default;
+                for (const item of localOrder.items) {
+                    await Product.findByIdAndUpdate(item.id, {
+                        $inc: { stockQuantity: -item.quantity },
+                        $set: { outOfStock: false }
+                    });
+
+                    const updated = await Product.findById(item.id);
+                    if (updated && updated.stockQuantity <= 0) {
+                        await Product.findByIdAndUpdate(item.id, { outOfStock: true, stockQuantity: 0 });
+                    }
+                }
+
+                // Now officially mark it as 'New' (Paid and ready for processing)
+                localOrder.status = 'New';
+                localOrder.paymentMethod = 'Online Payment';
+                localOrder.paymentId = order.cf_order_id?.toString();
+                await localOrder.save();
+
+                console.log(`[Verify] Local order ${trimmedOrderId} validated and stock decremented.`);
+            } else {
+                console.log(`[Verify] Order ${trimmedOrderId} already processed (Status: ${localOrder.status})`);
+            }
 
             // Send emails
             try {

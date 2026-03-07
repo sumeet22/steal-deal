@@ -7,6 +7,7 @@ import rateLimit from 'express-rate-limit';
 import hpp from 'hpp';
 // @ts-ignore
 import xss from 'xss-clean';
+import mongoSanitize from 'express-mongo-sanitize';
 
 const app = express();
 const PORT = Number(process.env.PORT) || 5000;
@@ -24,17 +25,30 @@ app.set('trust proxy', 1);
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
 })); // Secure HTTP headers
-// app.use(mongoSanitize()); // Data sanitization against NoSQL query injection (Incompatible with Express 5)
-// app.use(xss()); // Data sanitization against XSS
+app.use(mongoSanitize()); // Data sanitization against NoSQL query injection
+app.use(xss()); // Data sanitization against XSS
 app.use(hpp()); // Prevent HTTP Parameter Pollution
 
 // Rate Limiting
-const limiter = rateLimit({
+const globalLimiter = rateLimit({
   windowMs: 10 * 60 * 1000, // 10 minutes
-  max: 1000, // Limit each IP to 100 requests per windowMs
+  max: 2000, // Allow more for browsing
   message: 'Too many requests from this IP, please try again after 10 minutes'
 });
-app.use('/api', limiter); // Apply to all API routes
+
+const strictLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 20, // 20 requests per 10 mins (orders, payments, login)
+  message: 'Too many requests to this sensitive endpoint. Please wait.'
+});
+
+app.use('/api', globalLimiter);
+
+// Apply stricter limits to sensitive routes
+app.use('/api/orders', strictLimiter);
+app.use('/api/payment', strictLimiter);
+app.use('/api/auth/login', strictLimiter);
+app.use('/api/auth/register', strictLimiter);
 
 mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27018/stealdeal', {
   maxPoolSize: 10, // Maximum number of connections in the pool
@@ -56,6 +70,7 @@ import paymentRouter from './routes/payment.js';
 
 import contactRouter from './routes/contact.js';
 import settingsRouter from './routes/settings.js';
+import couponRouter from './routes/coupons.js';
 
 app.use('/api/categories', categoriesRouter);
 app.use('/api/products', productsRouter);
@@ -66,6 +81,7 @@ app.use('/api/wishlist', wishlistRouter);
 app.use('/api/payment', paymentRouter);
 app.use('/api/contact', contactRouter);
 app.use('/api/settings', settingsRouter);
+app.use('/api/coupons', couponRouter);
 
 app.get('/', (req, res) => {
   res.send('API is running...');

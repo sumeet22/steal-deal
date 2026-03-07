@@ -29,6 +29,10 @@ export interface IOrder extends Document {
   deliveryMethod: string;
   shippingCost: number;
   paymentMethod: string;
+  appliedCoupon?: {
+    code: string;
+    discountAmount: number;
+  };
   paymentProof?: string;
   paymentId?: string;
   createdAt: Date;
@@ -93,6 +97,10 @@ const OrderSchema = new Schema<IOrder>({
     required: true,
     enum: ['COD', 'Bank Transfer', 'Pick from Store', 'Razorpay', 'Online Payment'],
     default: 'COD',
+  },
+  appliedCoupon: {
+    code: String,
+    discountAmount: Number,
   },
   paymentProof: {
     type: String,
