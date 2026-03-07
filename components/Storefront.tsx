@@ -383,13 +383,15 @@ const Storefront: React.FC<StorefrontProps> = ({ onProductClick, activeCategoryI
   const categoryFilteredProducts = useMemo(() => {
     if (!activeCategoryId) return [];
 
-    // Filter loaded products by search term
+    // Filter by active category AND active status to prevent Admin-panel cache leaks
+    const baseProducts = products.filter(p => p.categoryId === activeCategoryId && p.isActive !== false);
+
     if (!categorySearchTerm.trim()) {
-      return products;
+      return baseProducts;
     }
 
     const term = categorySearchTerm.trim().toLowerCase();
-    return products.filter(product =>
+    return baseProducts.filter(product =>
       (product.name || '').toLowerCase().includes(term)
     );
   }, [products, categorySearchTerm, activeCategoryId]);
@@ -397,7 +399,8 @@ const Storefront: React.FC<StorefrontProps> = ({ onProductClick, activeCategoryI
   // Global search products (already loaded from API)
   const globalFilteredProducts = useMemo(() => {
     if (!globalSearchTerm.trim()) return [];
-    return products; // Products are already filtered by API
+    // Only show active products
+    return products.filter(p => p.isActive !== false);
   }, [products, globalSearchTerm]);
 
   // Create a memoized map of cart items by product ID to ensure stable references

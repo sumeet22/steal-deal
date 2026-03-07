@@ -168,7 +168,7 @@ const NewArrivalsPage: React.FC<NewArrivalsPageProps> = ({ onProductClick, onBac
             </div>
 
             {/* Products Grid */}
-            {products.length > 0 ? (
+            {products.filter(p => p.isActive !== false).length > 0 ? (
                 <>
                     <motion.div
                         variants={containerVariants}
@@ -176,7 +176,7 @@ const NewArrivalsPage: React.FC<NewArrivalsPageProps> = ({ onProductClick, onBac
                         animate="show"
                         className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 sm:gap-8"
                     >
-                        {products.map(product => {
+                        {products.filter(p => p.isActive !== false).map(product => {
                             const cartItem = cartItemsMap.get(product.id);
                             return (
                                 <ProductCard
