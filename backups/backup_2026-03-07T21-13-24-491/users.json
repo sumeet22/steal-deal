@@ -1,0 +1,83 @@
+[
+  {
+    "_id": "6947ee7c1aa817575668ba83",
+    "email": "ssdas220496+admin1@gmail.com",
+    "password": "$2b$10$5O6A2VXjmmKXqlTXUq3JuOJOU/yJ24et84DOO6dgW0w19JmVHo0Ma",
+    "name": "Steal Deals",
+    "phone": "+919004818637",
+    "role": "admin",
+    "isVerified": true,
+    "isBanned": false,
+    "createdAt": "2025-12-21T12:56:28.547Z",
+    "updatedAt": "2025-12-21T13:10:08.777Z",
+    "__v": 0,
+    "addresses": [
+      {
+        "addressLine1": "504-B wing, Golden Eagle Complex, new golden nest, Bhayandar east",
+        "addressLine2": "",
+        "landmark": "",
+        "city": "Bhayandar",
+        "state": "Maharashtra",
+        "pincode": "401105",
+        "country": "India",
+        "isDefault": false,
+        "type": "Home",
+        "_id": "69ac6acd71c64780c63f1da6"
+      }
+    ]
+  },
+  {
+    "_id": "6949040ed7e51452b42ad099",
+    "email": "sdas220496+user1@gmail.com",
+    "password": "$2b$10$gUucVH6tPDEeTCg2DqEGyubz.BMZ.bJi30ycF9RfrmkP4UYpDiMji",
+    "name": "Steal Deals",
+    "phone": "+919004818636",
+    "role": "user",
+    "isVerified": false,
+    "isBanned": false,
+    "verificationToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6InNkYXMyMjA0OTYrdXNlcjFAZ21haWwuY29tIiwiaWF0IjoxNzY2MzkyODQ2LCJleHAiOjE3NjYzOTY0NDZ9.vJkt_w-dmNVavwQLicw3JaSpmQED9QXYfyuswQLVclc",
+    "createdAt": "2025-12-22T08:40:46.990Z",
+    "updatedAt": "2025-12-22T08:40:46.990Z",
+    "__v": 0
+  },
+  {
+    "_id": "6949040fd7e51452b42ad09c",
+    "email": "dasrohit87654321@gmail.com",
+    "password": "$2b$10$rxFOiOHfTG6TKmQi4.hrx..RZZpYvbGwmPIt3EYzf7lRsYropbpoq",
+    "name": "Rohit Das",
+    "phone": "+919987266028",
+    "role": "user",
+    "isVerified": true,
+    "isBanned": false,
+    "createdAt": "2025-12-22T08:40:47.745Z",
+    "updatedAt": "2025-12-22T08:42:43.313Z",
+    "__v": 0
+  },
+  {
+    "_id": "698988d891b14edbf748861b",
+    "email": "ssdas220496@gmail.com",
+    "password": "$2b$10$aFYTwMntl6/WTmJ3sXD1OOKd11W7Z6XUYEG/m6Fc207HzaNDNFSt6",
+    "name": "same team",
+    "phone": "+919004818637",
+    "role": "admin",
+    "isVerified": true,
+    "isBanned": false,
+    "verificationToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6InNzZGFzMjIwNDk2QGdtYWlsLmNvbSIsImlhdCI6MTc3MDYyMTE0NCwiZXhwIjoxNzcwNjI0NzQ0fQ.sRcfVN3k_Ctnw3qwNGRar0iSQvtpYbxFPq3MkigLsog",
+    "createdAt": "2026-02-09T07:12:24.059Z",
+    "updatedAt": "2026-02-09T07:12:24.059Z",
+    "__v": 0
+  },
+  {
+    "_id": "69ac651a6f6f8606f4a7f97a",
+    "email": "apu110495@gmail.com",
+    "password": "$2b$10$tE.Mkxu/wryHEFf2OwMN5ea8Yi6iFqwcryVkgsnpihoRZK7J34x5K",
+    "name": "Apurva Harne",
+    "phone": "+919967081104",
+    "role": "user",
+    "isVerified": true,
+    "isBanned": false,
+    "createdAt": "2026-03-07T17:49:14.724Z",
+    "updatedAt": "2026-03-07T17:50:03.220Z",
+    "__v": 0
+  }
+]

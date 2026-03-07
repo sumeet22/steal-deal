@@ -1,17 +1,30 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-body {
-  font-family: 'Inter', sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  -webkit-text-size-adjust: 100%;
-  -moz-text-size-adjust: 100%;
-  -ms-text-size-adjust: 100%;
-  text-size-adjust: 100%;
+@layer base {
+  body {
+    font-family: 'Inter', sans-serif;
+    @apply bg-surface-light dark:bg-surface-dark text-slate-900 dark:text-slate-100;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: 'Outfit', sans-serif;
+    @apply tracking-tight;
+  }
+}
+
+* {
+  @apply transition-colors duration-200 ease-in-out;
 }
 
 /* Prevent mobile zoom on input focus */
@@ -50,14 +63,23 @@ body {
   background: #6b7280;
 }
 
-/* Logo filter for light mode - invert to make black bg white */
-.logo-filter {
-  filter: invert(1) hue-rotate(180deg);
+/* Glassmorphism Classes */
+.glass {
+  @apply bg-white/70 dark:bg-gray-900/70 backdrop-blur-md border border-white/20 dark:border-white/10 shadow-glass;
 }
 
-/* Logo filter for dark mode - enhance contrast */
-.dark .logo-filter {
-  filter: contrast(130%) brightness(105%);
+.glass-dark {
+  @apply bg-black/40 backdrop-blur-xl border border-white/10 shadow-glass;
+}
+
+/* Logo Styling */
+.logo-img {
+  transition: all 0.3s ease;
+}
+
+.dark .logo-img {
+  /* Only invert if the logo text is dark. Based on user screenshots it is black/blue. */
+  filter: brightness(1.2);
 }
 
 
