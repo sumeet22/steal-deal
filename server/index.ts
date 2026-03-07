@@ -25,8 +25,13 @@ app.set('trust proxy', 1);
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
 })); // Secure HTTP headers
-app.use(mongoSanitize()); // Data sanitization against NoSQL query injection
-app.use(xss()); // Data sanitization against XSS
+// Custom Sanitization for Express 5 compatibility
+app.use((req, _res, next) => {
+  if (req.body) mongoSanitize.sanitize(req.body);
+  if (req.query) mongoSanitize.sanitize(req.query);
+  if (req.params) mongoSanitize.sanitize(req.params);
+  next();
+});
 app.use(hpp()); // Prevent HTTP Parameter Pollution
 
 // Rate Limiting
