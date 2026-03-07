@@ -1,5 +1,5 @@
 import React, { useState, Suspense, useEffect } from 'react';
-import { HelmetProvider } from 'react-helmet-async';
+import { HelmetProvider, Helmet } from 'react-helmet-async';
 import { AnimatePresence, motion } from 'framer-motion';
 import { AppProvider, useAppContext } from './context/AppContext';
 import { WishlistProvider, useWishlist } from './context/WishlistContext';
@@ -70,7 +70,7 @@ const App: React.FC = () => {
   const [theme, setTheme] = useLocalStorage<'light' | 'dark'>('theme', 'dark');
   const [authView, setAuthView] = useState<'login' | 'register'>('login');
 
-  const { cart, products, currentUser, setCurrentUser } = useAppContext();
+  const { cart, products, categories, currentUser, setCurrentUser } = useAppContext();
 
   const cartItemCount = cart.reduce((count, item) => count + item.quantity, 0);
 
@@ -299,8 +299,41 @@ const App: React.FC = () => {
     return <NoInternetScreen />;
   }
 
+  const activeProduct = selectedProductId ? products.find(p => p.id === selectedProductId) : null;
+  const activeCategoryName = selectedCategory ? categories.find(c => c.id === selectedCategory)?.name : null;
+
+  const getPageMeta = () => {
+    const base = {
+      title: 'Steal Deal - Best Anime & RC Merch',
+      desc: 'Shop the best deals on anime figures, RC cars & unique collectibles.'
+    };
+
+    if (view === 'product' && activeProduct) {
+      return {
+        title: `${activeProduct.name} | Steal Deal`,
+        desc: activeProduct.description.substring(0, 160)
+      };
+    }
+    if (selectedCategory && activeCategoryName) {
+      return {
+        title: `${activeCategoryName} Collections | Steal Deal`,
+        desc: `Explore our collection of ${activeCategoryName}. Best prices on Steal Deal.`
+      };
+    }
+    return base;
+  };
+
+  const { title, desc } = getPageMeta();
+
   return (
     <div className="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen font-sans">
+      <Helmet>
+        <title>{title}</title>
+        <meta name="description" content={desc} />
+        <meta property="og:title" content={title} />
+        <meta property="og:description" content={desc} />
+        {activeProduct?.image && <meta property="og:image" content={activeProduct.image} />}
+      </Helmet>
       <header className="bg-white dark:bg-gray-800 shadow-md sticky top-0 z-40">
         <nav className="container mx-auto px-4 sm:px-6 lg:px-8" role="navigation">
           <div className="flex items-center justify-between h-16 relative">

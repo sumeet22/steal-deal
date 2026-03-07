@@ -112,4 +112,11 @@ const OrderSchema = new Schema<IOrder>({
   timestamps: true,
 });
 
+// Optimization Indexes
+OrderSchema.index({ createdAt: -1 }); // Dashboard and User History sort
+OrderSchema.index({ customerPhone: 1 }); // User history lookup
+OrderSchema.index({ status: 1 }); // Admin filtering
+OrderSchema.index({ user: 1 }); // Registered user history
+OrderSchema.index({ paymentId: 1 }, { sparse: true }); // Payment verification lookup
+
 export default model<IOrder>('Order', OrderSchema);
