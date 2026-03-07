@@ -81,7 +81,18 @@ const App: React.FC = () => {
   const mainStoreScrollPos = React.useRef(0); // Scroll position of the main category list
   const categoryScrollPos = React.useRef(0);  // Scroll position of the product list within a category
 
-  const navigate = (newView: View, productId?: string, categoryId?: string | null) => {
+  const navigate = (newView: View, productId?: string, categoryId?: string | null, replaceHistory = false) => {
+    // Determine if we are already at this destination to prevent redundant history entries
+    if (!replaceHistory) {
+      const currentParams = new URLSearchParams(window.location.search);
+      const isSameView = (currentParams.get('view') || 'store') === newView;
+      const isSameProd = (currentParams.get('productId') || undefined) === productId;
+      const isSameCat = (currentParams.get('categoryId') || null) === (categoryId === undefined ? selectedCategory : categoryId);
+
+      if (isSameView && isSameProd && isSameCat) {
+        replaceHistory = true;
+      }
+    }
 
     // 1. Going from Root Store (No Category) -> Category View
     if (view === 'store' && !selectedCategory && newView === 'store' && categoryId) {
@@ -112,28 +123,24 @@ const App: React.FC = () => {
     if (productId) {
       params.set('productId', productId);
     }
-    if (categoryId) {
-      params.set('categoryId', categoryId);
-    } else if (selectedCategory && categoryId === undefined && newView === 'store') {
-      // Persist existing category if not explicitly changed/cleared
-      params.set('categoryId', selectedCategory);
+
+    // Final category to set in URL
+    const finalCat = categoryId !== undefined ? categoryId : (newView === 'store' ? selectedCategory : null);
+    if (finalCat) {
+      params.set('categoryId', finalCat);
     }
 
-    // If we are explicitly clearing category (categoryId === null), we don't set it.
-
-    window.history.pushState({}, '', `?${params.toString()}`);
+    const newUrl = `?${params.toString()}`;
+    if (replaceHistory) {
+      window.history.replaceState({}, '', newUrl);
+    } else {
+      window.history.pushState({}, '', newUrl);
+    }
 
     // Scroll Handling Logic
-
-    // Case A: Back from Product -> Store (handled by Storefront component on mount via initialScroll prop)
     if (view === 'product' && newView === 'store') {
-      // Do nothing here, let Component handle it
+      // Do nothing, Component handles it
     }
-
-    // Case C: New Navigation (Scroll to Top)
-    // 1. Changing Category (categoryId passed and is not null)
-    // 2. Going to Product (newView === 'product')
-    // 3. Changing major views (Store -> Checkout, etc.)
     else if (categoryId || (newView === 'product') || newView !== view) {
       // Reset scroll positions if we are navigating to a fresh view
       if (categoryId) categoryScrollPos.current = 0;
@@ -170,29 +177,19 @@ const App: React.FC = () => {
   useEffect(() => {
     const parseUrl = () => {
       const params = new URLSearchParams(window.location.search);
-      const viewParam = params.get('view') as View | null;
+      const viewParam = (params.get('view') as View | null) || 'store';
       const productIdParam = params.get('productId');
+      const categoryParam = params.get('categoryId');
       const path = window.location.pathname;
+
       if (path === '/payment-success' || path === '/payment-failure' || path === '/payment-verification') {
         setView('payment-verification');
         return;
       }
 
-      if (viewParam) {
-        setView(viewParam);
-        if (viewParam === 'product' && productIdParam) {
-          setSelectedProductId(productIdParam);
-        } else {
-          setSelectedProductId(null);
-        }
-
-        const categoryParam = params.get('categoryId');
-        if (categoryParam) {
-          setSelectedCategory(categoryParam);
-        } else {
-          setSelectedCategory(null);
-        }
-      }
+      setView(viewParam);
+      setSelectedProductId(productIdParam);
+      setSelectedCategory(categoryParam);
     };
     parseUrl();
     window.addEventListener('popstate', parseUrl);
@@ -202,11 +199,11 @@ const App: React.FC = () => {
   // When user logs out, redirect to auth view if they were in a restricted area
   useEffect(() => {
     if (!currentUser && (view === 'admin' || view === 'orders' || view === 'checkout')) {
-      navigate('auth');
+      navigate('auth', undefined, undefined, true);
     }
     // If currentUser exists and they are on the auth view, redirect them to store
     if (currentUser && view === 'auth') {
-      navigate('store');
+      navigate('store', undefined, undefined, true);
     }
   }, [currentUser, view]);
 
@@ -318,7 +315,7 @@ const App: React.FC = () => {
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <span
                 className="cursor-pointer pointer-events-auto"
-                onClick={() => { navigate('store', undefined, null); window.scrollTo(0, 0); }}
+                onClick={() => navigate('store', undefined, null)}
               >
                 <img
                   src="/logo.png"
