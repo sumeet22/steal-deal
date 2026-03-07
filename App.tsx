@@ -174,7 +174,7 @@ const App: React.FC = () => {
       const viewParam = params.get('view') as View | null;
       const productIdParam = params.get('productId');
       const path = window.location.pathname;
-      if (path === '/payment-success' || path === '/payment-failure') {
+      if (path === '/payment-success' || path === '/payment-failure' || path === '/payment-verification') {
         setView('payment-verification');
         return;
       }

@@ -46,7 +46,7 @@ router.post('/orders', async (req, res) => {
                 customer_phone: sanitizedPhone.length === 10 ? sanitizedPhone : '9999999999',
             },
             order_meta: {
-                return_url: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/payment-verification?order_id={order_id}`
+                return_url: `${process.env.FRONTEND_URL || 'http://localhost:5173'}/?view=payment-verification&order_id={order_id}`
             }
         };
 
@@ -92,31 +92,50 @@ router.post('/verify', async (req, res) => {
         });
 
         const order = response.data;
-        if (order.order_status === 'PAID') {
-            // 1. Update our local order status
-            const localOrder = await Order.findById(order_id);
-            if (localOrder) {
-                localOrder.status = 'New'; // Success status
-                localOrder.paymentMethod = 'Online Payment';
-                // Store first successful payment's info if available
-                localOrder.paymentId = order.cf_order_id?.toString();
-                await localOrder.save();
+        console.log(`[Verify] Order ID: ${order_id}, Cashfree Status: ${order.order_status}`);
 
-                // 2. Send emails
+        const cfStatus = order.order_status?.toUpperCase();
+
+        if (cfStatus === 'PAID' || cfStatus === 'SUCCESS') {
+            // 1. Update our local order status
+            const trimmedOrderId = order_id.trim();
+            const localOrder = await Order.findOneAndUpdate(
+                { _id: trimmedOrderId },
+                {
+                    status: 'New',
+                    paymentMethod: 'Online Payment',
+                    paymentId: order.cf_order_id?.toString()
+                },
+                { new: true }
+            );
+
+            if (!localOrder) {
+                console.error(`[Verify] Local order ${trimmedOrderId} NOT found.`);
+                return res.status(404).json({ message: "Local order record not found in database." });
+            }
+
+            console.log(`[Verify] Local order ${trimmedOrderId} updated to 'New'.`);
+
+            // Send emails
+            try {
                 const customerEmail = order.customer_details?.customer_email || 'customer@example.com';
                 await sendOrderConfirmation(localOrder, customerEmail);
+            } catch (mailErr) {
+                console.error("[Verify] Mail sending failed:", mailErr);
+                // Don't fail the verification if just email fails
             }
 
             return res.status(200).json({
                 message: "Payment verified successfully",
                 order: {
-                    id: order.order_id,
-                    status: order.order_status,
-                    amount: order.order_amount,
+                    id: localOrder._id,
+                    status: 'PAID',
+                    amount: localOrder.total,
                     customer: order.customer_details
                 }
             });
         } else {
+            console.log(`[Verify] Order ${order_id} is not PAID. Status: ${order.order_status}`);
             return res.status(400).json({ message: `Payment status: ${order.order_status}`, status: order.order_status });
         }
     } catch (error: any) {

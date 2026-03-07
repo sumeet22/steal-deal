@@ -10,43 +10,62 @@ const PaymentVerification: React.FC<{ onBackToStore: () => void }> = ({ onBackTo
     const { showToast } = useToast();
     const { clearCart } = useAppContext();
 
-    useEffect(() => {
-        const verifyPayment = async () => {
-            const params = new URLSearchParams(window.location.search);
-            const orderId = params.get('order_id');
+    const [retryCount, setRetryCount] = useState(0);
+    const [cfStatus, setCfStatus] = useState<string | null>(null);
 
-            if (!orderId) {
-                setStatus('failure');
-                return;
-            }
+    const verifyPayment = async () => {
+        const params = new URLSearchParams(window.location.search);
+        let orderId = params.get('order_id');
 
-            try {
-                const res = await fetch('/api/payment/verify', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ order_id: orderId }),
-                });
+        // Fallback for path-based order_id if search param is missing
+        if (!orderId && window.location.pathname.startsWith('/payment-verification/')) {
+            orderId = window.location.pathname.split('/').pop() || null;
+        }
 
-                const data = await res.json();
+        if (!orderId) {
+            setStatus('failure');
+            return;
+        }
 
-                if (res.ok) {
-                    setStatus('success');
-                    setOrderDetails(data.order);
-                    showToast('Success', 'Payment verified successfully!', 'success');
-                    clearCart(); // Clear cart as order is now confirmed
+        setStatus('verifying');
+
+        try {
+            console.log(`[PaymentVerification] Verifying order: ${orderId} (Attempt ${retryCount + 1})`);
+            const res = await fetch('/api/payment/verify', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ order_id: orderId }),
+            });
+
+            const data = await res.json();
+            console.log("[PaymentVerification] Result:", { status: res.status, data });
+
+            if (res.ok) {
+                setStatus('success');
+                setOrderDetails(data.order);
+                showToast('Success', 'Payment verified successfully!', 'success');
+                clearCart();
+            } else {
+                setCfStatus(data.status);
+                // If order is still ACTIVE and we haven't exhausted retries, try again after a delay
+                if (data.status === 'ACTIVE' && retryCount < 3) {
+                    console.log(`[PaymentVerification] Order still ACTIVE. Retrying in 3s...`);
+                    setTimeout(() => setRetryCount(prev => prev + 1), 3000);
                 } else {
                     setStatus('failure');
                     showToast('Error', data.message || 'Payment verification failed.', 'error');
                 }
-            } catch (error) {
-                console.error("Verification error:", error);
-                setStatus('failure');
-                showToast('Error', 'An unexpected error occurred.', 'error');
             }
-        };
+        } catch (error) {
+            console.error("[PaymentVerification] Error:", error);
+            setStatus('failure');
+            showToast('Error', 'An unexpected error occurred.', 'error');
+        }
+    };
 
+    useEffect(() => {
         verifyPayment();
-    }, [clearCart, showToast]);
+    }, [clearCart, showToast, retryCount]);
 
     return (
         <div className="max-w-xl mx-auto p-1 sm:p-4 my-8">
@@ -121,9 +140,17 @@ const PaymentVerification: React.FC<{ onBackToStore: () => void }> = ({ onBackTo
                             <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-4 rounded-2xl text-sm font-medium">
                                 If money was deducted, it will be refunded automatically within 5-7 business days.
                             </div>
-                            <button onClick={onBackToStore} className="w-full py-5 bg-gray-900 dark:bg-white dark:text-gray-900 text-white font-extrabold rounded-2xl hover:bg-gray-800 dark:hover:bg-gray-100 transition-all">
-                                Return to Store
-                            </button>
+                            <div className="space-y-4">
+                                <button
+                                    onClick={() => setRetryCount(prev => prev + 1)}
+                                    className="w-full py-5 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold rounded-2xl transition-all shadow-xl shadow-indigo-500/20 active:scale-[0.98]"
+                                >
+                                    Retry Verification
+                                </button>
+                                <button onClick={onBackToStore} className="w-full py-5 bg-gray-900 dark:bg-white dark:text-gray-900 text-white font-extrabold rounded-2xl hover:bg-gray-800 dark:hover:bg-gray-100 transition-all">
+                                    Return to Store
+                                </button>
+                            </div>
                         </motion.div>
                     )}
                 </div>
