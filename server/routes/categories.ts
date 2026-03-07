@@ -49,8 +49,7 @@ router.put('/:id', async (req: Request, res: Response) => {
     if (description !== undefined) update.description = description;
     if (image !== undefined && image !== null) {
       if (typeof image === 'string') {
-        const trimmed = image.trim();
-        if (trimmed !== '') update.image = trimmed;
+        update.image = image.trim();
       } else {
         update.image = image;
       }

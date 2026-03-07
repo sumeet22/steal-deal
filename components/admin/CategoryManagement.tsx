@@ -4,7 +4,7 @@ import { Category } from '../../types';
 import { PencilIcon, TrashIcon, XIcon } from '../Icons';
 
 const CategoryManagement: React.FC = () => {
-  const { categories, addCategory, updateCategory, deleteCategory, reorderCategories } = useAppContext();
+  const { categories, addCategory, updateCategory, deleteCategory, reorderCategories, setCategories } = useAppContext();
   const [newCategory, setNewCategory] = useState({ name: '', image: '' });
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
@@ -49,7 +49,7 @@ const CategoryManagement: React.FC = () => {
           order: updatedCategory.order,
           isActive: updatedCategory.isActive,
         };
-        updateCategory(mappedCategory);
+        setCategories(prev => prev.map(cat => cat.id === mappedCategory.id ? mappedCategory : cat));
       } else {
         console.error('Failed to toggle category status');
       }

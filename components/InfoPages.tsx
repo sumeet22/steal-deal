@@ -114,12 +114,43 @@ export const ShippingPolicy: React.FC = () => (
 
 export const ContactUs: React.FC = () => {
     const [status, setStatus] = React.useState<'idle' | 'submitting' | 'success'>('idle');
+    const [formData, setFormData] = React.useState({
+        name: '',
+        email: '',
+        subject: '',
+        message: ''
+    });
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setStatus('submitting');
-        // Simulate API call
-        setTimeout(() => setStatus('success'), 1500);
+
+        try {
+            const response = await fetch('http://localhost:5000/api/contact', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData),
+            });
+
+            if (response.ok) {
+                setStatus('success');
+                setFormData({ name: '', email: '', subject: '', message: '' });
+            } else {
+                alert("Failed to send message. Please try again.");
+                setStatus('idle');
+            }
+        } catch (error) {
+            console.error("Error sending message:", error);
+            alert("An error occurred. Please check your connection.");
+            setStatus('idle');
+        }
+    };
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
     };
 
     return (
@@ -146,7 +177,7 @@ export const ContactUs: React.FC = () => {
                             </div>
                             <div>
                                 <p className="font-medium">Email</p>
-                                <p className="text-gray-500 text-sm">support@stealdeal2025.com</p>
+                                <p className="text-gray-500 text-sm">ssdas220496@gmail.com</p>
                             </div>
                         </div>
 
@@ -156,7 +187,7 @@ export const ContactUs: React.FC = () => {
                             </div>
                             <div>
                                 <p className="font-medium">Phone</p>
-                                <p className="text-gray-500 text-sm">+91 98765 43210</p>
+                                <p className="text-gray-500 text-sm">+91 90048 18637</p>
                             </div>
                         </div>
 
@@ -166,7 +197,7 @@ export const ContactUs: React.FC = () => {
                             </div>
                             <div>
                                 <p className="font-medium">Office</p>
-                                <p className="text-gray-500 text-sm">123 E-Commerce Plaza, Outer Ring Road, Bangalore - 560103</p>
+                                <p className="text-gray-500 text-sm">Shop no. 4, Narmada Terrace, Cabin Cross Rd, B Wing, Kharegaon, Bhayandar East, Bhayandar, Mira Bhayandar, Maharashtra 401105</p>
                             </div>
                         </div>
                     </div>
@@ -191,19 +222,19 @@ export const ContactUs: React.FC = () => {
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div>
                                 <label className="block text-sm font-medium mb-1">Full Name</label>
-                                <input required type="text" className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 focus:ring-2 focus:ring-indigo-500 outline-none transition-all" placeholder="John Doe" />
+                                <input required name="name" value={formData.name} onChange={handleChange} type="text" className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 focus:ring-2 focus:ring-indigo-500 outline-none transition-all" placeholder="John Doe" />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium mb-1">Email Address</label>
-                                <input required type="email" className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 focus:ring-2 focus:ring-indigo-500 outline-none transition-all" placeholder="john@example.com" />
+                                <input required name="email" value={formData.email} onChange={handleChange} type="email" className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 focus:ring-2 focus:ring-indigo-500 outline-none transition-all" placeholder="john@example.com" />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium mb-1">Subject</label>
-                                <input required type="text" className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 focus:ring-2 focus:ring-indigo-500 outline-none transition-all" placeholder="How can we help?" />
+                                <input required name="subject" value={formData.subject} onChange={handleChange} type="text" className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 focus:ring-2 focus:ring-indigo-500 outline-none transition-all" placeholder="How can we help?" />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium mb-1">Message</label>
-                                <textarea required rows={4} className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 focus:ring-2 focus:ring-indigo-500 outline-none transition-all resize-none" placeholder="Your message here..."></textarea>
+                                <textarea required name="message" value={formData.message} onChange={handleChange} rows={4} className="w-full px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 focus:ring-2 focus:ring-indigo-500 outline-none transition-all resize-none" placeholder="Your message here..."></textarea>
                             </div>
                             <button
                                 type="submit"
