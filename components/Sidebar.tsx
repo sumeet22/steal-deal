@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { XIcon, HomeIcon, UserCircleIcon, ClipboardListIcon, LogoutIcon, ChevronDownIcon, SparklesIcon, DocumentTextIcon, ShieldCheckIcon, RefreshIcon, TruckIcon } from './Icons';
+import { XIcon, HomeIcon, UserCircleIcon, ClipboardListIcon, LogoutIcon, ChevronDownIcon, SparklesIcon, DocumentTextIcon, ShieldCheckIcon, RefreshIcon, TruckIcon, MailIcon } from './Icons';
 import { useAppContext } from '../context/AppContext';
 
 interface SidebarProps {
@@ -250,7 +250,8 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, onNavigate }) => {
                                                         { label: 'Terms & Conditions', action: 'terms', icon: DocumentTextIcon },
                                                         { label: 'Privacy Policy', action: 'privacy', icon: ShieldCheckIcon },
                                                         { label: 'Returns Policy', action: 'returns', icon: RefreshIcon },
-                                                        { label: 'Shipping Policy', action: 'shipping', icon: TruckIcon }
+                                                        { label: 'Shipping Policy', action: 'shipping', icon: TruckIcon },
+                                                        { label: 'Contact Us', action: 'contact', icon: MailIcon }
                                                     ].map((item) => (
                                                         <button
                                                             key={item.action}

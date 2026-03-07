@@ -27,6 +27,7 @@ const TermsAndConditions = React.lazy(() => import('./components/InfoPages').the
 const PrivacyPolicy = React.lazy(() => import('./components/InfoPages').then(module => ({ default: module.PrivacyPolicy })));
 const ReturnsPolicy = React.lazy(() => import('./components/InfoPages').then(module => ({ default: module.ReturnsPolicy })));
 const ShippingPolicy = React.lazy(() => import('./components/InfoPages').then(module => ({ default: module.ShippingPolicy })));
+const ContactUs = React.lazy(() => import('./components/InfoPages').then(module => ({ default: module.ContactUs })));
 const UserProfile = React.lazy(() => import('./components/UserProfile'));
 const HeartsEffect = React.lazy(() => import('./components/effects/HeartsEffect'));
 
@@ -54,7 +55,7 @@ const WishlistButton: React.FC<{ onNavigate: () => void }> = ({ onNavigate }) =>
 };
 
 
-type View = 'store' | 'checkout' | 'orders' | 'admin' | 'product' | 'auth' | 'wishlist' | 'newarrivals' | 'terms' | 'privacy' | 'returns' | 'shipping' | 'profile';
+type View = 'store' | 'checkout' | 'orders' | 'admin' | 'product' | 'auth' | 'wishlist' | 'newarrivals' | 'terms' | 'privacy' | 'returns' | 'shipping' | 'contact' | 'profile';
 
 const App: React.FC = () => {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -228,6 +229,9 @@ const App: React.FC = () => {
       case 'auth':
         document.title = `Authentication | ${baseTitle}`;
         break;
+      case 'contact':
+        document.title = `Contact Us | ${baseTitle}`;
+        break;
       default:
         document.title = baseTitle;
     }
@@ -271,6 +275,8 @@ const App: React.FC = () => {
         return <ReturnsPolicy />;
       case 'shipping':
         return <ShippingPolicy />;
+      case 'contact':
+        return <ContactUs />;
       default:
         return (
           <Storefront
