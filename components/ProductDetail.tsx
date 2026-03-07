@@ -31,7 +31,7 @@ const getProductImages = (product: Product): ProductImage[] => {
 };
 
 const ProductDetail: React.FC<ProductDetailProps> = ({ productId, onBack }) => {
-  const { products, addToCart, cart, updateCartQuantity } = useAppContext();
+  const { products, addToCart, cart, updateCartQuantity, getDisplayPrice } = useAppContext();
   const { isInWishlist, toggleWishlist } = useWishlist();
   const [quantity, setQuantity] = useState(1);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -316,11 +316,11 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ productId, onBack }) => {
 
             <div className="flex items-baseline gap-4 mb-6">
               <p className="text-3xl font-medium text-gray-900 dark:text-white">
-                ₹{product.price.toLocaleString('en-IN')}
+                ₹{getDisplayPrice(product.price).toLocaleString('en-IN')}
               </p>
               {isSale && (
                 <p className="text-xl text-gray-500 line-through">
-                  ₹{product.originalPrice?.toLocaleString('en-IN')}
+                  ₹{getDisplayPrice(product.originalPrice!).toLocaleString('en-IN')}
                 </p>
               )}
             </div>

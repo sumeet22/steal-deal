@@ -17,11 +17,38 @@ const OrderManagement: React.FC = () => {
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<OrderStatus>(OrderStatus.New);
   const [selectedProof, setSelectedProof] = useState<string | null>(null);
+  const [verifyingId, setVerifyingId] = useState<string | null>(null);
 
-  const filteredOrders = orders.filter(order => filterStatus === OrderStatus.New ? true : order.status === filterStatus);
+  const filteredOrders = orders
+    .filter(order => order.status === filterStatus)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   const handleStatusChange = (orderId: string, newStatus: OrderStatus) => {
     updateOrderStatus(orderId, newStatus);
+  };
+
+  const handleVerifyPayment = async (orderId: string) => {
+    setVerifyingId(orderId);
+    try {
+      const res = await fetch('/api/payment/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ order_id: orderId }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert('Payment verified! Status updated to New.');
+        // The endpoint already updates the DB, so we just need to refresh/sync local state
+        // Re-fetching orders or updating local state would be ideal
+        window.location.reload();
+      } else {
+        alert(`Payment verification failed: ${data.message || 'Inactive or Failed'}`);
+      }
+    } catch (error) {
+      alert('Error verifying payment.');
+    } finally {
+      setVerifyingId(null);
+    }
   };
 
   const toggleExpand = (orderId: string) => {
@@ -30,9 +57,10 @@ const OrderManagement: React.FC = () => {
 
   const getStatusColor = (status: OrderStatus) => {
     switch (status) {
+      case OrderStatus.Pending: return 'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-200';
       case OrderStatus.New: return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200';
-      case OrderStatus.Accepted: return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
-      case OrderStatus.Shipped: return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
+      case OrderStatus.Accepted: return 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200';
+      case OrderStatus.Shipped: return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-200';
       case OrderStatus.Cancelled: return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
       case OrderStatus.Completed: return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200';
       default: return 'bg-gray-100 text-gray-800 dark:bg-gray-600 dark:text-gray-200';
@@ -42,46 +70,51 @@ const OrderManagement: React.FC = () => {
   return (
     <>
       <div className="bg-white dark:bg-gray-800 shadow-lg rounded-lg p-4 sm:p-6">
-        <h2 className="text-2xl font-bold mb-6">Manage Orders</h2>
-        <div className="mb-4">
-          <label htmlFor="order-status-filter" className="sr-only">Filter by Status</label>
-          <select
-            id="order-status-filter"
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value as OrderStatus)}
-            className="p-2 border rounded-lg bg-white dark:bg-gray-700 dark:border-gray-600 focus:ring-indigo-500 focus:border-indigo-500"
-          >
-            {Object.values(OrderStatus).map(status => (
-              <option key={status} value={status}>{status}</option>
-            ))}
-          </select>
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold">Manage Orders</h2>
+          <div className="text-xs text-gray-500 bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full">
+            Total {filteredOrders.length} {filterStatus} Orders
+          </div>
         </div>
+
+        <div className="flex gap-2 overflow-x-auto pb-4 mb-2 scrollbar-hide">
+          {Object.values(OrderStatus).map(status => (
+            <button
+              key={status}
+              onClick={() => setFilterStatus(status)}
+              className={`px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-all ${filterStatus === status
+                  ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30'
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                }`}
+            >
+              {status}
+            </button>
+          ))}
+        </div>
+
         <div className="space-y-4">
-          {filteredOrders.map((order: Order) => {
+          {filteredOrders.length > 0 ? filteredOrders.map((order: Order) => {
             const isExpanded = expandedOrderId === order.id;
             return (
-              <div key={order.id} className={`p-4 border rounded-lg dark:border-gray-700 transition-all duration-300 ${isExpanded ? 'bg-gray-50 dark:bg-gray-900/50 shadow-md' : 'shadow-sm'}`}>
+              <div key={order.id} className={`p-4 border rounded-3xl dark:border-gray-700 transition-all duration-300 ${isExpanded ? 'bg-gray-50 dark:bg-gray-900/50 shadow-md border-indigo-200 dark:border-indigo-900' : 'shadow-sm'}`}>
                 <div
                   className="flex flex-wrap justify-between items-center cursor-pointer gap-4"
                   onClick={() => toggleExpand(order.id)}
                   aria-expanded={isExpanded}
-                  aria-controls={`order-details-${order.id}`}
                 >
                   <div className="flex-1 min-w-[150px]">
                     <div className="flex items-center gap-2">
                       <p className="font-bold text-gray-900 dark:text-white">Order #{order.id}</p>
                       {order.paymentMethod === 'Online Payment' && (
-                        <span className="px-2 py-0.5 text-xs bg-indigo-100 text-indigo-800 rounded-full font-medium">Online Pay</span>
+                        <span className="px-2 py-0.5 text-[10px] bg-indigo-100 text-indigo-800 rounded-full font-black uppercase tracking-wider">Online</span>
                       )}
                     </div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">{order.customerName}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">{new Date(order.createdAt).toLocaleString()}</p>
                   </div>
-                  <div className="flex-shrink-0 text-left sm:text-center">
-                    <p className="text-sm font-semibold text-gray-900 dark:text-white">₹{(order.total || 0).toFixed(2)}</p>
-                    <p className="text-xs text-gray-500">{new Date(order.createdAt).toLocaleDateString()}</p>
-                  </div>
+
                   <div className="flex items-center gap-4">
-                    <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(order.status)}`}>
+                    <p className="text-sm font-black text-gray-900 dark:text-white">₹{order.total.toFixed(2)}</p>
+                    <span className={`px-3 py-1 text-[10px] font-black rounded-full uppercase tracking-widest ${getStatusColor(order.status)}`}>
                       {order.status}
                     </span>
                     <ChevronDownIcon className={`transform transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
@@ -89,101 +122,105 @@ const OrderManagement: React.FC = () => {
                 </div>
 
                 {isExpanded && (
-                  <div id={`order-details-${order.id}`} className="mt-4 pt-4 border-t dark:border-gray-600 animate-fade-in">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="mt-4 pt-4 border-t dark:border-gray-600 animate-fade-in">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-2">
                       <div>
-                        <h4 className="font-semibold mb-2">Customer Details</h4>
-                        <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
-                          <p><strong>Name:</strong> {order.customerName}</p>
-                          <p><strong>Phone:</strong> {order.customerPhone}</p>
-                          <p><strong>Address:</strong> {formatAddress(order)}</p>
+                        <h4 className="text-[10px] uppercase tracking-widest font-black text-gray-400 mb-2">Customer & Shipping</h4>
+                        <div className="bg-white dark:bg-gray-800 p-4 rounded-2xl border border-gray-100 dark:border-gray-700 space-y-2 text-sm shadow-sm">
+                          <p><strong className="text-gray-500 font-medium">Name:</strong> {order.customerName}</p>
+                          <p><strong className="text-gray-500 font-medium">Phone:</strong> {order.customerPhone}</p>
+                          <p><strong className="text-gray-500 font-medium">Method:</strong> {order.deliveryMethod === 'home_delivery' ? '🚚 Home Delivery' : '🏪 Store Pickup'}</p>
+                          <p className="text-gray-700 dark:text-gray-300 leading-relaxed italic border-t pt-2 mt-2">
+                            {formatAddress(order)}
+                          </p>
                         </div>
 
-                        {/* Payment Proof Section */}
-                        {order.paymentMethod === 'Online Payment' && order.paymentProof && (
-                          <div className="mt-4">
-                            <h4 className="font-semibold mb-2 text-indigo-600 dark:text-indigo-400">Payment Proof</h4>
-                            <div
-                              className="relative group cursor-pointer w-fit"
-                              onClick={() => setSelectedProof(order.paymentProof!)}
+                        {order.status === OrderStatus.Pending && order.paymentMethod === 'Online Payment' && (
+                          <div className="mt-4 p-4 bg-amber-50 dark:bg-amber-900/20 rounded-2xl border border-amber-100 dark:border-amber-900/30">
+                            <p className="text-xs text-amber-700 dark:text-amber-400 font-bold mb-3 uppercase tracking-tighter">⚠️ Waiting for Payment</p>
+                            <button
+                              onClick={() => handleVerifyPayment(order.id)}
+                              disabled={verifyingId === order.id}
+                              className="w-full py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-black rounded-xl transition-all shadow-md active:scale-95 disabled:opacity-50"
                             >
-                              <img
-                                src={order.paymentProof}
-                                alt="Payment Proof"
-                                className="w-32 h-32 object-cover rounded-lg border-2 border-indigo-100 dark:border-indigo-900 hover:opacity-90 transition-opacity"
-                              />
-                              <div className="absolute inset-0 bg-black/30 flex items-center justify-center rounded-lg opacity-0 group-hover:opacity-100 transition-opacity">
-                                <span className="text-white text-xs font-bold">View</span>
-                              </div>
-                            </div>
-                            <p className="text-xs text-gray-500 mt-1">Click to enlarge</p>
+                              {verifyingId === order.id ? 'VERIFYING...' : 'FORCE VERIFY FROM CASHFREE'}
+                            </button>
                           </div>
                         )}
-
                       </div>
+
                       <div>
-                        <h4 className="font-semibold mb-2">Items</h4>
-                        <ul className="list-disc pl-5 text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                        <h4 className="text-[10px] uppercase tracking-widest font-black text-gray-400 mb-2">Order Items</h4>
+                        <div className="space-y-3">
                           {order.items.map((item: any) => (
-                            <li key={item.id} className="flex items-center gap-2">
-                              <img src={item.image} alt={item.name} className="w-10 h-10 object-cover rounded" />
-                              <span>{item.name} x {item.quantity}</span>
-                            </li>
+                            <div key={item.id} className="flex items-center gap-3 bg-white dark:bg-gray-800 p-2 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm">
+                              <img src={item.image} alt={item.name} className="w-12 h-12 object-cover rounded-xl" />
+                              <div className="flex-1">
+                                <p className="text-sm font-bold truncate">{item.name}</p>
+                                <p className="text-[10px] text-gray-500 font-bold uppercase">{item.quantity} Unit{item.quantity > 1 ? 's' : ''} • ₹{item.price}</p>
+                              </div>
+                            </div>
                           ))}
-                        </ul>
+                        </div>
                       </div>
                     </div>
-                    <div className="mt-6 flex flex-wrap items-center gap-4 bg-gray-50 dark:bg-gray-700/30 p-4 rounded-lg">
-                      <div className="flex items-center gap-2">
-                        <label htmlFor={`status-${order.id}`} className="text-sm font-medium">Update Status:</label>
+
+                    <div className="mt-8 flex flex-wrap items-center justify-between gap-4 bg-gray-100 dark:bg-gray-800/80 p-4 rounded-3xl border border-gray-200 dark:border-gray-700">
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs font-black uppercase text-gray-500">Fast Actions:</span>
                         <select
-                          id={`status-${order.id}`}
                           value={order.status}
-                          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => handleStatusChange(order.id, e.target.value as OrderStatus)}
-                          onClick={(e: React.MouseEvent<HTMLSelectElement>) => e.stopPropagation()}
-                          className="p-2 border rounded bg-white dark:bg-gray-700 dark:border-gray-600 focus:ring-indigo-500 focus:border-indigo-500"
+                          onChange={(e) => handleStatusChange(order.id, e.target.value as OrderStatus)}
+                          className="text-xs font-bold p-2 px-4 border-2 border-indigo-100 dark:border-indigo-900 rounded-xl bg-white dark:bg-gray-700 focus:ring-2 ring-indigo-500 outline-none"
                         >
                           {Object.values(OrderStatus).map(status => (
                             <option key={status} value={status}>{status}</option>
                           ))}
                         </select>
                       </div>
-                      {order.status === OrderStatus.New && (
+
+                      <div className="flex gap-2">
+                        {order.status === OrderStatus.New && (
+                          <button
+                            onClick={() => handleStatusChange(order.id, OrderStatus.Accepted)}
+                            className="px-6 py-2 bg-green-600 hover:bg-green-700 text-white text-xs font-black rounded-xl shadow-lg shadow-green-500/20 transition-all hover:-translate-y-0.5 active:translate-y-0"
+                          >
+                            ACCEPT & PREPARE
+                          </button>
+                        )}
+                        {order.status === OrderStatus.Accepted && (
+                          <button
+                            onClick={() => handleStatusChange(order.id, OrderStatus.Shipped)}
+                            className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-black rounded-xl shadow-lg shadow-blue-500/20 transition-all hover:-translate-y-0.5 active:translate-y-0"
+                          >
+                            MARK AS SHIPPED
+                          </button>
+                        )}
                         <button
-                          onClick={() => handleStatusChange(order.id, OrderStatus.Accepted)}
-                          className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-bold rounded-lg shadow-sm transition-colors"
+                          onClick={() => handleStatusChange(order.id, OrderStatus.Cancelled)}
+                          className="px-6 py-2 border-2 border-red-100 dark:border-red-900/30 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 text-xs font-black rounded-xl transition-all"
                         >
-                          Accept Order
+                          CANCEL
                         </button>
-                      )}
+                      </div>
                     </div>
                   </div>
                 )}
               </div>
             )
-          })}
+          }) : (
+            <div className="text-center py-20 bg-gray-50 dark:bg-gray-900/20 rounded-[3rem] border-2 border-dashed border-gray-200 dark:border-gray-800">
+              <div className="text-5xl mb-4 opacity-20">📦</div>
+              <h3 className="text-sm font-black uppercase tracking-widest text-gray-400">No {filterStatus} Orders Found</h3>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Payment Proof Modal */}
+      {/* Payment Proof Modal (Kept for compatibility) */}
       {selectedProof && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4"
-          onClick={() => setSelectedProof(null)}
-        >
-          <div className="relative max-w-4xl max-h-[90vh]">
-            <img
-              src={selectedProof}
-              alt="Payment Proof Fullscreen"
-              className="max-w-full max-h-[85vh] rounded-lg shadow-2xl"
-            />
-            <button
-              className="absolute -top-10 right-0 text-white font-bold text-xl hover:text-gray-300"
-              onClick={() => setSelectedProof(null)}
-            >
-              ✕ Close
-            </button>
-          </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 backdrop-blur-md p-4" onClick={() => setSelectedProof(null)}>
+          <img src={selectedProof} alt="Proof" className="max-w-full max-h-[85vh] rounded-3xl shadow-2xl" />
         </div>
       )}
     </>

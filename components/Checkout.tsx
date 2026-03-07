@@ -12,7 +12,15 @@ interface CheckoutProps {
 declare global {
   interface Window {
     Razorpay: any;
+    Cashfree: any;
   }
+}
+
+let cashfree: any;
+if (typeof window !== 'undefined' && window.Cashfree) {
+  cashfree = window.Cashfree({
+    mode: "sandbox", // Use "production" for live
+  });
 }
 
 const INDIAN_STATES = [
@@ -295,10 +303,6 @@ const Checkout: React.FC<CheckoutProps> = ({ onBackToStore }) => {
       return;
     }
 
-    if (customerInfo.paymentMethod === 'Online Payment' && !customerInfo.paymentProof) {
-      showToast('Error', 'Please upload a screenshot of your payment.', 'error');
-      return;
-    }
 
     const outOfStockItems = cart.filter(item => item.outOfStock || item.stockQuantity <= 0);
     if (outOfStockItems.length > 0) {
@@ -337,6 +341,77 @@ const Checkout: React.FC<CheckoutProps> = ({ onBackToStore }) => {
       } as ShippingAddress
       : address;
 
+    if (customerInfo.paymentMethod === 'Online Payment') {
+      try {
+        setIsProcessing(true);
+
+        // 1. Create a "Pending" order in our database first
+        const pendingOrder = await createOrder({
+          customerName: customerInfo.customerName,
+          customerPhone: customerInfo.customerPhone,
+          shippingAddress: finalShippingAddress,
+          deliveryMethod: customerInfo.deliveryMethod,
+          shippingCost: shippingCost,
+          items: cart,
+          total: total,
+          paymentMethod: customerInfo.paymentMethod as any,
+          status: 'Pending',
+        } as any);
+
+        if (!pendingOrder) throw new Error('Order creation failed');
+
+        // 2. Create order on Cashfree via our backend
+        const cfOrderRes = await fetch('/api/payment/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            order_amount: total,
+            order_currency: 'INR',
+            order_id: pendingOrder.id,
+            customer_details: {
+              customer_id: currentUser?.id || `guest_${Date.now()}`,
+              customer_email: currentUser?.email || 'customer@example.com',
+              customer_phone: customerInfo.customerPhone
+            }
+          }),
+        });
+
+        if (!cfOrderRes.ok) {
+          const errorText = await cfOrderRes.text();
+          let errorMessage = 'Cashfree session creation failed';
+          try {
+            const errorJson = JSON.parse(errorText);
+            errorMessage = errorJson.error || errorJson.message || errorMessage;
+          } catch (e) { }
+          throw new Error(errorMessage);
+        }
+        const cfOrderData = await cfOrderRes.json();
+
+        // 3. Open Cashfree Checkout
+        if (cfOrderData.payment_session_id) {
+          const checkoutOptions = {
+            paymentSessionId: cfOrderData.payment_session_id,
+            redirectTarget: "_self",
+          };
+
+          cashfree.checkout(checkoutOptions).then((result: any) => {
+            if (result.error) {
+              console.error("Cashfree error:", result.error);
+              showToast('Error', result.error.message, 'error');
+              setIsProcessing(false);
+            }
+          });
+          return;
+        }
+      } catch (error: any) {
+        console.error("Cashfree flow error:", error);
+        showToast('Error', 'Failed to initialize payment gateway.', 'error');
+        setIsProcessing(false);
+        return;
+      }
+    }
+
+    // COD Flow
     setTimeout(() => {
       createOrder({
         customerName: customerInfo.customerName,
@@ -347,7 +422,6 @@ const Checkout: React.FC<CheckoutProps> = ({ onBackToStore }) => {
         items: cart,
         total: total,
         paymentMethod: customerInfo.paymentMethod as any,
-        paymentProof: customerInfo.paymentMethod === 'Online Payment' ? customerInfo.paymentProof : undefined,
         status: 'New',
       } as any);
 
@@ -548,36 +622,15 @@ const Checkout: React.FC<CheckoutProps> = ({ onBackToStore }) => {
                   </p>
                 </div>
 
-                <div className="text-center">
-                  <p className="text-sm font-bold mb-2">Scan & Pay ₹{total.toFixed(2)}</p>
-                  <div className="bg-white p-2 inline-block rounded-lg shadow-sm">
-                    <img
-                      src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=upi://pay?pa=pkt-9987266028@okbizaxis&pn=StealDeal&am=${total.toFixed(2)}`}
-                      alt="Payment QR Code"
-                      className="w-40 h-40 object-contain"
-                    />
+                <div className="text-center p-4">
+                  <p className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                    You will be redirected to our secure payment gateway to complete your transaction.
+                  </p>
+                  <div className="flex justify-center gap-4 mt-4 opacity-70 grayscale">
+                    {/* Payment Logos Placeholder */}
+                    <span className="text-xs">UPI • Cards • NetBanking</span>
                   </div>
-                  <p className="text-xs text-gray-500 mt-2">UPI: pkt-9987266028@okbizaxis</p>
                 </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
-                    Upload Payment Screenshot <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileChange}
-                    required={customerInfo.paymentMethod === 'Online Payment'}
-                    className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 dark:file:bg-indigo-900/30 dark:file:text-indigo-300"
-                  />
-                  <p className="text-xs text-gray-400 mt-1">Supported formats: JPEG, PNG, WebP (Max 2MB)</p>
-                </div>
-                {customerInfo.paymentProof && (
-                  <div className="text-xs text-green-600 font-medium flex items-center gap-1">
-                    <span>✓ Screenshot attached (Verified)</span>
-                  </div>
-                )}
               </div>
             )}
           </section>

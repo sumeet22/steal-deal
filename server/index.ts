@@ -1,15 +1,12 @@
+import 'dotenv/config';
 import express from 'express';
 import mongoose from 'mongoose';
-import dotenv from 'dotenv';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import mongoSanitize from 'express-mongo-sanitize';
 import hpp from 'hpp';
 // @ts-ignore
 import xss from 'xss-clean';
-
-dotenv.config();
 
 const app = express();
 const PORT = Number(process.env.PORT) || 5000;

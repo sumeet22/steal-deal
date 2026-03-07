@@ -38,6 +38,7 @@ export interface CartItem extends Product {
 }
 
 export enum OrderStatus {
+  Pending = 'Pending',
   New = 'New',
   Accepted = 'Accepted',
   Shipped = 'Shipped',

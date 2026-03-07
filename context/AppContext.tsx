@@ -37,8 +37,11 @@ interface AppContextType {
   updateCartQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
   validateAndUpdateCart: () => Promise<{ hasChanges: boolean; removedItems: string[]; priceChanges: Array<{ name: string; oldPrice: number; newPrice: number }>; stockIssues: string[] }>;
-  createOrder: (order: Omit<Order, 'id' | 'createdAt' | 'status'>) => void;
+  createOrder: (order: Omit<Order, 'id' | 'createdAt'>) => Promise<Order | void>;
   updateOrderStatus: (orderId: string, status: OrderStatus) => void;
+  getDisplayPrice: (price: number) => number;
+  pricePercentage: number;
+  setPricePercentage: (val: number) => void;
   setProducts: React.Dispatch<React.SetStateAction<Product[]>>;
   setCategories: React.Dispatch<React.SetStateAction<Category[]>>;
   setOrders: React.Dispatch<React.SetStateAction<Order[]>>;
@@ -58,6 +61,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [orders, setOrders] = useState<Order[]>([]);
   const [currentUser, setCurrentUserInternal] = useLocalStorage<User | null>('currentUser', null);
   const [token, setToken] = useLocalStorage<string | null>('token', null);
+  const [pricePercentage, setPricePercentage] = useLocalStorage<number>('pricePercentage', 100);
   const [productsLoading, setProductsLoading] = useState(false);
   const { showToast } = useToast();
 
@@ -179,6 +183,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       showToast('Error', 'Failed to save address', 'error');
     }
   }, [currentUser, token, setCurrentUserInternal, showToast]);
+
+  const getDisplayPrice = useCallback((basePrice: number) => {
+    return (basePrice * pricePercentage) / 100;
+  }, [pricePercentage]);
 
   // Helper function to map product data
   const mapProductData = useCallback((p: any): Product => {
@@ -538,10 +546,15 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         showToast('Error', `Only ${product.stockQuantity} items in stock.`, 'error');
         return prev;
       }
-      return [...prev, { ...product, quantity }];
+
+      // Add hiked prices to cart items
+      const displayPrice = getDisplayPrice(product.price);
+      const displayOriginalPrice = product.originalPrice ? getDisplayPrice(product.originalPrice) : undefined;
+
+      return [...prev, { ...product, quantity, price: displayPrice, originalPrice: displayOriginalPrice }];
     });
     showToast('Success', `${product.name} added to cart`, 'success');
-  }, [setCart, showToast]);
+  }, [setCart, showToast, getDisplayPrice]);
 
   const removeFromCart = useCallback((productId: string) => {
     setCart(prev => prev.filter(item => item.id !== productId));
@@ -616,18 +629,21 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         }
 
         // Check for price changes
-        if (cartItem.price !== latestProduct.price) {
+        const currentHikedPrice = getDisplayPrice(latestProduct.price);
+        if (cartItem.price !== currentHikedPrice) {
           result.priceChanges.push({
             name: cartItem.name,
             oldPrice: cartItem.price,
-            newPrice: latestProduct.price
+            newPrice: currentHikedPrice
           });
           result.hasChanges = true;
         }
 
-        // Return updated cart item with latest data
+        // Return updated cart item with latest data (hiked price)
         return {
           ...latestProduct,
+          price: currentHikedPrice,
+          originalPrice: latestProduct.originalPrice ? getDisplayPrice(latestProduct.originalPrice) : undefined,
           quantity: adjustedQuantity
         };
       }).filter(item => item !== null) as CartItem[];
@@ -644,36 +660,36 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   }, [cart, setCart, mapProductData]);
 
-  const createOrder = useCallback((orderData: Omit<Order, 'id' | 'createdAt' | 'status'>) => {
-    (async () => {
-      try {
-        const body = {
-          ...orderData,
-        };
-        const headers: any = { 'Content-Type': 'application/json' };
-        if (token) headers.Authorization = `Bearer ${token}`;
+  const createOrder = useCallback(async (orderData: Omit<Order, 'id' | 'createdAt'>) => {
+    try {
+      const body = {
+        ...orderData,
+      };
+      const headers: any = { 'Content-Type': 'application/json' };
+      if (token) headers.Authorization = `Bearer ${token}`;
 
-        const res = await fetch('/api/orders', { method: 'POST', headers, body: JSON.stringify(body) });
-        if (!res.ok) throw new Error('Failed to create order');
-        const newOrderData = await res.json();
+      const res = await fetch('/api/orders', { method: 'POST', headers, body: JSON.stringify(body) });
+      if (!res.ok) throw new Error('Failed to create order');
+      const newOrderData = await res.json();
 
-        const newOrder: Order = {
-          id: newOrderData._id || newOrderData.id,
-          customerName: newOrderData.customerName,
-          customerPhone: newOrderData.customerPhone,
-          shippingAddress: newOrderData.shippingAddress,
-          items: newOrderData.items || [],
-          total: newOrderData.total,
-          status: newOrderData.status,
-          paymentMethod: newOrderData.paymentMethod,
-          deliveryMethod: newOrderData.deliveryMethod,
-          shippingCost: newOrderData.shippingCost,
-          paymentProof: newOrderData.paymentProof,
-          createdAt: newOrderData.createdAt,
-        };
+      const newOrder: Order = {
+        id: newOrderData._id || newOrderData.id,
+        customerName: newOrderData.customerName,
+        customerPhone: newOrderData.customerPhone,
+        shippingAddress: newOrderData.shippingAddress,
+        items: newOrderData.items || [],
+        total: newOrderData.total,
+        status: newOrderData.status,
+        paymentMethod: newOrderData.paymentMethod,
+        deliveryMethod: newOrderData.deliveryMethod,
+        shippingCost: newOrderData.shippingCost,
+        paymentProof: newOrderData.paymentProof,
+        createdAt: newOrderData.createdAt,
+      };
 
-        setOrders(prev => [newOrder, ...prev]);
+      setOrders(prev => [newOrder, ...prev]);
 
+      if (newOrder.status !== 'Pending') {
         setProducts(prevProducts => {
           const itemsMap = new Map(orderData.items.map(item => [item.id, item.quantity]));
           return prevProducts.map(p =>
@@ -683,11 +699,13 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
         clearCart();
         showToast('Success!', 'Order placed successfully!', 'success');
-      } catch (err) {
-        console.error(err);
-        showToast('Error', 'Failed to place order', 'error');
       }
-    })();
+
+      return newOrder;
+    } catch (err) {
+      console.error(err);
+      showToast('Error', 'Failed to place order', 'error');
+    }
   }, [setOrders, setProducts, clearCart, showToast, token]);
 
   const updateOrderStatus = useCallback((orderId: string, status: OrderStatus) => {
@@ -914,6 +932,9 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     validateAndUpdateCart,
     createOrder,
     updateOrderStatus,
+    getDisplayPrice,
+    pricePercentage,
+    setPricePercentage,
     setProducts,
     setCategories,
     setOrders,

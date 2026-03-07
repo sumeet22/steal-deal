@@ -14,7 +14,7 @@ interface SearchOverlayProps {
 
 const SearchOverlay: React.FC<SearchOverlayProps> = ({ isOpen, onClose, onSearch, onProductClick, initialTerm = '' }) => {
     const [searchTerm, setSearchTerm] = useState(initialTerm);
-    const { products } = useAppContext();
+    const { products, getDisplayPrice } = useAppContext();
 
     // Basic search logic for immediate feedback (optional)
     // Or we just let the user hit Enter/Search icon to trigger the main search
@@ -91,7 +91,7 @@ const SearchOverlay: React.FC<SearchOverlayProps> = ({ isOpen, onClose, onSearch
                                         <img src={product.image} alt={product.name} className="w-16 h-16 object-cover rounded-md" />
                                         <div>
                                             <h4 className="font-medium text-gray-900 dark:text-gray-100">{product.name}</h4>
-                                            <p className="text-red-500 font-bold">₹{product.price.toLocaleString()}</p>
+                                            <p className="text-red-500 font-bold">₹{getDisplayPrice(product.price).toLocaleString()}</p>
                                         </div>
                                     </div>
                                 ))}

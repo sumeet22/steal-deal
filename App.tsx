@@ -29,6 +29,7 @@ const ReturnsPolicy = React.lazy(() => import('./components/InfoPages').then(mod
 const ShippingPolicy = React.lazy(() => import('./components/InfoPages').then(module => ({ default: module.ShippingPolicy })));
 const ContactUs = React.lazy(() => import('./components/InfoPages').then(module => ({ default: module.ContactUs })));
 const UserProfile = React.lazy(() => import('./components/UserProfile'));
+const PaymentVerification = React.lazy(() => import('./components/PaymentVerification'));
 const HeartsEffect = React.lazy(() => import('./components/effects/HeartsEffect'));
 
 import { MenuIcon, SearchIcon, ShieldCheckIcon, CreditCardIcon, TruckIcon } from './components/Icons';
@@ -55,7 +56,7 @@ const WishlistButton: React.FC<{ onNavigate: () => void }> = ({ onNavigate }) =>
 };
 
 
-type View = 'store' | 'checkout' | 'orders' | 'admin' | 'product' | 'auth' | 'wishlist' | 'newarrivals' | 'terms' | 'privacy' | 'returns' | 'shipping' | 'contact' | 'profile';
+type View = 'store' | 'checkout' | 'orders' | 'admin' | 'product' | 'auth' | 'wishlist' | 'newarrivals' | 'terms' | 'privacy' | 'returns' | 'shipping' | 'contact' | 'profile' | 'payment-verification';
 
 const App: React.FC = () => {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -172,6 +173,12 @@ const App: React.FC = () => {
       const params = new URLSearchParams(window.location.search);
       const viewParam = params.get('view') as View | null;
       const productIdParam = params.get('productId');
+      const path = window.location.pathname;
+      if (path === '/payment-success' || path === '/payment-failure') {
+        setView('payment-verification');
+        return;
+      }
+
       if (viewParam) {
         setView(viewParam);
         if (viewParam === 'product' && productIdParam) {
@@ -277,6 +284,8 @@ const App: React.FC = () => {
         return <ShippingPolicy />;
       case 'contact':
         return <ContactUs />;
+      case 'payment-verification':
+        return <PaymentVerification onBackToStore={() => navigate('store')} />;
       default:
         return (
           <Storefront

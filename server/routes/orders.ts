@@ -1,5 +1,7 @@
 import express, { Request, Response } from 'express';
 import Order from '../models/Order.js';
+import User from '../models/User.js';
+import { sendOrderStatusUpdate } from '../utils/mail.js';
 
 const router = express.Router();
 
@@ -28,7 +30,7 @@ router.post('/', async (req: Request, res: Response) => {
       total,
       paymentMethod,
       paymentId: paymentId || undefined,
-      status: 'New'
+      status: req.body.status || 'New'
     });
 
     const createdOrder = await order.save();
@@ -54,8 +56,23 @@ router.put('/:id', async (req: Request, res: Response) => {
     const order = await Order.findById(req.params.id);
     if (!order) return res.status(404).json({ message: 'Order not found' });
 
-    if (req.body.status) {
+    if (req.body.status && order.status !== req.body.status) {
       order.status = req.body.status;
+      const updatedOrder = await order.save();
+
+      // Send email logic
+      try {
+        // Try to find the user's email. Often it's in the order document if we added it,
+        // but currently our Order model uses customerPhone to identify users in history.
+        // Let's try to find a user with this phone number.
+        const user = await User.findOne({ phone: order.customerPhone });
+        if (user && user.email) {
+          await sendOrderStatusUpdate(updatedOrder, user.email);
+        }
+      } catch (err) {
+        console.error('Failed to send status update email:', err);
+      }
+      return res.json(updatedOrder);
     }
 
     const updatedOrder = await order.save();

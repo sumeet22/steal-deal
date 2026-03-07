@@ -109,8 +109,26 @@ const OrderHistory: React.FC = () => {
                           </li>
                         ))}
                       </ul>
-                      <div className="mt-4 pt-2 border-t dark:border-gray-600">
-                        <p><strong className="font-medium">{isStorePickup(order) ? 'Delivery Method:' : 'Shipping Address:'}</strong> {formatAddress(order)}</p>
+                      <div className="mt-4 pt-4 border-t dark:border-gray-600 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                          <p className="text-gray-500 font-medium uppercase text-[10px] tracking-wider">Order Status</p>
+                          <p className="font-semibold text-gray-900 dark:text-white">{order.status}</p>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-gray-500 font-medium uppercase text-[10px] tracking-wider">Payment Method</p>
+                          <p className="font-semibold text-gray-900 dark:text-white">
+                            {order.paymentMethod === 'Online Payment' ? 'Cashfree Online' : order.paymentMethod}
+                          </p>
+                        </div>
+                        <div className="md:col-span-2 space-y-1">
+                          <p className="text-gray-500 font-medium uppercase text-[10px] tracking-wider">
+                            {isStorePickup(order) ? 'Delivery Method' : 'Shipping Address'}
+                          </p>
+                          <p className="text-gray-700 dark:text-gray-300 leading-relaxed font-medium">{formatAddress(order)}</p>
+                        </div>
+                        <div className="md:col-span-2 pt-2 text-[11px] text-gray-400">
+                          Ordered on {new Date(order.createdAt).toLocaleString()}
+                        </div>
                       </div>
                     </div>
                   )}
