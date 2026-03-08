@@ -1,0 +1,44 @@
+[
+  {
+    "_id": "69ac7e6a01403c884163112c",
+    "code": "STEAL10",
+    "description": "10% off on all the orders no doubt",
+    "discountPercentage": 10,
+    "minOrderAmount": 100,
+    "expiryDate": "2026-03-14T00:00:00.000Z",
+    "isActive": true,
+    "usageCount": 0,
+    "isPublic": true,
+    "createdAt": "2026-03-07T19:37:14.523Z",
+    "updatedAt": "2026-03-07T19:37:14.523Z",
+    "__v": 0
+  },
+  {
+    "_id": "69ac7fa9c979f22d0b50400e",
+    "code": "STEAL20",
+    "description": "StealDeal Blast Coupons",
+    "discountPercentage": 20,
+    "minOrderAmount": 600,
+    "expiryDate": "2026-03-14T00:00:00.000Z",
+    "isActive": true,
+    "usageCount": 0,
+    "isPublic": true,
+    "createdAt": "2026-03-07T19:42:33.081Z",
+    "updatedAt": "2026-03-07T19:42:33.081Z",
+    "__v": 0
+  },
+  {
+    "_id": "69ac8059c979f22d0b504011",
+    "code": "NARUTO30",
+    "description": "StealDeal Blast Coupons",
+    "discountPercentage": 30,
+    "minOrderAmount": 1000,
+    "expiryDate": "2026-03-14T00:00:00.000Z",
+    "isActive": true,
+    "usageCount": 0,
+    "isPublic": false,
+    "createdAt": "2026-03-07T19:45:29.413Z",
+    "updatedAt": "2026-03-07T19:45:29.413Z",
+    "__v": 0
+  }
+]

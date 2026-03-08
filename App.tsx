@@ -326,7 +326,7 @@ const App: React.FC = () => {
   const { title, desc } = getPageMeta();
 
   return (
-    <div className="bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen font-sans">
+    <div className="bg-surface-light dark:bg-surface-dark text-slate-900 dark:text-slate-100 min-h-screen font-sans selection:bg-brand-500 selection:text-white">
       <Helmet>
         <title>{title}</title>
         <meta name="description" content={desc} />
@@ -334,7 +334,7 @@ const App: React.FC = () => {
         <meta property="og:description" content={desc} />
         {activeProduct?.image && <meta property="og:image" content={activeProduct.image} />}
       </Helmet>
-      <header className="bg-white dark:bg-gray-800 shadow-md sticky top-0 z-40">
+      <header className="glass sticky top-0 z-40 transition-all duration-300">
         <nav className="container mx-auto px-4 sm:px-6 lg:px-8" role="navigation">
           <div className="flex items-center justify-between h-16 relative">
             {/* Left: Menu */}
@@ -347,12 +347,12 @@ const App: React.FC = () => {
             {/* Center: Logo (Absolute) */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <span
-                className="cursor-pointer pointer-events-auto"
+                className="cursor-pointer pointer-events-auto flex items-center"
                 onClick={() => navigate('store', undefined, null)}
               >
                 <img
-                  src="/logo.png"
-                  className="h-16 sm:h-12 w-auto transition-all duration-300 hover:scale-105 mix-blend-difference dark:mix-blend-screen logo-filter"
+                  src="/logo_transparent.png"
+                  className="h-10 sm:h-12 w-auto transition-all duration-500 hover:scale-110 logo-img"
                   alt="Steal Deal"
                   loading="eager"
                 />
@@ -368,11 +368,11 @@ const App: React.FC = () => {
               <WishlistButton onNavigate={() => navigate('wishlist')} />
 
               <div className="relative">
-                <button onClick={() => setIsCartOpen(true)} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-indigo-600 dark:text-indigo-400" aria-label="Cart">
-                  <div className="relative">
+                <button onClick={() => setIsCartOpen(true)} className="p-2 rounded-full hover:bg-brand-50 dark:hover:bg-brand-900/30 text-brand-500 dark:text-brand-400 group transition-all" aria-label="Cart">
+                  <div className="relative group-hover:scale-110 transition-transform">
                     <ShoppingCartIcon />
                     {cartItemCount > 0 && (
-                      <span className="absolute -top-2 -right-2 bg-indigo-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full border-2 border-white dark:border-gray-800">
+                      <span className="absolute -top-2 -right-2 bg-brand-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full border-2 border-white dark:border-gray-800 animate-bounce-in">
                         {cartItemCount}
                       </span>
                     )}
@@ -402,29 +402,37 @@ const App: React.FC = () => {
       </main>
 
       {/* Footer */}
-      <footer className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 mt-auto">
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+      <footer className="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 mt-auto overflow-hidden relative">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-px bg-gradient-to-r from-transparent via-brand-500 to-transparent opacity-30"></div>
+        <div className="container mx-auto px-4 py-12">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-8">
 
             {/* Trusted By / Features */}
-            <div className="flex flex-wrap justify-center gap-6 text-gray-500 dark:text-gray-400">
-              <div className="flex items-center gap-2">
-                <ShieldCheckIcon className="text-indigo-500" />
-                <span className="text-sm font-medium">Secure Payments</span>
+            <div className="flex flex-wrap justify-center gap-8 text-slate-500 dark:text-slate-400">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                  <ShieldCheckIcon />
+                </div>
+                <span className="text-sm font-semibold tracking-tight">Secure Payments</span>
               </div>
-              <div className="flex items-center gap-2">
-                <TruckIcon className="text-indigo-500" />
-                <span className="text-sm font-medium">Fast Shipping</span>
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-lg bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                  <TruckIcon />
+                </div>
+                <span className="text-sm font-semibold tracking-tight">Fast Shipping</span>
               </div>
-              <div className="flex items-center gap-2">
-                <CreditCardIcon className="text-indigo-500" />
-                <span className="text-sm font-medium">Trusted Sellers</span>
+              <div className="flex items-center gap-3 active:scale-95 transition-transform">
+                <div className="p-2 rounded-lg bg-brand-50 dark:bg-brand-500/10 text-brand-600 dark:text-brand-400">
+                  <CreditCardIcon />
+                </div>
+                <span className="text-sm font-semibold tracking-tight">Curated Deals</span>
               </div>
             </div>
 
-            {/* Copyright */}
-            <div className="text-center md:text-right text-sm text-gray-500">
-              <p>&copy; StealDeal2025. All rights reserved.</p>
+            {/* Copyright & Branding */}
+            <div className="text-center md:text-right space-y-2">
+              <h3 className="text-2xl font-black italic tracking-tighter text-brand-600 dark:text-brand-400">STEAL DEAL</h3>
+              <p className="text-xs text-slate-400 font-medium tracking-widest uppercase">&copy; 2025 PREMIUM MERCHANDISE. ALL RIGHTS RESERVED.</p>
             </div>
 
           </div>

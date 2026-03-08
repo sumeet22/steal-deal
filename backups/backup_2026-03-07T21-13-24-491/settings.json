@@ -1,0 +1,11 @@
+[
+  {
+    "_id": "69ac6a5571c64780c63f1cf4",
+    "pricePercentage": 300,
+    "shippingFee": 150,
+    "createdAt": "2026-03-07T18:11:33.815Z",
+    "updatedAt": "2026-03-07T18:27:05.566Z",
+    "__v": 0,
+    "freeShippingThreshold": 500
+  }
+]

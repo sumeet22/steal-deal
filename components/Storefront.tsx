@@ -135,28 +135,28 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
   return (
     <motion.div
       variants={itemVariants}
-      className="product-card bg-white dark:bg-gray-800 rounded-2xl shadow-lg overflow-hidden flex flex-col group transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 border border-transparent hover:border-indigo-500/30"
+      className="product-card bg-white dark:bg-slate-900 rounded-3xl shadow-premium overflow-hidden flex flex-col group transition-all duration-500 hover:shadow-premium-hover border border-slate-100 dark:border-slate-800 hover:border-brand-500/30"
     >
       <div
-        className="relative cursor-pointer"
+        className="relative cursor-pointer overflow-hidden"
         onClick={() => onProductClick(product.id)}
         onMouseEnter={() => setIsHovering(true)}
         onMouseLeave={() => setIsHovering(false)}
       >
-        <div className="h-40 sm:h-48 bg-gray-200 dark:bg-gray-700 flex items-center justify-center overflow-hidden relative">
+        <div className="h-48 sm:h-56 bg-slate-50 dark:bg-slate-800 flex items-center justify-center overflow-hidden relative">
           {currentImage ? (
             <>
               <AnimatePresence initial={false}>
                 <motion.img
                   key={currentImageIndex}
-                  src={currentImage.replace('/products/', '/products_400/')}
+                  src={currentImage}
                   alt={product.name}
                   loading="lazy"
-                  className="absolute inset-0 h-full w-full object-cover group-hover:scale-105"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
+                  className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-110"
+                  initial={{ opacity: 0, scale: 1.1 }}
+                  animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0 }}
-                  transition={{ duration: 1, ease: "easeInOut" }}
+                  transition={{ duration: 0.6, ease: "easeOut" }}
                 />
               </AnimatePresence>
 
@@ -185,27 +185,29 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
           )}
 
         </div>
-        <div className="absolute top-2 left-2 flex flex-col gap-1">
-          {isNew && <span className="badge-animate text-xs font-bold bg-teal-500 text-white px-2 py-1 rounded-full shadow-md">NEW</span>}
-          {isSale && <span className="badge-animate text-xs font-bold bg-red-500 text-white px-2 py-1 rounded-full shadow-md">-{discount}%</span>}
+        <div className="absolute top-3 left-3 flex flex-col gap-1.5">
+          {isNew && <span className="badge-animate text-[10px] font-black tracking-wider bg-emerald-500 text-white px-2.5 py-1 rounded-full shadow-lg uppercase">NEW</span>}
+          {isSale && <span className="badge-animate text-[10px] font-black tracking-wider bg-rose-600 text-white px-2.5 py-1 rounded-full shadow-lg uppercase">-{discount}%</span>}
         </div>
-        {isInCart && (
-          <div className="absolute top-2 right-2 bg-green-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg">
-            In Cart
-          </div>
-        )}
-        {showSuccess && !isInCart && (
-          <div className="absolute top-2 right-2 bg-green-500 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg success-feedback">
-            ✓ Added!
-          </div>
-        )}
+        <AnimatePresence>
+          {isInCart && (
+            <motion.div
+              initial={{ x: 50, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: 50, opacity: 0 }}
+              className="absolute top-3 right-3 bg-brand-600 text-white px-3 py-1.5 rounded-full text-[10px] font-black shadow-lg uppercase tracking-widest z-10"
+            >
+              IN CART
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
-      <div className="p-3 sm:p-4 flex flex-col flex-grow">
-        <h3 className="text-base sm:text-lg font-semibold truncate transition-colors group-hover:text-indigo-500 cursor-pointer" onClick={() => onProductClick(product.id)}>{product.name}</h3>
+      <div className="p-4 sm:p-5 flex flex-col flex-grow">
+        <h3 className="text-lg sm:text-xl font-bold tracking-tight text-slate-900 dark:text-white leading-tight mb-2 group-hover:text-brand-500 transition-colors" onClick={() => onProductClick(product.id)}>{product.name}</h3>
 
-        <div className="flex items-center flex-wrap gap-2 mt-2">
-          <p className="text-lg sm:text-xl font-bold text-indigo-600 dark:text-indigo-400">₹{getDisplayPrice(product.price).toFixed(2)}</p>
-          {isSale && <p className="text-md text-gray-500 line-through">₹{getDisplayPrice(product.originalPrice!).toFixed(2)}</p>}
+        <div className="flex items-baseline gap-2 mt-auto">
+          <p className="text-xl sm:text-2xl font-black text-brand-600 dark:text-brand-400">₹{getDisplayPrice(product.price).toFixed(2)}</p>
+          {isSale && <p className="text-sm font-medium text-slate-400 line-through">₹{getDisplayPrice(product.originalPrice!).toFixed(2)}</p>}
         </div>
 
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-gray-500 dark:text-gray-400 mb-2">
@@ -233,27 +235,30 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
                 type="button"
                 onClick={handleAddToCart}
                 disabled={isAdding}
-                className={`add-to-cart-btn w-full font-bold py-2.5 px-4 rounded-lg text-sm sm:text-base transition-all duration-300 shadow-md ${isAdding
-                  ? 'bg-gray-400 cursor-wait'
+                className={`w-full font-black py-4 px-6 rounded-2xl text-xs sm:text-sm uppercase tracking-widest transition-all duration-500 relative overflow-hidden group/btn ${isAdding
+                  ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-wait'
                   : showSuccess
-                    ? 'bg-green-500 hover:bg-green-600'
-                    : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 hover:shadow-lg'
-                  } text-white`}
+                    ? 'bg-emerald-500 text-white'
+                    : 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:shadow-brand-500/25 hover:shadow-2xl active:scale-[0.98]'
+                  }`}
               >
-                {isAdding ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <svg className="spinner h-4 w-4" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Adding...
-                  </span>
-                ) : showSuccess ? (
-                  <span className="flex items-center justify-center gap-2">
-                    ✓ Added to Cart
-                  </span>
-                ) : (
-                  'ADD TO CART'
+                <span className="relative z-10 flex items-center justify-center gap-2">
+                  {isAdding ? (
+                    <>
+                      <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Updating...
+                    </>
+                  ) : showSuccess ? (
+                    <>✓ Added</>
+                  ) : (
+                    'Add to Cart'
+                  )}
+                </span>
+                {!isAdding && !showSuccess && (
+                  <div className="absolute inset-0 bg-gradient-to-r from-brand-600 to-violet-600 opacity-0 group-hover/btn:opacity-100 transition-opacity duration-500"></div>
                 )}
               </button>
             )}
@@ -521,68 +526,77 @@ const Storefront: React.FC<StorefrontProps> = ({ onProductClick, activeCategoryI
 
         {/* Hero Section */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 0.8 }}
-          className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-950 via-slate-900 to-indigo-950 shadow-2xl min-h-[400px] flex items-center justify-center text-center px-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1.2 }}
+          className="relative overflow-hidden rounded-[3rem] bg-slate-950 shadow-2xl min-h-[500px] flex items-center justify-center text-center px-4"
         >
-          <div className="absolute inset-0 opacity-30 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] mix-blend-overlay"></div>
-          <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-t from-black/60 to-transparent"></div>
+          <div className="absolute inset-0 opacity-40 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] mix-blend-overlay"></div>
+
+          {/* Advanced Background Gradients */}
+          <div className="absolute top-0 left-0 w-full h-full bg-gradient-to-br from-brand-900/40 via-transparent to-purple-900/40 opacity-60"></div>
 
           {/* Animated Background Blobs */}
-          <div className="absolute top-10 left-10 w-64 h-64 bg-indigo-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
-          <div className="absolute bottom-10 right-10 w-64 h-64 bg-violet-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
+          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-brand-500 rounded-full mix-blend-screen filter blur-[120px] opacity-20 animate-blob"></div>
+          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-fuchsia-500 rounded-full mix-blend-screen filter blur-[120px] opacity-20 animate-blob animation-delay-2000"></div>
 
-          <div className="relative z-10 max-w-4xl mx-auto space-y-6 p-6">
+          <div className="relative z-10 max-w-4xl mx-auto space-y-8 p-6">
             <motion.div
-              initial={{ y: 30, opacity: 0 }}
+              initial={{ y: 40, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.2, duration: 0.8 }}
+              transition={{ delay: 0.3, duration: 1, ease: [0.22, 1, 0.36, 1] }}
             >
-              <span className="inline-block py-1 px-3 rounded-full bg-white/10 border border-white/20 text-indigo-200 text-sm font-semibold mb-4 backdrop-blur-sm">
-                ✨ Premium Collection
-              </span>
-              <h1 className="text-4xl sm:text-6xl md:text-7xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-white via-indigo-100 to-slate-200 mb-2 drop-shadow-sm">
-                Upgrade Your Collection
+              <div className="inline-flex items-center gap-2 py-2 px-4 rounded-full bg-white/5 border border-white/10 text-brand-200 text-xs font-black uppercase tracking-[0.2em] mb-6 backdrop-blur-xl">
+                <span className="flex h-2 w-2 rounded-full bg-brand-400 animate-pulse"></span>
+                The Premium Edition
+              </div>
+              <h1 className="text-5xl sm:text-7xl md:text-8xl font-black text-white mb-6 drop-shadow-2xl leading-[0.9] tracking-tighter">
+                DON'T JUST SHOP.<br />
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-brand-400 to-fuchsia-400">EVOLVE.</span>
               </h1>
-              <p className="text-lg sm:text-xl md:text-2xl text-slate-300 max-w-2xl mx-auto font-light leading-relaxed">
-                Authentic figures, premium accessories, and exclusive merchandise from your favorite anime series.
+              <p className="text-lg sm:text-xl md:text-2xl text-slate-400 max-w-3xl mx-auto font-medium leading-relaxed tracking-tight">
+                Hand-picked elite collections. Authentic limited editions.<br />
+                The wait is over for the collectors who care.
               </p>
             </motion.div>
 
             <motion.div
-              initial={{ y: 30, opacity: 0 }}
+              initial={{ y: 40, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.5, duration: 0.8 }}
-              className="flex flex-col sm:flex-row gap-4 justify-center mt-8"
+              transition={{ delay: 0.6, duration: 1, ease: [0.22, 1, 0.36, 1] }}
+              className="flex flex-col sm:flex-row gap-5 justify-center mt-12"
             >
               <button
                 onClick={() => document.getElementById('categories-grid')?.scrollIntoView({ behavior: 'smooth' })}
-                className="px-8 py-4 bg-white text-indigo-900 rounded-full font-bold text-lg hover:bg-gray-50 hover:scale-105 transition-all shadow-xl hover:shadow-indigo-500/20"
+                className="group relative px-10 py-5 bg-white text-slate-950 rounded-2xl font-black text-sm uppercase tracking-widest hover:scale-105 transition-all shadow-[0_0_40px_rgba(255,255,255,0.2)] overflow-hidden"
               >
-                Shop Now
+                <span className="relative z-10">Start Exploring</span>
+                <div className="absolute inset-0 bg-brand-500 translate-y-full group-hover:translate-y-0 transition-transform duration-500"></div>
               </button>
               <button
                 onClick={() => onNavigateToNewArrivals?.()}
-                className="px-8 py-4 bg-transparent border-2 border-white/20 text-white rounded-full font-bold text-lg hover:bg-white/10 hover:border-white/40 transition-all backdrop-blur-sm"
+                className="px-10 py-5 bg-white/5 border border-white/10 text-white rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-white/10 hover:border-white/30 transition-all backdrop-blur-xl"
               >
-                View New Arrivals
+                New Drops
               </button>
             </motion.div>
           </div>
         </motion.div>
 
-        <div>
-          <div className="relative flex-grow max-w-2xl mx-auto">
+        <div className="max-w-2xl mx-auto w-full px-4 transform -translate-y-8">
+          <div className="relative group">
             <input
               type="text"
-              placeholder="Search all products..."
+              placeholder="Searching for something specific?"
               value={globalSearchTerm}
               onChange={(e) => setGlobalSearchTerm(e.target.value)}
-              className="w-full p-3 pl-10 border rounded-full bg-white dark:bg-gray-800 dark:border-gray-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+              className="w-full p-5 pl-14 h-16 border-0 rounded-2xl bg-white dark:bg-slate-800 shadow-premium focus:ring-4 focus:ring-brand-500/20 outline-none transition-all text-lg font-medium"
             />
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
+            <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-brand-500 group-focus-within:scale-110 transition-transform">
               <SearchIcon />
+            </div>
+            <div className="absolute right-4 inset-y-0 flex items-center">
+              <span className="text-[10px] font-bold text-slate-400 bg-slate-100 dark:bg-slate-700 px-2 py-1 rounded-md">ENTER</span>
             </div>
           </div>
         </div>
@@ -630,20 +644,20 @@ const Storefront: React.FC<StorefrontProps> = ({ onProductClick, activeCategoryI
                     variants={itemVariants}
                     key={category.id}
                     onClick={() => handleSelectCategory(category.id)}
-                    className="group relative rounded-2xl overflow-hidden cursor-pointer shadow-lg hover:shadow-2xl transition-all duration-300 h-64 sm:h-80 md:h-96 bg-gray-900"
+                    className="group relative rounded-[2rem] overflow-hidden cursor-pointer shadow-premium hover:shadow-premium-hover transition-all duration-700 h-80 sm:h-96 bg-slate-900"
                   >
                     <img
                       src={category.image || `https://placehold.co/600x400?text=${category.name}`}
                       alt={category.name}
                       loading="lazy"
-                      className="w-full h-full object-contain sm:object-cover group-hover:scale-105 sm:group-hover:scale-110 transition-transform duration-700"
+                      className="w-full h-full object-contain sm:object-cover group-hover:scale-110 transition-transform duration-1000 ease-out"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent opacity-80 group-hover:opacity-90 transition-opacity"></div>
-                    <div className="absolute bottom-0 left-0 p-4 sm:p-6 md:p-8 w-full transform transition-transform duration-300 group-hover:translate-y-[-8px]">
-                      <h2 className="text-white text-xl sm:text-2xl md:text-3xl font-bold tracking-tight mb-2">{category.name}</h2>
-                      <div className="h-1 w-12 bg-indigo-500 rounded-full group-hover:w-24 transition-all duration-300"></div>
-                      <p className="text-gray-300 text-xs sm:text-sm mt-2 sm:mt-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform translate-y-4 group-hover:translate-y-0">
-                        Explore Collection →
+                    <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-slate-950 via-slate-900/40 to-transparent"></div>
+                    <div className="absolute bottom-0 left-0 p-6 sm:p-10 w-full transform transition-all duration-500 group-hover:pb-12">
+                      <h2 className="text-white text-2xl sm:text-4xl font-black italic tracking-tighter mb-3 uppercase leading-none">{category.name}</h2>
+                      <div className="h-1 w-12 bg-brand-500 rounded-full group-hover:w-full transition-all duration-700"></div>
+                      <p className="text-brand-200 text-[10px] font-black tracking-widest uppercase mt-4 opacity-0 group-hover:opacity-100 transition-all duration-500 transform translate-y-4 group-hover:translate-y-0">
+                        Explore Collection
                       </p>
                     </div>
                   </motion.div>

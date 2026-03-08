@@ -208,7 +208,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ productId, onBack }) => {
 
   return (
     <PullToRefresh onRefresh={handleRefresh}>
-      <div className="max-w-7xl mx-auto animate-hero-fade-in pb-16 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-7xl mx-auto animate-hero-fade-in pb-20 px-4 sm:px-6 lg:px-8">
         <Helmet>
           <title>{product.name} | Steal Deal</title>
           <meta name="description" content={product.description.substring(0, 160)} />
@@ -229,10 +229,10 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ productId, onBack }) => {
           <span className="text-gray-900 dark:text-white font-medium truncate max-w-[200px]">{product.name}</span>
         </nav>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-12 lg:gap-20">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16">
           {/* Left Column: Images */}
-          <div className="space-y-6">
-            <div className="relative aspect-square bg-white dark:bg-gray-800 rounded-3xl overflow-hidden group border border-gray-100 dark:border-gray-700">
+          <div className="lg:col-span-7 space-y-6">
+            <div className="relative aspect-[4/5] sm:aspect-square bg-white dark:bg-slate-900 rounded-[2.5rem] overflow-hidden group border border-slate-100 dark:border-slate-800 shadow-premium">
               {currentImage ? (
                 <>
                   <img
@@ -244,15 +244,15 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ productId, onBack }) => {
                   />
 
                   {/* Badges */}
-                  <div className="absolute top-4 left-4 flex flex-col gap-2">
+                  <div className="absolute top-6 left-6 flex flex-col gap-2">
                     {isNew && (
-                      <span className="px-3 py-1 text-xs font-bold tracking-wider text-white bg-black dark:bg-white dark:text-black rounded-full shadow-lg">
-                        NEW
+                      <span className="px-4 py-1.5 text-[10px] font-black tracking-widest text-white bg-emerald-500 rounded-full shadow-xl uppercase">
+                        NEW ARRIVAL
                       </span>
                     )}
                     {isSale && (
-                      <span className="px-3 py-1 text-xs font-bold tracking-wider text-white bg-red-600 rounded-full shadow-lg">
-                        -{discount}%
+                      <span className="px-4 py-1.5 text-[10px] font-black tracking-widest text-white bg-rose-600 rounded-full shadow-xl uppercase">
+                        SPECIAL DEAL -{discount}%
                       </span>
                     )}
                   </div>
@@ -286,14 +286,14 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ productId, onBack }) => {
 
             {/* Thumbnails */}
             {productImages.length > 1 && (
-              <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
+              <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
                 {productImages.map((img, index) => (
                   <button
                     key={index}
                     onClick={() => setCurrentImageIndex(index)}
-                    className={`relative flex-shrink-0 w-24 h-24 rounded-2xl overflow-hidden transition-all duration-200 border ${index === currentImageIndex
-                      ? 'border-black dark:border-white ring-1 ring-black dark:ring-white scale-95'
-                      : 'border-transparent opacity-70 hover:opacity-100 hover:border-gray-200 dark:hover:border-gray-700'
+                    className={`relative flex-shrink-0 w-20 h-20 rounded-2xl overflow-hidden transition-all duration-500 border-2 ${index === currentImageIndex
+                      ? 'border-brand-500 scale-95 shadow-lg shadow-brand-500/20'
+                      : 'border-transparent opacity-50 hover:opacity-100 hover:border-slate-200 dark:hover:border-slate-700'
                       }`}
                   >
                     <img
@@ -308,18 +308,18 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ productId, onBack }) => {
           </div>
 
           {/* Right Column: Details */}
-          <div className="flex flex-col pt-2">
+          <div className="lg:col-span-5 flex flex-col pt-2">
 
             <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white tracking-tight mb-4 leading-tight">
               {product.name}
             </h1>
 
-            <div className="flex items-baseline gap-4 mb-6">
-              <p className="text-3xl font-medium text-gray-900 dark:text-white">
+            <div className="flex items-baseline gap-4 mb-8">
+              <p className="text-4xl font-black text-brand-600 dark:text-brand-400 tracking-tight">
                 ₹{getDisplayPrice(product.price).toLocaleString('en-IN')}
               </p>
               {isSale && (
-                <p className="text-xl text-gray-500 line-through">
+                <p className="text-xl text-slate-400 line-through font-medium">
                   ₹{getDisplayPrice(product.originalPrice!).toLocaleString('en-IN')}
                 </p>
               )}
@@ -327,47 +327,51 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ productId, onBack }) => {
 
             {/* Stats Bar (Recently Sold Badge) */}
             {(stats.viewCount > 20 || stats.soldLast24Hours > 5) && (
-              <div className="flex flex-wrap items-center gap-4 mb-8">
+              <div className="flex flex-wrap items-center gap-4 mb-10">
                 {stats.soldLast24Hours > 0 && (
-                  <div className="flex items-center gap-2 bg-orange-50 dark:bg-orange-900/20 text-orange-700 dark:text-orange-300 px-3 py-1.5 rounded-full text-sm font-medium border border-orange-100 dark:border-orange-900/30 animate-pulse-slow">
+                  <div className="flex items-center gap-2 bg-orange-50 dark:bg-orange-500/10 text-orange-600 dark:text-orange-400 px-4 py-2 rounded-xl text-sm font-bold border border-orange-100 dark:border-orange-500/20">
                     <FireIcon />
-                    <span>{stats.soldLast24Hours} sold in last 24h</span>
+                    <span>{stats.soldLast24Hours} SOLD TODAY</span>
                   </div>
                 )}
-                <div className="flex items-center gap-2 text-gray-500 dark:text-gray-400 text-sm">
-                  <EyeIcon />
-                  <span>{stats.viewCount} people viewing</span>
+                <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-sm font-medium">
+                  <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                  <span>{stats.viewCount} buyers are interested</span>
                 </div>
               </div>
             )}
 
             {/* Transactional Area: Quantity & Add to Cart */}
-            <div className="space-y-8 mb-10 pb-10 border-b border-gray-100 dark:border-gray-800">
+            <div className="space-y-8 mb-10 pb-10 border-b border-slate-100 dark:border-slate-800">
               {/* Quantity Helper */}
               {product.stockQuantity > 0 && !product.outOfStock ? (
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center max-w-[200px]">
-                    <span className="text-sm font-medium text-gray-900 dark:text-white">Quantity</span>
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center max-w-[240px]">
+                    <span className="text-xs font-black uppercase tracking-widest text-slate-500">Select Quantity</span>
                   </div>
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-6">
                     <QuantityStepper
                       quantity={quantity}
                       setQuantity={setQuantity}
                       maxQuantity={product.stockQuantity}
                     />
-                    <span className="text-sm text-green-600 dark:text-green-400 font-medium bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded">
-                      {itemInCart ? `In Cart: ${quantity}` : 'In Stock'}
-                    </span>
+                    <div className="flex flex-col">
+                      <span className="text-sm text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                        {itemInCart ? `${quantity} in your cart` : 'Available in stock'}
+                      </span>
+                    </div>
                   </div>
                   {product.stockQuantity < 10 && (
-                    <p className="text-xs text-red-500 font-medium">
-                      Only {product.stockQuantity} left!
+                    <p className="text-xs text-rose-500 font-bold uppercase tracking-wider flex items-center gap-1">
+                      <FireIcon className="w-3 h-3" />
+                      Hurry! Only {product.stockQuantity} left
                     </p>
                   )}
                 </div>
               ) : (
-                <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg text-red-600 dark:text-red-400 font-medium border border-red-100 dark:border-red-900/30">
-                  Currently Out of Stock
+                <div className="p-5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl text-slate-500 dark:text-slate-400 font-bold text-center border-2 border-dashed border-slate-200 dark:border-slate-700">
+                  Item currently unavailable
                 </div>
               )}
 
@@ -376,26 +380,29 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ productId, onBack }) => {
                 <button
                   onClick={handleAddToCart}
                   disabled={product.stockQuantity <= 0 || product.outOfStock}
-                  className="flex-1 bg-black dark:bg-white text-white dark:text-black font-bold py-4 px-8 rounded-full text-lg hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className="flex-1 bg-slate-900 dark:bg-white text-white dark:text-slate-900 font-black py-5 px-8 rounded-2xl text-base uppercase tracking-widest hover:shadow-2xl hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 group/atc relative overflow-hidden"
                 >
-                  <ShoppingBagIcon />
-                  {product.stockQuantity <= 0 || product.outOfStock
-                    ? 'Out of Stock'
-                    : itemInCart
-                      ? 'Update Cart'
-                      : 'Add to Cart'
-                  }
+                  <div className="absolute inset-0 bg-brand-500 translate-y-full group-hover/atc:translate-y-0 transition-transform duration-500"></div>
+                  <span className="relative z-10 flex items-center gap-3">
+                    <ShoppingBagIcon />
+                    {product.stockQuantity <= 0 || product.outOfStock
+                      ? 'Unavailable'
+                      : itemInCart
+                        ? 'Update Quantity'
+                        : 'Bag this Deal'
+                    }
+                  </span>
                 </button>
 
                 <button
                   onClick={() => toggleWishlist(product)}
-                  className={`p-4 rounded-full border transition-all duration-200 ${isInWishlist(product.id)
-                    ? 'border-red-200 bg-red-50 text-red-500 dark:bg-red-900/20 dark:border-red-900 hover:bg-red-100'
-                    : 'border-gray-200 hover:border-black dark:border-gray-700 dark:hover:border-white text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
+                  className={`p-5 rounded-2xl border-2 transition-all duration-300 active:scale-90 ${isInWishlist(product.id)
+                    ? 'border-rose-100 bg-rose-50 text-rose-500 dark:bg-rose-500/10 dark:border-rose-500/20'
+                    : 'border-slate-100 dark:border-slate-800 text-slate-400 hover:text-brand-500 hover:border-brand-500/20 hover:bg-brand-50 dark:hover:bg-brand-500/10'
                     }`}
                   aria-label="Add to wishlist"
                 >
-                  <HeartIcon filled={isInWishlist(product.id)} />
+                  <HeartIcon filled={isInWishlist(product.id)} className="w-6 h-6" />
                 </button>
               </div>
             </div>

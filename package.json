@@ -8,7 +8,9 @@
     "build": "vite build",
     "preview": "vite preview",
     "start:backend": "node --loader ts-node/esm server/index.ts",
-    "seed:db": "node --loader ts-node/esm server/seed.ts"
+    "seed:db": "node --loader ts-node/esm server/seed.ts",
+    "db:backup": "node scripts/db-manager.js backup",
+    "db:restore": "node scripts/db-manager.js restore"
   },
   "dependencies": {
     "axios": "^1.13.6",
