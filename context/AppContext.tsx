@@ -876,12 +876,16 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           body: JSON.stringify({ status })
         });
 
-        if (!res.ok) throw new Error('Failed to update order status');
+        if (!res.ok) {
+          const errorData = await res.json();
+          throw new Error(errorData.message || 'Failed to update order status');
+        }
 
         setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o));
-        showToast('Success', 'Order status updated', 'success');
-      } catch (err) {
-        showToast('Error', 'Failed to update order status', 'error');
+        showToast('Success', `Order #${orderId.slice(-6).toUpperCase()} status updated to ${status}`, 'success');
+      } catch (err: any) {
+        console.error('Update status error:', err);
+        showToast('Error', err.message || 'Failed to update order status', 'error');
       }
     })();
   }, [setOrders, showToast, token]);

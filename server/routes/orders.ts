@@ -168,28 +168,51 @@ router.get('/:id', async (req: Request, res: Response) => {
 
 router.put('/:id', async (req: Request, res: Response) => {
   try {
+    const { status } = req.body;
     const order = await Order.findById(req.params.id);
     if (!order) return res.status(404).json({ message: 'Order not found' });
 
-    if (req.body.status && order.status !== req.body.status) {
-      order.status = req.body.status;
+    // If status is provided and different, update it
+    if (status && order.status !== status) {
+      order.status = status;
       const updatedOrder = await order.save();
 
       try {
-        // Prefer the email stored in the order, fallback to user lookup by phone
-        const recipientEmail = order.customerEmail || (await User.findOne({ phone: order.customerPhone }))?.email;
+        // IMPROVED: Robust email lookup
+        // 1. Check order.customerEmail
+        // 2. Check if order.user is linked, get that user's email
+        // 3. Fallback to lookup by order.customerPhone if user not linked
+        let recipientEmail = order.customerEmail;
+
+        if (!recipientEmail) {
+          if (order.user) {
+            const linkedUser = await User.findById(order.user);
+            recipientEmail = linkedUser?.email;
+          }
+
+          if (!recipientEmail && order.customerPhone) {
+            const userByPhone = await User.findOne({ phone: order.customerPhone });
+            recipientEmail = userByPhone?.email;
+          }
+        }
+
         if (recipientEmail) {
+          console.debug(`Sending status update email for Order #${order._id} to ${recipientEmail}`);
           await sendOrderStatusUpdate(updatedOrder, recipientEmail);
+        } else {
+          console.warn(`Could not find recipient email for Order #${order._id}. Status updated to ${status} but no email sent.`);
         }
       } catch (err) {
         console.error('Failed to send status update email:', err);
+        // We don't return error to admin just because email failed, status is updated
       }
       return res.json(updatedOrder);
     }
 
-    const updatedOrder = await order.save();
-    res.json(updatedOrder);
+    // If no status change, just return the order (could be other updates in future)
+    res.json(order);
   } catch (error) {
+    console.error('Update order error:', error);
     res.status(500).json({ message: 'Server error', error });
   }
 });
