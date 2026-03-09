@@ -486,4 +486,46 @@ router.post('/login', async (req, res) => {
   }
 });
 
+
+/**
+ * @desc    Post-checkout registration (conversion)
+ * @route   POST /api/auth/post-checkout-register
+ * @access  Public
+ */
+router.post('/post-checkout-register', async (req, res) => {
+  const { name, email, phone, password } = req.body;
+
+  try {
+    const userExists = await User.findOne({ $or: [{ email }, { phone }] });
+
+    if (userExists) {
+      return res.status(400).json({ msg: 'User with this email or phone already exists' });
+    }
+
+    const user = await User.create({
+      username: name,
+      email: email.toLowerCase(),
+      phone,
+      password,
+      isVerified: true
+    });
+
+    if (user) {
+      res.status(201).json({
+        _id: user._id,
+        username: user.username,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        token: generateToken(user._id),
+      });
+    } else {
+      res.status(400).json({ msg: 'Invalid user data' });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ msg: 'Server error' });
+  }
+});
+
 export default router;

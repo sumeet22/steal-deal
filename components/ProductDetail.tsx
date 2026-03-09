@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { useAppContext } from '../context/AppContext';
 import { useWishlist } from '../context/WishlistContext';
-import { ChevronLeftIcon, ChevronRightIcon, ShoppingCartIcon, EyeIcon, ShoppingBagIcon, FireIcon, HeartIcon } from './Icons';
+import { ChevronLeftIcon, ChevronRightIcon, ShoppingCartIcon, EyeIcon, ShoppingBagIcon, FireIcon, HeartIcon, LoadingSpinner } from './Icons';
 import QuantityStepper from './shared/QuantityStepper';
 import { Product, ProductImage } from '../types';
 import PullToRefresh from './shared/PullToRefresh';
@@ -31,7 +31,7 @@ const getProductImages = (product: Product): ProductImage[] => {
 };
 
 const ProductDetail: React.FC<ProductDetailProps> = ({ productId, onBack }) => {
-  const { products, addToCart, cart, updateCartQuantity, getDisplayPrice } = useAppContext();
+  const { products, addToCart, cart, updateCartQuantity, getDisplayPrice, mapProductData, settingsLoaded } = useAppContext();
   const { isInWishlist, toggleWishlist } = useWishlist();
   const [quantity, setQuantity] = useState(1);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -39,11 +39,20 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ productId, onBack }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Try to find product in products array first, then use fetched product
   const product = useMemo(() => {
     const foundProduct = products.find(p => p.id === productId);
     return foundProduct || fetchedProduct;
   }, [products, productId, fetchedProduct]);
+
+  // If settings haven't loaded yet, show a clean loading state to avoid price flicker
+  if (!settingsLoaded && !product) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+        <LoadingSpinner className="w-12 h-12 text-brand-600" />
+        <p className="text-slate-400 font-medium animate-pulse italic uppercase tracking-widest text-xs">Loading Details...</p>
+      </div>
+    );
+  }
 
   // Sync quantity with cart
   useEffect(() => {
@@ -75,29 +84,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ productId, onBack }) => {
           return res.json();
         })
         .then(data => {
-          // Map the product data
-          const categoryId = data.category && (typeof data.category === 'object'
-            ? (data.category._id || data.category.id)
-            : data.category);
-
-          const mappedProduct: Product = {
-            id: data._id || data.id,
-            name: data.name,
-            price: data.price,
-            originalPrice: data.originalPrice ?? null,
-            description: data.description || '',
-            stockQuantity: data.stockQuantity ?? data.stock ?? 0,
-            categoryId: categoryId || '',
-            image: data.image || data.imageUrl || undefined,
-            images: data.images || undefined,
-            tags: data.tags || [],
-            viewCount: data.viewCount ?? undefined,
-            addToCartCount: data.addToCartCount ?? undefined,
-            soldLast24Hours: data.soldLast24Hours ?? undefined,
-            outOfStock: data.outOfStock ?? false,
-          };
-
-          setFetchedProduct(mappedProduct);
+          setFetchedProduct(mapProductData(data));
           setLoading(false);
         })
         .catch(err => {
@@ -106,7 +93,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ productId, onBack }) => {
           setLoading(false);
         });
     }
-  }, [productId, products]);
+  }, [productId, products, mapProductData]);
 
   const productImages = useMemo(() => product ? getProductImages(product) : [], [product]);
 
@@ -132,35 +119,14 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ productId, onBack }) => {
       if (!res.ok) throw new Error('Product not found');
       const data = await res.json();
 
-      const categoryId = data.category && (typeof data.category === 'object'
-        ? (data.category._id || data.category.id)
-        : data.category);
-
-      const mappedProduct: Product = {
-        id: data._id || data.id,
-        name: data.name,
-        price: data.price,
-        originalPrice: data.originalPrice ?? null,
-        description: data.description || '',
-        stockQuantity: data.stockQuantity ?? data.stock ?? 0,
-        categoryId: categoryId || '',
-        image: data.image || data.imageUrl || undefined,
-        images: data.images || undefined,
-        tags: data.tags || [],
-        viewCount: data.viewCount ?? undefined,
-        addToCartCount: data.addToCartCount ?? undefined,
-        soldLast24Hours: data.soldLast24Hours ?? undefined,
-        outOfStock: data.outOfStock ?? false,
-      };
-
-      setFetchedProduct(mappedProduct);
+      setFetchedProduct(mapProductData(data));
     } catch (err) {
       console.error('Error refreshing product:', err);
       setError('Failed to refresh product');
     } finally {
       setLoading(false);
     }
-  }, [productId]);
+  }, [productId, mapProductData]);
 
 
   if (loading) {

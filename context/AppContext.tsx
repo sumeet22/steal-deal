@@ -56,8 +56,9 @@ interface AppContextType {
   setOrders: React.Dispatch<React.SetStateAction<Order[]>>;
   setUsers: React.Dispatch<React.SetStateAction<User[]>>;
 
-  // Loading states
   productsLoading: boolean;
+  settingsLoaded: boolean;
+  mapProductData: (p: any) => Product;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -70,20 +71,26 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [orders, setOrders] = useState<Order[]>([]);
   const [currentUser, setCurrentUserInternal] = useLocalStorage<User | null>('currentUser', null);
   const [token, setToken] = useLocalStorage<string | null>('token', null);
-  const [pricePercentage, setPricePercentageInternal] = useState<number>(100);
-  const [shippingFee, setShippingFeeInternal] = useState<number>(0);
-  const [freeShippingThreshold, setFreeShippingThresholdInternal] = useState<number>(0);
+  const [pricePercentage, setPricePercentageInternal] = useLocalStorage<number>('pricePercentage', 100);
+  const [shippingFee, setShippingFeeInternal] = useLocalStorage<number>('shippingFee', 0);
+  const [freeShippingThreshold, setFreeShippingThresholdInternal] = useLocalStorage<number>('freeShippingThreshold', 0);
   const [coupons, setCoupons] = useState<Coupon[]>([]);
   const [productsLoading, setProductsLoading] = useState(false);
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
   const { showToast } = useToast();
 
   const mapProductData = useCallback((p: any): Product => {
     const categoryId = p.category && (typeof p.category === 'object' ? (p.category._id || p.category.id) : p.category);
+    const rawPrice = (p.basePrice ?? p.price) || 0; // Use basePrice if exists, else price
+    const hikedPrice = (rawPrice * pricePercentage) / 100;
+    const hikedOriginalPrice = p.originalPrice ? (p.originalPrice * pricePercentage) / 100 : undefined;
+
     return {
       id: p._id || p.id,
       name: p.name,
-      price: p.price,
-      originalPrice: p.originalPrice ?? null,
+      price: hikedPrice,
+      basePrice: rawPrice,
+      originalPrice: hikedOriginalPrice,
       description: p.description || '',
       stockQuantity: p.stockQuantity ?? p.stock ?? 0,
       categoryId: categoryId || '',
@@ -99,17 +106,25 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       isActive: p.isActive ?? true,
       categoryOrder: p.categoryOrder ?? 0,
     };
-  }, []);
+  }, [pricePercentage]);
 
   const mapOrderData = useCallback((o: any): Order => ({
     id: o._id || o.id,
     customerName: o.customerName,
+    customerEmail: o.customerEmail,
     customerPhone: o.customerPhone,
     shippingAddress: o.shippingAddress,
-    items: (o.items || []).map((item: any) => ({
-      ...mapProductData(item),
-      quantity: item.quantity
-    })),
+    items: (o.items || []).map((item: any) => {
+      // If it's an old order, it might have the price stored. 
+      // Orders should store the price at time of purchase.
+      // But mapOrderData is used for existing order objects.
+      return {
+        ...mapProductData(item),
+        price: item.price, // Keep the stored price for history
+        originalPrice: item.originalPrice,
+        quantity: item.quantity
+      };
+    }),
     total: o.total,
     status: o.status,
     paymentMethod: o.paymentMethod,
@@ -199,6 +214,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         setFreeShippingThresholdInternal(data.freeShippingThreshold || 0);
       } catch (err) {
         console.error('Settings fetch error:', err);
+      } finally {
+        setSettingsLoaded(true);
       }
     };
 
@@ -349,9 +366,10 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     }
   }, [currentUser, token, setCurrentUserInternal, showToast]);
 
-  const getDisplayPrice = useCallback((basePrice: number) => {
-    return (basePrice * pricePercentage) / 100;
-  }, [pricePercentage]);
+  const getDisplayPrice = useCallback((price: number) => {
+    // Current frontend strategy: price already hiked by mapProductData
+    return price;
+  }, []);
 
   // Fetch products by category with pagination
   const fetchProductsByCategory = useCallback(async (
@@ -688,14 +706,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         return prev;
       }
 
-      // Add hiked prices to cart items
-      const displayPrice = getDisplayPrice(product.price);
-      const displayOriginalPrice = product.originalPrice ? getDisplayPrice(product.originalPrice) : undefined;
-
-      return [...prev, { ...product, quantity, price: displayPrice, originalPrice: displayOriginalPrice }];
+      // Prices are already hiked by mapProductData when products are loaded or updated
+      return [...prev, { ...product, quantity }];
     });
     showToast('Success', `${product.name} added to cart`, 'success');
-  }, [setCart, showToast, getDisplayPrice]);
+  }, [setCart, showToast]);
 
   const removeFromCart = useCallback((productId: string) => {
     setCart(prev => prev.filter(item => item.id !== productId));
@@ -722,6 +737,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
   // Validate cart items against current product data
   const validateAndUpdateCart = useCallback(async () => {
+    if (!settingsLoaded) return { hasChanges: false, removedItems: [], priceChanges: [], stockIssues: [] };
+
     const result = {
       hasChanges: false,
       removedItems: [] as string[],
@@ -770,21 +787,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         }
 
         // Check for price changes
-        const currentHikedPrice = getDisplayPrice(latestProduct.price);
-        if (cartItem.price !== currentHikedPrice) {
+        if (cartItem.price !== latestProduct.price) {
           result.priceChanges.push({
             name: cartItem.name,
             oldPrice: cartItem.price,
-            newPrice: currentHikedPrice
+            newPrice: latestProduct.price
           });
           result.hasChanges = true;
         }
 
-        // Return updated cart item with latest data (hiked price)
+        // Return updated cart item with latest data (which is already hiked by mapProductData)
         return {
           ...latestProduct,
-          price: currentHikedPrice,
-          originalPrice: latestProduct.originalPrice ? getDisplayPrice(latestProduct.originalPrice) : undefined,
           quantity: adjustedQuantity
         };
       }).filter(item => item !== null) as CartItem[];
@@ -816,6 +830,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       const newOrder: Order = {
         id: newOrderData._id || newOrderData.id,
         customerName: newOrderData.customerName,
+        customerEmail: newOrderData.customerEmail,
         customerPhone: newOrderData.customerPhone,
         shippingAddress: newOrderData.shippingAddress,
         items: newOrderData.items || [],
@@ -1090,6 +1105,8 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setOrders,
     setUsers,
     productsLoading,
+    settingsLoaded,
+    mapProductData,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

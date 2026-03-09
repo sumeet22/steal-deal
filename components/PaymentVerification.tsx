@@ -133,12 +133,16 @@ const PaymentVerification: React.FC<{ onBackToStore: () => void }> = ({ onBackTo
                             <div className="w-24 h-24 bg-red-500 text-white rounded-full flex items-center justify-center mx-auto shadow-xl shadow-red-500/30">
                                 <svg className="w-14 h-14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M6 18L18 6M6 6l12 12" /></svg>
                             </div>
-                            <div className="space-y-2">
-                                <h2 className="text-4xl font-black text-gray-900 dark:text-white">Payment Failed</h2>
-                                <p className="text-gray-500 dark:text-gray-400 text-lg">We couldn't process your transaction. No funds were captured.</p>
+                            <div className="space-y-6">
+                                <h2 className="text-4xl font-black text-gray-900 dark:text-white leading-tight">Payment Unsuccessful</h2>
+                                <p className="text-gray-500 dark:text-gray-400 text-lg mx-auto max-w-sm">
+                                    We couldn't confirm your transaction at this moment.
+                                </p>
                             </div>
-                            <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-4 rounded-2xl text-sm font-medium">
-                                If money was deducted, it will be refunded automatically within 5-7 business days.
+
+                            <div className="bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-400 p-6 rounded-3xl border-2 border-rose-100 dark:border-rose-900/50 space-y-2">
+                                <p className="font-bold text-base">Your payment could not be completed</p>
+                                <p className="text-sm opacity-90">Please try again. If any amount was deducted, it will be refunded within 3-5 days.</p>
                             </div>
                             <div className="space-y-4">
                                 <button

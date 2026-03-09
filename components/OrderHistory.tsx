@@ -37,8 +37,14 @@ const OrderHistory: React.FC = () => {
   const userOrders = useMemo(() => {
     if (!currentUser) return [];
     const currentUserPhone = normalizePhone(currentUser.phone);
+    const currentUserEmail = currentUser.email?.toLowerCase();
+
     return orders
-      .filter(order => normalizePhone(order.customerPhone) === currentUserPhone)
+      .filter(order => {
+        const phoneMatch = normalizePhone(order.customerPhone) === currentUserPhone;
+        const emailMatch = currentUserEmail && order.customerEmail?.toLowerCase() === currentUserEmail;
+        return phoneMatch || emailMatch;
+      })
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }, [orders, currentUser]);
 
