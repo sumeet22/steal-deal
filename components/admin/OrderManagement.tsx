@@ -83,8 +83,8 @@ const OrderManagement: React.FC = () => {
               key={status}
               onClick={() => setFilterStatus(status)}
               className={`px-4 py-2 rounded-xl text-sm font-bold whitespace-nowrap transition-all ${filterStatus === status
-                  ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30'
+                : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                 }`}
             >
               {status}
@@ -157,7 +157,7 @@ const OrderManagement: React.FC = () => {
                               <img src={item.image} alt={item.name} className="w-12 h-12 object-cover rounded-xl" />
                               <div className="flex-1">
                                 <p className="text-sm font-bold truncate">{item.name}</p>
-                                <p className="text-[10px] text-gray-500 font-bold uppercase">{item.quantity} Unit{item.quantity > 1 ? 's' : ''} • ₹{item.price}</p>
+                                <p className="text-[10px] text-gray-500 font-bold uppercase">{item.quantity} Unit{item.quantity > 1 ? 's' : ''} • ₹{Number(item.price).toFixed(2)}</p>
                               </div>
                             </div>
                           ))}

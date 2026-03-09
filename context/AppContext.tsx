@@ -115,14 +115,14 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     customerPhone: o.customerPhone,
     shippingAddress: o.shippingAddress,
     items: (o.items || []).map((item: any) => {
-      // If it's an old order, it might have the price stored. 
-      // Orders should store the price at time of purchase.
-      // But mapOrderData is used for existing order objects.
+      // Use prices as stored in the order history, NOT current hiked prices
       return {
-        ...mapProductData(item),
-        price: item.price, // Keep the stored price for history
+        id: item._id || item.id,
+        name: item.name,
+        price: item.price,
         originalPrice: item.originalPrice,
-        quantity: item.quantity
+        quantity: item.quantity,
+        image: item.image || item.imageUrl || undefined
       };
     }),
     total: o.total,
