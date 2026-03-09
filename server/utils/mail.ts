@@ -225,13 +225,15 @@ export const sendOrderStatusUpdate = async (order: IOrder, customerEmail: string
     `;
 
     try {
-        await transporter.sendMail({
+        console.debug(`Attempting to send ${order.status} email to ${customerEmail} for Order #${order._id}...`);
+        const info = await transporter.sendMail({
             from: `"${APP_NAME}" <${adminEmail}>`,
             to: customerEmail,
             subject: `${statusIcon} Order ${order.status}: #${order._id}`,
             html: htmlContent
         });
+        console.debug(`Email sent successfully to ${customerEmail}. MessageId: ${info.messageId}`);
     } catch (error) {
-        console.error('Status update email failed:', error);
+        console.error(`Status update email failed for ${customerEmail}:`, error);
     }
 };
