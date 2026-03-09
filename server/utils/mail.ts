@@ -37,14 +37,22 @@ export const sendOrderConfirmation = async (order: IOrder, customerEmail: string
     const itemsHtml = order.items.map(item => `
         <tr>
             <td style="padding: 15px 0; border-bottom: 1px solid #f3f4f6;">
-                <div style="font-weight: 600; color: #111827;">${item.name}</div>
-                <div style="font-size: 12px; color: #6b7280;">Quantity: ${item.quantity}</div>
+                <div style="display: flex; align-items: center;">
+                    ${item.image ? `<img src="${item.image}" alt="${item.name}" style="width: 50px; h-height: 50px; object-fit: cover; border-radius: 8px; margin-right: 15px;">` : ''}
+                    <div>
+                        <div style="font-weight: 600; color: #111827;">${item.name}</div>
+                        <div style="font-size: 12px; color: #6b7280;">Quantity: ${item.quantity} @ ₹${item.price.toFixed(2)}</div>
+                    </div>
+                </div>
             </td>
             <td style="padding: 15px 0; border-bottom: 1px solid #f3f4f6; text-align: right; font-weight: 700; color: #111827;">
                 ₹${(item.price * item.quantity).toFixed(2)}
             </td>
         </tr>
     `).join('');
+
+    const subtotal = order.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const discountAmount = (order.appliedCoupon?.discountAmount || 0) + (order.paymentMethod === 'Online Payment' ? (subtotal * 0.05) : 0);
 
     const htmlContent = `
         <div style="font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background-color: ${BG_COLOR}; padding: 40px 20px;">
@@ -75,13 +83,27 @@ export const sendOrderConfirmation = async (order: IOrder, customerEmail: string
                     <table style="width: 100%; border-collapse: collapse;">
                         ${itemsHtml}
                         <tr>
+                            <td style="padding: 15px 0 5px 0; font-size: 14px; color: #6b7280;">Subtotal</td>
+                            <td style="padding: 15px 0 5px 0; font-size: 14px; color: #111827; text-align: right;">₹${subtotal.toFixed(2)}</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 5px 0; font-size: 14px; color: #6b7280;">Shipping Fee</td>
+                            <td style="padding: 5px 0; font-size: 14px; color: #111827; text-align: right;">${order.shippingCost > 0 ? `₹${order.shippingCost.toFixed(2)}` : 'FREE'}</td>
+                        </tr>
+                        ${discountAmount > 0 ? `
+                        <tr>
+                            <td style="padding: 5px 0; font-size: 14px; color: #10b981;">Total Discount</td>
+                            <td style="padding: 5px 0; font-size: 14px; color: #10b981; text-align: right;">-₹${discountAmount.toFixed(2)}</td>
+                        </tr>
+                        ` : ''}
+                        <tr>
                             <td style="padding: 20px 0 0 0; font-size: 18px; font-weight: 800; color: #111827;">Total Paid</td>
                             <td style="padding: 20px 0 0 0; font-size: 22px; font-weight: 800; color: ${PRIMARY_COLOR}; text-align: right;">₹${order.total.toFixed(2)}</td>
                         </tr>
                     </table>
 
                     <div style="margin-top: 40px; text-align: center;">
-                        <a href="${process.env.FRONTEND_URL}/profile" style="background-color: ${PRIMARY_COLOR}; color: white; padding: 16px 32px; border-radius: 12px; text-decoration: none; font-weight: 700; display: inline-block;">View Order Details</a>
+                        <a href="${process.env.FRONTEND_URL}/?view=order-tracking&orderId=${order._id}" style="background-color: ${PRIMARY_COLOR}; color: white; padding: 16px 32px; border-radius: 12px; text-decoration: none; font-weight: 700; display: inline-block;">View Order Details</a>
                     </div>
                 </div>
 
@@ -181,9 +203,12 @@ export const sendOrderStatusUpdate = async (order: IOrder, customerEmail: string
                     <div style="background-color: #f9fafb; border-radius: 16px; padding: 24px; text-align: left; margin-bottom: 30px;">
                         <h3 style="font-size: 12px; text-transform: uppercase; color: #9ca3af; margin: 0 0 15px 0;">Order Summary</h3>
                         ${order.items.map(item => `
-                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px;">
-                                <span style="color: #111827;">${item.name} x ${item.quantity}</span>
-                                <span style="color: #6b7280;">₹${(item.price * item.quantity).toFixed(2)}</span>
+                            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                                <div style="display: flex; align-items: center;">
+                                    ${item.image ? `<img src="${item.image}" alt="${item.name}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 6px; margin-right: 12px;">` : ''}
+                                    <span style="color: #111827; font-size: 14px;">${item.name} x ${item.quantity}</span>
+                                </div>
+                                <span style="color: #6b7280; font-size: 14px;">₹${(item.price * item.quantity).toFixed(2)}</span>
                             </div>
                         `).join('')}
                         <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #e5e7eb; display: flex; justify-content: space-between; font-weight: 800;">
@@ -192,7 +217,7 @@ export const sendOrderStatusUpdate = async (order: IOrder, customerEmail: string
                         </div>
                     </div>
 
-                    <a href="${process.env.FRONTEND_URL}/profile" style="background-color: ${PRIMARY_COLOR}; color: white; padding: 16px 32px; border-radius: 12px; text-decoration: none; font-weight: 700; display: inline-block;">Track Order History</a>
+                    <a href="${process.env.FRONTEND_URL}/?view=order-tracking&orderId=${order._id}" style="background-color: ${PRIMARY_COLOR}; color: white; padding: 16px 32px; border-radius: 12px; text-decoration: none; font-weight: 700; display: inline-block;">Track Order History</a>
                 </div>
                 ${getEmailFooter()}
             </div>

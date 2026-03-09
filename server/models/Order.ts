@@ -21,6 +21,7 @@ export interface IShippingAddress {
 export interface IOrder extends Document {
   user?: Schema.Types.ObjectId;
   customerName: string;
+  customerEmail?: string;
   customerPhone: string;
   shippingAddress: IShippingAddress | string; // Supporting both for legacy, though schema enforces structure for new ones
   items: IOrderItem[];
@@ -63,6 +64,7 @@ const OrderSchema = new Schema<IOrder>({
     ref: 'User',
   },
   customerName: { type: String, required: true },
+  customerEmail: { type: String },
   customerPhone: { type: String, required: true },
   // Flexible schema to handle both string (legacy) and object (new)
   // But strict for new orders via validation logic in code, or Mixed type. 

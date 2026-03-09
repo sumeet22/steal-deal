@@ -21,6 +21,7 @@ const OrderHistory = React.lazy(() => import('./components/OrderHistory'));
 const ProductDetail = React.lazy(() => import('./components/ProductDetail'));
 const WishlistPage = React.lazy(() => import('./components/WishlistPage'));
 const NewArrivalsPage = React.lazy(() => import('./components/NewArrivalsPage'));
+const OrderTracking = React.lazy(() => import('./components/OrderTracking'));
 const Sidebar = React.lazy(() => import('./components/Sidebar'));
 const SearchOverlay = React.lazy(() => import('./components/SearchOverlay'));
 const TermsAndConditions = React.lazy(() => import('./components/InfoPages').then(module => ({ default: module.TermsAndConditions })));
@@ -55,7 +56,7 @@ const WishlistButton: React.FC<{ onNavigate: () => void }> = ({ onNavigate }) =>
 };
 
 
-type View = 'store' | 'checkout' | 'orders' | 'admin' | 'product' | 'auth' | 'wishlist' | 'newarrivals' | 'terms' | 'privacy' | 'returns' | 'shipping' | 'contact' | 'profile' | 'payment-verification';
+type View = 'store' | 'checkout' | 'orders' | 'admin' | 'product' | 'auth' | 'wishlist' | 'newarrivals' | 'terms' | 'privacy' | 'returns' | 'shipping' | 'contact' | 'profile' | 'payment-verification' | 'order-tracking';
 
 const App: React.FC = () => {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -190,6 +191,12 @@ const App: React.FC = () => {
       setView(viewParam);
       setSelectedProductId(productIdParam);
       setSelectedCategory(categoryParam);
+
+      // If we are tracking, we might have orderId in url
+      const orderIdParam = params.get('orderId');
+      if (orderIdParam && viewParam === 'order-tracking') {
+        // We can just let the component handle it or set a separate state
+      }
     };
     parseUrl();
     window.addEventListener('popstate', parseUrl);
@@ -198,7 +205,7 @@ const App: React.FC = () => {
 
   // When user logs out, redirect to auth view if they were in a restricted area
   useEffect(() => {
-    if (!currentUser && (view === 'admin' || view === 'orders' || view === 'checkout')) {
+    if (!currentUser && (view === 'admin' || view === 'orders')) {
       navigate('auth', undefined, undefined, true);
     }
     // If currentUser exists and they are on the auth view, redirect them to store
@@ -282,6 +289,9 @@ const App: React.FC = () => {
         return <ContactUs />;
       case 'payment-verification':
         return <PaymentVerification onBackToStore={() => navigate('store')} />;
+      case 'order-tracking':
+        const urlParams = new URLSearchParams(window.location.search);
+        return <OrderTracking orderIdFromUrl={urlParams.get('orderId')} />;
       default:
         return (
           <Storefront

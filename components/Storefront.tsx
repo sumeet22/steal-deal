@@ -2,7 +2,7 @@ import React, { useState, useMemo, useCallback } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppContext } from '../context/AppContext';
-import { SearchIcon, ChevronLeftIcon, EyeIcon, FireIcon } from './Icons';
+import { SearchIcon, ChevronLeftIcon, EyeIcon, FireIcon, LoadingSpinner } from './Icons';
 import { Product, ProductImage } from '../types';
 import QuantityStepper from './shared/QuantityStepper';
 import PullToRefresh from './shared/PullToRefresh';
@@ -342,7 +342,17 @@ const ProductGrid: React.FC<ProductGridProps> = React.memo(({
 ProductGrid.displayName = 'ProductGrid';
 
 const Storefront: React.FC<StorefrontProps> = ({ onProductClick, activeCategoryId, onCategorySelect, initialScroll = 0, onNavigateToNewArrivals }) => {
-  const { products, categories, cart, addToCart, updateCartQuantity, fetchProductsByCategory, fetchProductsBySearch, productsLoading } = useAppContext();
+  const { products, categories, cart, addToCart, updateCartQuantity, fetchProductsByCategory, fetchProductsBySearch, productsLoading, settingsLoaded } = useAppContext();
+
+  // If settings haven't loaded yet, show a clean loading state to avoid price flicker
+  if (!settingsLoaded && products.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+        <LoadingSpinner className="w-12 h-12 text-brand-600" />
+        <p className="text-slate-400 font-medium animate-pulse italic uppercase tracking-widest text-xs">Syncing Premium Pricing...</p>
+      </div>
+    );
+  }
 
   // Restore scroll position on mount
   React.useEffect(() => {

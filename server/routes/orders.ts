@@ -1,7 +1,7 @@
 import express, { Request, Response } from 'express';
 import Order from '../models/Order.js';
 import User from '../models/User.js';
-import { sendOrderStatusUpdate } from '../utils/mail.js';
+import { sendOrderStatusUpdate, sendOrderConfirmation } from '../utils/mail.js';
 
 const router = express.Router();
 
@@ -14,10 +14,22 @@ router.get('/', async (req: Request, res: Response) => {
   }
 });
 
+// Public Order Tracking
+router.get('/track/:id', async (req: Request, res: Response) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: 'Order not found' });
+    res.json(order);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching order' });
+  }
+});
+
 router.post('/', async (req: Request, res: Response) => {
   try {
     const {
       customerName,
+      customerEmail,
       customerPhone,
       shippingAddress,
       items,
@@ -36,7 +48,7 @@ router.post('/', async (req: Request, res: Response) => {
     const Settings = (await import('../models/Settings.js')).default;
     const Coupon = (await import('../models/Coupon.js')).default;
 
-    const settings = await Settings.findOne() || { shippingFee: 0, freeShippingThreshold: 0 };
+    const settings = await Settings.findOne() || { pricePercentage: 100, shippingFee: 0, freeShippingThreshold: 0 };
 
     let dbSubtotal = 0;
     const validatedItems = [];
@@ -51,13 +63,14 @@ router.post('/', async (req: Request, res: Response) => {
         return res.status(400).json({ message: `Insufficient stock for ${product.name}. Available: ${product.stockQuantity}` });
       }
 
-      const itemTotal = product.price * item.quantity;
+      const itemPrice = (product.price * (settings.pricePercentage || 100)) / 100;
+      const itemTotal = itemPrice * item.quantity;
       dbSubtotal += itemTotal;
       validatedItems.push({
         id: product._id,
         name: product.name,
         quantity: item.quantity,
-        price: product.price,
+        price: itemPrice,
         image: product.image || (product.images && product.images[0]?.url)
       });
     }
@@ -94,6 +107,7 @@ router.post('/', async (req: Request, res: Response) => {
 
     const order = new Order({
       customerName,
+      customerEmail,
       customerPhone,
       shippingAddress,
       items: validatedItems,
@@ -126,6 +140,15 @@ router.post('/', async (req: Request, res: Response) => {
       }
     }
 
+    // --- NOTIFICATIONS ---
+    try {
+      if (customerEmail) {
+        await sendOrderConfirmation(createdOrder, customerEmail);
+      }
+    } catch (err) {
+      console.error('Failed to send order confirmation email:', err);
+    }
+
     res.status(201).json(createdOrder);
   } catch (error) {
     console.error('Create order error:', error);
@@ -152,14 +175,11 @@ router.put('/:id', async (req: Request, res: Response) => {
       order.status = req.body.status;
       const updatedOrder = await order.save();
 
-      // Send email logic
       try {
-        // Try to find the user's email. Often it's in the order document if we added it,
-        // but currently our Order model uses customerPhone to identify users in history.
-        // Let's try to find a user with this phone number.
-        const user = await User.findOne({ phone: order.customerPhone });
-        if (user && user.email) {
-          await sendOrderStatusUpdate(updatedOrder, user.email);
+        // Prefer the email stored in the order, fallback to user lookup by phone
+        const recipientEmail = order.customerEmail || (await User.findOne({ phone: order.customerPhone }))?.email;
+        if (recipientEmail) {
+          await sendOrderStatusUpdate(updatedOrder, recipientEmail);
         }
       } catch (err) {
         console.error('Failed to send status update email:', err);

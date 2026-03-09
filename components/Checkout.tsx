@@ -3,7 +3,8 @@ import { Helmet } from 'react-helmet-async';
 import { motion } from 'framer-motion';
 import { useAppContext } from '../context/AppContext';
 import { useToast } from '../context/ToastContext';
-import { ShippingAddress, Address } from '../types';
+import { ShippingAddress, Address, Order } from '../types';
+import { LoadingSpinner } from './Icons';
 
 interface CheckoutProps {
   onBackToStore: () => void;
@@ -33,11 +34,22 @@ const INDIAN_STATES = [
 ];
 
 const Checkout: React.FC<CheckoutProps> = ({ onBackToStore }) => {
-  const { cart, createOrder, currentUser, addAddress, validateAndUpdateCart, shippingFee, freeShippingThreshold, validateCoupon } = useAppContext();
+  const { cart, createOrder, currentUser, setCurrentUser, addAddress, validateAndUpdateCart, shippingFee, freeShippingThreshold, validateCoupon, settingsLoaded } = useAppContext();
   const { showToast } = useToast();
+
+  // If settings haven't loaded yet, show a clean loading state to avoid price flicker
+  if (!settingsLoaded && cart.length > 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+        <LoadingSpinner className="w-12 h-12 text-brand-600" />
+        <p className="text-slate-400 font-medium animate-pulse italic uppercase tracking-widest text-xs">Finalizing Prices...</p>
+      </div>
+    );
+  }
 
   const [customerInfo, setCustomerInfo] = useState({
     customerName: '',
+    customerEmail: '',
     customerPhone: '',
     deliveryMethod: 'store_pickup' as 'store_pickup' | 'home_delivery',
     paymentMethod: 'COD' as 'COD' | 'Online Payment',
@@ -56,6 +68,7 @@ const Checkout: React.FC<CheckoutProps> = ({ onBackToStore }) => {
 
   const [selectedAddressId, setSelectedAddressId] = useState<string>('new');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [orderComplete, setOrderComplete] = useState<Order | null>(null);
   const [couponCode, setCouponCode] = useState('');
   const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discountPercentage: number; discountAmount: number } | null>(null);
   const [availableCoupons, setAvailableCoupons] = useState<any[]>([]);
@@ -71,6 +84,7 @@ const Checkout: React.FC<CheckoutProps> = ({ onBackToStore }) => {
       setCustomerInfo(prev => ({
         ...prev,
         customerName: currentUser.name,
+        customerEmail: currentUser.email,
         customerPhone: phoneNumber
       }));
 
@@ -324,6 +338,16 @@ const Checkout: React.FC<CheckoutProps> = ({ onBackToStore }) => {
       return;
     }
 
+    if (!currentUser && !customerInfo.customerEmail.trim()) {
+      showToast('Error', 'Please enter your Email Address.', 'error');
+      return;
+    }
+
+    if (!currentUser && !/^\S+@\S+\.\S+$/.test(customerInfo.customerEmail)) {
+      showToast('Error', 'Please enter a valid Email Address.', 'error');
+      return;
+    }
+
     if (!validatePhoneNumber(customerInfo.customerPhone)) {
       showToast('Error', 'Please enter a valid 10-digit Phone Number.', 'error');
       return;
@@ -403,6 +427,7 @@ const Checkout: React.FC<CheckoutProps> = ({ onBackToStore }) => {
         // 1. Create a "Pending" order in our database first
         const pendingOrder = await createOrder({
           customerName: customerInfo.customerName,
+          customerEmail: customerInfo.customerEmail,
           customerPhone: customerInfo.customerPhone,
           shippingAddress: finalShippingAddress,
           deliveryMethod: customerInfo.deliveryMethod,
@@ -426,7 +451,7 @@ const Checkout: React.FC<CheckoutProps> = ({ onBackToStore }) => {
             order_id: pendingOrder.id,
             customer_details: {
               customer_id: currentUser?.id || `guest_${Date.now()}`,
-              customer_email: currentUser?.email || 'customer@example.com',
+              customer_email: currentUser?.email || customerInfo.customerEmail || 'customer@example.com',
               customer_phone: customerInfo.customerPhone
             }
           }),
@@ -468,9 +493,10 @@ const Checkout: React.FC<CheckoutProps> = ({ onBackToStore }) => {
     }
 
     // COD Flow
-    setTimeout(() => {
-      createOrder({
+    setTimeout(async () => {
+      const order = await createOrder({
         customerName: customerInfo.customerName,
+        customerEmail: customerInfo.customerEmail,
         customerPhone: customerInfo.customerPhone,
         shippingAddress: finalShippingAddress,
         deliveryMethod: customerInfo.deliveryMethod,
@@ -483,9 +509,105 @@ const Checkout: React.FC<CheckoutProps> = ({ onBackToStore }) => {
       } as any);
 
       setIsProcessing(false);
-      onBackToStore();
+      if (order) {
+        setOrderComplete(order);
+      } else {
+        onBackToStore();
+      }
     }, 1500);
   };
+
+  if (orderComplete) {
+    return (
+      <div className="max-w-2xl mx-auto py-12 px-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white dark:bg-gray-800 rounded-3xl p-8 shadow-2xl text-center border-t-8 border-indigo-600"
+        >
+          <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-6 text-green-600">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <h2 className="text-3xl font-black mb-2 tracking-tighter">Order Placed!</h2>
+          <p className="text-gray-500 mb-8 font-medium">Thank you for your purchase, {orderComplete.customerName}. Your order #{orderComplete.id.slice(-6).toUpperCase()} is being processed.</p>
+
+          <div className="bg-gray-50 dark:bg-gray-700/50 rounded-2xl p-6 mb-8 text-left space-y-3">
+            <div className="flex justify-between">
+              <span className="text-sm text-gray-500">Total Paid</span>
+              <span className="font-bold">₹{orderComplete.total.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-sm text-gray-500">Method</span>
+              <span className="font-bold">{orderComplete.paymentMethod}</span>
+            </div>
+          </div>
+
+          {!currentUser && (
+            <div className="border-t pt-8 mt-8 border-dashed border-gray-200 dark:border-gray-700">
+              <h3 className="text-xl font-bold mb-4">Want to track your order easily?</h3>
+              <p className="text-sm text-gray-500 mb-6 font-medium">Create an account with 1 click using your order details.</p>
+
+              <div className="bg-indigo-50 dark:bg-indigo-900/10 rounded-2xl p-6 border border-indigo-100 dark:border-indigo-800/50">
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    const password = (e.target as any).password.value;
+                    if (!password) return;
+
+                    try {
+                      const res = await fetch('/api/auth/post-checkout-register', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          name: orderComplete.customerName,
+                          email: orderComplete.customerEmail,
+                          phone: orderComplete.customerPhone,
+                          password
+                        })
+                      });
+                      const data = await res.json();
+                      if (!res.ok) throw new Error(data.msg || 'Registration failed');
+
+                      setCurrentUser(data, data.token);
+                      showToast('Account Created!', 'Welcome to Steal Deal!', 'success');
+                    } catch (err: any) {
+                      showToast('Error', err.message, 'error');
+                    }
+                  }}
+                  className="space-y-4"
+                >
+                  <div className="text-left">
+                    <label className="block text-[10px] font-black uppercase tracking-widest text-indigo-400 mb-1 px-1">Choose a Password</label>
+                    <input
+                      name="password"
+                      type="password"
+                      required
+                      placeholder="••••••••"
+                      className="w-full bg-white dark:bg-gray-800 p-3 rounded-xl border-2 border-transparent focus:border-indigo-500 outline-none transition-all shadow-sm"
+                    />
+                  </div>
+                  <button type="submit" className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-black py-3 rounded-xl shadow-lg transition-all">
+                    Create Account & Login
+                  </button>
+                </form>
+              </div>
+            </div>
+          )}
+
+          <div className="mt-8 pt-4">
+            <button
+              onClick={onBackToStore}
+              className="text-gray-500 hover:text-indigo-600 font-bold text-sm tracking-tight transition-colors uppercase"
+            >
+              ← Continue Shopping
+            </button>
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
 
   if (cart.length === 0) {
     return (
@@ -543,8 +665,23 @@ const Checkout: React.FC<CheckoutProps> = ({ onBackToStore }) => {
                     placeholder="9876543210"
                   />
                 </div>
-                <p className="text-xs text-gray-400 mt-1">10-digit mobile number</p>
               </div>
+              {!currentUser && (
+                <div className="sm:col-span-2">
+                  <label htmlFor="customerEmail" className="block text-sm font-medium mb-1">Email Address</label>
+                  <input
+                    type="email"
+                    id="customerEmail"
+                    name="customerEmail"
+                    value={customerInfo.customerEmail}
+                    onChange={handleChange}
+                    required={!currentUser}
+                    className="w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600 focus:ring-2 focus:ring-indigo-500 outline-none"
+                    placeholder="your@email.com"
+                  />
+                  <p className="text-xs text-gray-400 mt-1">Order updates will be sent here</p>
+                </div>
+              )}
             </div>
           </section>
 

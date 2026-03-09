@@ -41,7 +41,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onClose }) => {
     if (product) {
       setFormData({
         name: product.name,
-        price: product.price.toString(),
+        price: product.basePrice.toString(),
         originalPrice: product.originalPrice?.toString() || '',
         description: product.description,
         stockQuantity: product.stockQuantity.toString(),
@@ -199,6 +199,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onClose }) => {
     const productData = {
       name: formData.name,
       price: parseFloat(formData.price),
+      basePrice: parseFloat(formData.price),
       originalPrice: formData.originalPrice ? parseFloat(formData.originalPrice) : undefined,
       description: formData.description,
       stockQuantity: parseInt(formData.stockQuantity, 10),

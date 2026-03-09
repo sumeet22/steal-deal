@@ -43,7 +43,7 @@ const globalLimiter = rateLimit({
 
 const strictLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
-  max: 20, // 20 requests per 10 mins (orders, payments, login)
+  max: 200, // Increased from 20 to 200 to accommodate retries and app init
   message: 'Too many requests to this sensitive endpoint. Please wait.'
 });
 

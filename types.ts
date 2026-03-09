@@ -16,6 +16,7 @@ export interface Product {
   id: string;
   name: string;
   price: number;
+  basePrice: number;
   originalPrice?: number;
   description: string;
   stockQuantity: number;
@@ -70,6 +71,7 @@ export interface AppliedCoupon {
 export interface Order {
   id: string;
   customerName: string;
+  customerEmail?: string;
   customerPhone: string;
   shippingAddress: ShippingAddress;
   items: CartItem[];
