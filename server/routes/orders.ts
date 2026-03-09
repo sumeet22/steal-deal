@@ -65,6 +65,9 @@ router.post('/', async (req: Request, res: Response) => {
 
       const itemPrice = (product.price * (settings.pricePercentage || 100)) / 100;
       const itemTotal = itemPrice * item.quantity;
+
+      console.debug(`Order Creation - Product: ${product.name}, Base Price: ${product.price}, Hike: ${settings.pricePercentage || 100}%, Final Item Price: ${itemPrice}`);
+
       dbSubtotal += itemTotal;
       validatedItems.push({
         id: product._id,
