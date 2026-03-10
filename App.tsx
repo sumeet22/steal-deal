@@ -415,34 +415,57 @@ const App: React.FC = () => {
       <footer className="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 mt-auto overflow-hidden relative">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-px bg-gradient-to-r from-transparent via-brand-500 to-transparent opacity-30"></div>
         <div className="container mx-auto px-4 py-12">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-12 items-start">
 
             {/* Trusted By / Features */}
-            <div className="flex flex-wrap justify-center gap-8 text-slate-500 dark:text-slate-400">
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                  <ShieldCheckIcon />
+            <div className="space-y-6">
+              <h4 className="text-sm font-black uppercase tracking-widest text-slate-400">Our Guarantee</h4>
+              <div className="space-y-4 text-slate-500 dark:text-slate-400">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                    <ShieldCheckIcon />
+                  </div>
+                  <span className="text-sm font-semibold tracking-tight">Secure Payments</span>
                 </div>
-                <span className="text-sm font-semibold tracking-tight">Secure Payments</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400">
-                  <TruckIcon />
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                    <TruckIcon />
+                  </div>
+                  <span className="text-sm font-semibold tracking-tight">Fast Shipping</span>
                 </div>
-                <span className="text-sm font-semibold tracking-tight">Fast Shipping</span>
-              </div>
-              <div className="flex items-center gap-3 active:scale-95 transition-transform">
-                <div className="p-2 rounded-lg bg-brand-50 dark:bg-brand-500/10 text-brand-600 dark:text-brand-400">
-                  <CreditCardIcon />
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-brand-50 dark:bg-brand-500/10 text-brand-600 dark:text-brand-400">
+                    <CreditCardIcon />
+                  </div>
+                  <span className="text-sm font-semibold tracking-tight">Curated Deals</span>
                 </div>
-                <span className="text-sm font-semibold tracking-tight">Curated Deals</span>
               </div>
             </div>
 
+            {/* Quick Links */}
+            <div className="space-y-6">
+              <h4 className="text-sm font-black uppercase tracking-widest text-slate-400">Legal</h4>
+              <ul className="space-y-3 text-sm font-medium text-slate-500 dark:text-slate-400">
+                <li><button onClick={() => navigate('privacy')} className="hover:text-brand-500 transition-colors">Privacy Policy</button></li>
+                <li><button onClick={() => navigate('returns')} className="hover:text-brand-500 transition-colors">Refund & Cancellation</button></li>
+                <li><button onClick={() => navigate('shipping')} className="hover:text-brand-500 transition-colors">Shipping Policy</button></li>
+                <li><button onClick={() => navigate('terms')} className="hover:text-brand-500 transition-colors">Terms & Conditions</button></li>
+                <li><button onClick={() => navigate('contact')} className="hover:text-brand-500 transition-colors">Contact Us</button></li>
+              </ul>
+            </div>
+
             {/* Copyright & Branding */}
-            <div className="text-center md:text-right space-y-2">
-              <h3 className="text-2xl font-black italic tracking-tighter text-brand-600 dark:text-brand-400">STEAL DEAL</h3>
-              <p className="text-xs text-slate-400 font-medium tracking-widest uppercase">&copy; 2025 PREMIUM MERCHANDISE. ALL RIGHTS RESERVED.</p>
+            <div className="text-left md:text-right space-y-4">
+              <h3 className="text-3xl font-black italic tracking-tighter text-brand-600 dark:text-brand-400">STEAL DEAL</h3>
+              <div className="space-y-1">
+                <p className="text-xs font-bold text-slate-900 dark:text-slate-100 uppercase tracking-widest">SUMIT KESHAB DAS</p>
+                <p className="text-[10px] text-slate-400 font-medium tracking-tight">
+                  Premium Merchandise & Collectibles
+                </p>
+                <p className="text-[10px] text-slate-400 font-medium tracking-widest uppercase mt-4">
+                  &copy; 2026 ALL RIGHTS RESERVED.
+                </p>
+              </div>
             </div>
 
           </div>
