@@ -336,7 +336,7 @@ const App: React.FC = () => {
   const { title, desc } = getPageMeta();
 
   return (
-    <div className="bg-surface-light dark:bg-surface-dark text-slate-900 dark:text-slate-100 min-h-screen font-sans selection:bg-brand-500 selection:text-white">
+    <div className="bg-surface-light dark:bg-surface-dark text-slate-900 dark:text-slate-100 min-h-screen flex flex-col font-sans selection:bg-brand-500 selection:text-white">
       <Helmet>
         <title>{title}</title>
         <meta name="description" content={desc} />
@@ -394,7 +394,7 @@ const App: React.FC = () => {
         </nav>
       </header>
 
-      <main className="container mx-auto p-4 sm:p-6 lg:p-8">
+      <main className="container mx-auto p-4 sm:p-6 lg:p-8 flex-grow">
         <Suspense fallback={<div className="flex justify-center items-center h-64"><LoadingSpinner /></div>}>
           <AnimatePresence mode="wait">
             <motion.div
@@ -415,12 +415,12 @@ const App: React.FC = () => {
       <footer className="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-800 mt-auto overflow-hidden relative">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-4xl h-px bg-gradient-to-r from-transparent via-brand-500 to-transparent opacity-30"></div>
         <div className="container mx-auto px-4 py-12">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-12 items-start">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-12 items-start text-center md:text-left">
 
             {/* Trusted By / Features */}
             <div className="space-y-6">
               <h4 className="text-sm font-black uppercase tracking-widest text-slate-400">Our Guarantee</h4>
-              <div className="space-y-4 text-slate-500 dark:text-slate-400">
+              <div className="flex flex-col items-center md:items-start space-y-4 text-slate-500 dark:text-slate-400">
                 <div className="flex items-center gap-3">
                   <div className="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
                     <ShieldCheckIcon />
@@ -455,19 +455,19 @@ const App: React.FC = () => {
             </div>
 
             {/* Copyright & Branding */}
-            <div className="text-left md:text-right space-y-4">
-              <h3 className="text-3xl font-black italic tracking-tighter text-brand-600 dark:text-brand-400">STEAL DEAL</h3>
+            <div className="space-y-4">
               <div className="space-y-1">
-                <p className="text-xs font-bold text-slate-900 dark:text-slate-100 uppercase tracking-widest">SUMIT KESHAB DAS</p>
+                <h3 className="text-3xl font-black italic tracking-tighter text-brand-600 dark:text-brand-400">STEAL DEAL</h3>
                 <p className="text-[10px] text-slate-400 font-medium tracking-tight">
                   Premium Merchandise & Collectibles
                 </p>
-                <p className="text-[10px] text-slate-400 font-medium tracking-widest uppercase mt-4">
-                  &copy; 2026 ALL RIGHTS RESERVED.
-                </p>
+                <div className="pt-4">
+                  <p className="text-[10px] text-slate-400 font-medium tracking-widest uppercase">
+                    &copy; 2025 ALL RIGHTS RESERVED.
+                  </p>
+                </div>
               </div>
             </div>
-
           </div>
         </div>
       </footer>

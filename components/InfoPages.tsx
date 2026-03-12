@@ -104,11 +104,11 @@ export const ReturnsPolicy: React.FC = () => (
     >
         <h1 className="text-3xl font-bold mb-6 text-indigo-600 dark:text-indigo-400">Refund and Cancellation Policy</h1>
         <div className="prose dark:prose-invert max-w-none space-y-4">
-            <p>At Steal Deal (SUMIT KESHAB DAS), customer satisfaction is our top priority. Please read our policy regarding refunds and cancellations carefully.</p>
+            <p>At Steal Deal, customer satisfaction is our top priority. Please read our policy regarding refunds and cancellations carefully.</p>
 
             <section>
                 <h3 className="text-xl font-bold">Cancellations</h3>
-                <p>Orders can only be cancelled within 12 hours of placement. Once an order has been processed or shipped, it cannot be cancelled. To request a cancellation, please contact us immediately at ssdas220496@gmail.com.</p>
+                <p>Orders can only be cancelled within 12 hours of placement. Once an order has been processed or shipped, it cannot be cancelled. To request a cancellation, please contact us immediately at <a href="mailto:thestealdeal.co@gmail.com" className="text-indigo-600 dark:text-indigo-400 hover:underline">thestealdeal.co@gmail.com</a>.</p>
             </section>
 
             <section>
@@ -235,7 +235,7 @@ export const ContactUs: React.FC = () => {
                             </div>
                             <div>
                                 <p className="font-bold text-gray-900 dark:text-white">Legal Entity Name</p>
-                                <p className="text-gray-500 text-sm">SUMIT KESHAB DAS</p>
+                                <p className="text-gray-500 text-sm">SDX DIGITAL SOLUTIONS</p>
                             </div>
                         </div>
 
@@ -245,7 +245,11 @@ export const ContactUs: React.FC = () => {
                             </div>
                             <div>
                                 <p className="font-bold text-gray-900 dark:text-white">Email</p>
-                                <p className="text-gray-500 text-sm">ssdas220496@gmail.com</p>
+                                <p className="text-gray-500 text-sm">
+                                    <a href="mailto:thestealdeal.co@gmail.com" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors cursor-pointer">
+                                        thestealdeal.co@gmail.com
+                                    </a>
+                                </p>
                             </div>
                         </div>
 
@@ -255,7 +259,11 @@ export const ContactUs: React.FC = () => {
                             </div>
                             <div>
                                 <p className="font-bold text-gray-900 dark:text-white">Phone</p>
-                                <p className="text-gray-500 text-sm">+91 90048 18637</p>
+                                <p className="text-gray-500 text-sm">
+                                    <a href="tel:+919321166028" className="hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors cursor-pointer">
+                                        +91 93211 66028
+                                    </a>
+                                </p>
                             </div>
                         </div>
 
@@ -265,10 +273,21 @@ export const ContactUs: React.FC = () => {
                             </div>
                             <div>
                                 <p className="font-bold text-gray-900 dark:text-white">Registered Address</p>
-                                <p className="text-gray-500 text-xs leading-relaxed">
-                                    Shop no. 4, Narmada Terrace, Cabin Cross Rd, B Wing, Kharegaon,<br />
-                                    Bhayandar East, Bhayandar, Mira Bhayandar, Maharashtra 401105
-                                </p>
+                                <div className="space-y-2">
+                                    <p className="text-gray-500 text-xs leading-relaxed">
+                                        Shop no. 4, Narmada Terrace, Cabin Cross Rd, B Wing, Kharegaon,<br />
+                                        Bhayandar East, Bhayandar, Mira Bhayandar, Maharashtra 401105
+                                    </p>
+                                    <a 
+                                        href="https://share.google/sPUGk0XkQvpY8iT2O" 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center gap-1 text-indigo-600 dark:text-indigo-400 text-xs font-semibold hover:underline group"
+                                    >
+                                        Show Directions
+                                        <svg className="w-3 h-3 transition-transform group-hover:translate-x-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+                                    </a>
+                                </div>
                             </div>
                         </div>
                     </div>
