@@ -7,7 +7,8 @@
 
     // Get category info from page
     const h1 = document.querySelector('h1');
-    const catTitle = h1?.title?.trim() || "3D wallets";
+    // const catTitle = h1?.innerText?.trim() || "Trending Gifts";
+    const catTitle = h1?.innerText?.trim();
     // Try to get category image from meta or og tags
     const ogImage = document.querySelector('meta[property="og:image"]');
     const catImage = ogImage?.content || "";
@@ -143,10 +144,12 @@
         }
     } catch (e) { return console.error("❌ Local DB offline!"); }
 
-    // --- STEP 5: Intelligent Product Upsert ---
-    const pRes = await fetch(`${API_BASE}/products?limit=5000`);
+    // --- STEP 5: Intelligent Product Upsert & Sync ---
+    const pRes = await fetch(`${API_BASE}/products?category=${categoryId}&limit=5000&includeInactive=true`);
     const { products: existingList } = await pRes.json();
-    let added = 0, updated = 0, skipped = 0, failed = 0;
+    let added = 0, updated = 0, skipped = 0, failed = 0, deleted = 0;
+
+    const matchedExistingIds = new Set();
 
     for (const p of scrapedData) {
         const payload = { ...p, category: categoryId };
@@ -163,9 +166,24 @@
         let method = 'POST', url = `${API_BASE}/products`, go = true;
 
         if (existing) {
-            if (p.price === existing.price) { skipped++; go = false; }
-            else if (p.price > existing.price) { method = 'PUT'; url = `${API_BASE}/products/${existing._id}`; }
-            else { skipped++; go = false; }
+            matchedExistingIds.add(existing._id);
+            // Re-activate if it was soft-deleted or marked out of stock
+            const needsReactivation = !existing.isActive || existing.outOfStock;
+
+            if (p.price === existing.price && !needsReactivation) {
+                skipped++;
+                go = false;
+            } else if (p.price !== existing.price || needsReactivation) {
+                method = 'PUT';
+                url = `${API_BASE}/products/${existing._id}`;
+                // Ensure the payload sets it to active and in-stock if we're updating
+                payload.isActive = true;
+                payload.outOfStock = false;
+                payload.stockQuantity = 10; // Reset stock to default 10
+            } else {
+                skipped++;
+                go = false;
+            }
         }
 
         if (go) {
@@ -177,9 +195,28 @@
         await delay(50);
     }
 
+    // --- STEP 6: Deactivate Stale Products (Soft Delete) ---
+    console.log("   ➤ Syncing: Deactivating stale products (preserving order history)...");
+    let deactivated = 0;
+    for (const ep of existingList) {
+        if (!matchedExistingIds.has(ep._id)) {
+            try {
+                // Soft delete to protect order history: Set inactive and out of stock
+                const res = await fetch(`${API_BASE}/products/${ep._id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ isActive: false, outOfStock: true, stockQuantity: 0 })
+                });
+                if (res.ok) { deactivated++; } else { failed++; }
+            } catch (e) { failed++; }
+            await delay(50);
+        }
+    }
+
     console.log(`%c✨ SYNC COMPLETE!
   ✅ Added: ${added}
   ↗️  Updated: ${updated}
   ⏭️  Skipped: ${skipped}
+  🗄️  Deactivated: ${deactivated}
   ❌ Failed: ${failed}`, "color: green; font-weight: bold; font-size: 13px;");
 })();
