@@ -38,7 +38,7 @@ const UserMenu: React.FC<UserMenuProps> = ({ onNavigateToAuth }) => {
         <div className="p-1 rounded-full bg-brand-500 text-white shadow-sm">
           <UserCircleIcon />
         </div>
-        {currentUser && <span className="hidden sm:inline text-xs font-black uppercase tracking-widest text-slate-700 dark:text-slate-300">{currentUser.name.split(' ')[0]}</span>}
+        {currentUser?.name && <span className="hidden sm:inline text-xs font-black uppercase tracking-widest text-slate-700 dark:text-slate-300">{currentUser.name.split(' ')[0]}</span>}
         {!currentUser && <span className="hidden sm:inline text-xs font-black uppercase tracking-widest text-slate-700 dark:text-slate-300">Account</span>}
       </button>
 

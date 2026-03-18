@@ -256,6 +256,8 @@ const App: React.FC = () => {
           onCategorySelect={(id) => navigate('store', undefined, id)}
           initialScroll={selectedCategory ? categoryScrollPos.current : mainStoreScrollPos.current}
           onNavigateToNewArrivals={() => navigate('newarrivals')}
+          searchTerm={globalSearchTerm}
+          onSearch={setGlobalSearchTerm}
         />;
       case 'product':
         return <ProductDetail productId={selectedProductId!} onBack={() => navigate('store')} />;

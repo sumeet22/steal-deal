@@ -14,9 +14,11 @@ interface ProductDetailProps {
 
 // Helper function to get sorted images with fallback to legacy image field
 const getProductImages = (product: Product): ProductImage[] => {
+  let images: ProductImage[] = [];
+
   if (product.images && product.images.length > 0) {
     // Sort by isMain first (main image first), then by order
-    return [...product.images].sort((a, b) => {
+    images = [...product.images].sort((a, b) => {
       // Main image always comes first
       if (a.isMain && !b.isMain) return -1;
       if (!a.isMain && b.isMain) return 1;
@@ -25,9 +27,14 @@ const getProductImages = (product: Product): ProductImage[] => {
     });
   } else if (product.image) {
     // Fallback to legacy single image
-    return [{ url: product.image, order: 0, isMain: true }];
+    images = [{ url: product.image, order: 0, isMain: true }];
   }
-  return [];
+
+  // Swap any low-res quicksell URL with full-res version
+  return images.map(img => ({
+    ...img,
+    url: img.url.replace('/products_400/', '/products/')
+  }));
 };
 
 const ProductDetail: React.FC<ProductDetailProps> = ({ productId, onBack }) => {

@@ -14,6 +14,8 @@ interface StorefrontProps {
   onCategorySelect: (categoryId: string | null) => void;
   initialScroll?: number;
   onNavigateToNewArrivals?: () => void;
+  searchTerm?: string;
+  onSearch?: (term: string) => void;
 }
 
 const containerVariants = {
@@ -341,7 +343,15 @@ const ProductGrid: React.FC<ProductGridProps> = React.memo(({
 
 ProductGrid.displayName = 'ProductGrid';
 
-const Storefront: React.FC<StorefrontProps> = ({ onProductClick, activeCategoryId, onCategorySelect, initialScroll = 0, onNavigateToNewArrivals }) => {
+const Storefront: React.FC<StorefrontProps> = ({ 
+  onProductClick, 
+  activeCategoryId, 
+  onCategorySelect, 
+  initialScroll = 0, 
+  onNavigateToNewArrivals,
+  searchTerm: propsSearchTerm = '',
+  onSearch: propsOnSearch
+}) => {
   const { products, categories, cart, addToCart, updateCartQuantity, fetchProductsByCategory, fetchProductsBySearch, productsLoading, settingsLoaded } = useAppContext();
 
   // If settings haven't loaded yet, show a clean loading state to avoid price flicker
@@ -363,7 +373,7 @@ const Storefront: React.FC<StorefrontProps> = ({ onProductClick, activeCategoryI
 
   // State for search and pagination
   const [categorySearchTerm, setCategorySearchTerm] = useState('');
-  const [globalSearchTerm, setGlobalSearchTerm] = useState('');
+  const currentPageRef = React.useRef(1);
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
 
@@ -383,16 +393,16 @@ const Storefront: React.FC<StorefrontProps> = ({ onProductClick, activeCategoryI
 
   // Fetch products when global search changes (debounced)
   React.useEffect(() => {
-    if (globalSearchTerm.trim()) {
+    if (propsSearchTerm.trim()) {
       const timer = setTimeout(() => {
         setCurrentPage(1);
-        fetchProductsBySearch(globalSearchTerm, 1, 20).then(result => {
+        fetchProductsBySearch(propsSearchTerm, 1, 20).then(result => {
           setHasMore(result.hasMore);
         });
       }, 300); // 300ms debounce
       return () => clearTimeout(timer);
     }
-  }, [globalSearchTerm, fetchProductsBySearch]);
+  }, [propsSearchTerm, fetchProductsBySearch]);
 
   // Category search is now client-side filtering (products already loaded for category)
   const categoryFilteredProducts = useMemo(() => {
@@ -413,10 +423,10 @@ const Storefront: React.FC<StorefrontProps> = ({ onProductClick, activeCategoryI
 
   // Global search products (already loaded from API)
   const globalFilteredProducts = useMemo(() => {
-    if (!globalSearchTerm.trim()) return [];
+    if (!propsSearchTerm.trim()) return [];
     // Only show active products
     return products.filter(p => p.isActive !== false);
-  }, [products, globalSearchTerm]);
+  }, [products, propsSearchTerm]);
 
   // Create a memoized map of cart items by product ID to ensure stable references
   const cartItemsMap = useMemo(() => {
@@ -430,7 +440,7 @@ const Storefront: React.FC<StorefrontProps> = ({ onProductClick, activeCategoryI
   const handleSelectCategory = (categoryId: string) => {
     onCategorySelect(categoryId);
     setCategorySearchTerm('');
-    setGlobalSearchTerm(''); // Clear global search when selecting category
+    if (propsOnSearch) propsOnSearch(''); // Clear global search when selecting category
   };
 
   const handleBackToCategories = () => {
@@ -446,9 +456,9 @@ const Storefront: React.FC<StorefrontProps> = ({ onProductClick, activeCategoryI
         setCurrentPage(1);
         setHasMore(result.hasMore);
       });
-    } else if (globalSearchTerm) {
+    } else if (propsSearchTerm) {
       // Refresh search results
-      await fetchProductsBySearch(globalSearchTerm, 1, 20).then(result => {
+      await fetchProductsBySearch(propsSearchTerm, 1, 20).then(result => {
         setCurrentPage(1);
         setHasMore(result.hasMore);
       });
@@ -456,7 +466,7 @@ const Storefront: React.FC<StorefrontProps> = ({ onProductClick, activeCategoryI
       // Refresh categories (reload page)
       window.location.reload();
     }
-  }, [activeCategoryId, globalSearchTerm, fetchProductsByCategory, fetchProductsBySearch]);
+  }, [activeCategoryId, propsSearchTerm, fetchProductsByCategory, fetchProductsBySearch]);
 
 
   // Infinite scroll - load more when sentinel element is visible
@@ -477,8 +487,8 @@ const Storefront: React.FC<StorefrontProps> = ({ onProductClick, activeCategoryI
             fetchProductsByCategory(activeCategoryId, nextPage, 20).then(result => {
               setHasMore(result.hasMore);
             });
-          } else if (globalSearchTerm) {
-            fetchProductsBySearch(globalSearchTerm, nextPage, 20).then(result => {
+          } else if (propsSearchTerm) {
+            fetchProductsBySearch(propsSearchTerm, nextPage, 20).then(result => {
               setHasMore(result.hasMore);
             });
           }
@@ -498,7 +508,7 @@ const Storefront: React.FC<StorefrontProps> = ({ onProductClick, activeCategoryI
         observer.unobserve(loadMoreRef.current);
       }
     };
-  }, [activeCategoryId, globalSearchTerm, currentPage, hasMore, productsLoading, fetchProductsByCategory, fetchProductsBySearch]);
+  }, [activeCategoryId, propsSearchTerm, currentPage, hasMore, productsLoading, fetchProductsByCategory, fetchProductsBySearch]);
 
 
   // Memoized callbacks to prevent ProductCard re-renders
@@ -598,8 +608,8 @@ const Storefront: React.FC<StorefrontProps> = ({ onProductClick, activeCategoryI
             <input
               type="text"
               placeholder="Searching for something specific?"
-              value={globalSearchTerm}
-              onChange={(e) => setGlobalSearchTerm(e.target.value)}
+              value={propsSearchTerm}
+              onChange={(e) => propsOnSearch && propsOnSearch(e.target.value)}
               className="w-full p-5 pl-14 h-16 border-0 rounded-2xl bg-white dark:bg-slate-800 shadow-premium focus:ring-4 focus:ring-brand-500/20 outline-none transition-all text-lg font-medium"
             />
             <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none text-brand-500 group-focus-within:scale-110 transition-transform">
@@ -611,7 +621,7 @@ const Storefront: React.FC<StorefrontProps> = ({ onProductClick, activeCategoryI
           </div>
         </div>
 
-        {globalSearchTerm ? (
+        {propsSearchTerm ? (
           <div>
             <h2 className="text-2xl font-bold mb-6">Search Results</h2>
             <ProductGrid
