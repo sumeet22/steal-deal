@@ -15,7 +15,7 @@ interface AppContextType {
   logout: () => void;
 
   // Lazy loading functions
-  fetchProductsByCategory: (categoryId: string, page?: number, limit?: number) => Promise<{ products: Product[]; hasMore: boolean; total: number }>;
+  fetchProductsByCategory: (categoryId: string, page?: number, limit?: number, search?: string) => Promise<{ products: Product[]; hasMore: boolean; total: number }>;
   fetchProductsBySearch: (searchQuery: string, page?: number, limit?: number) => Promise<{ products: Product[]; hasMore: boolean; total: number }>;
   fetchNewArrivals: (page?: number, limit?: number, searchQuery?: string) => Promise<{ products: Product[]; hasMore: boolean; total: number }>;
   fetchAllProductsForAdmin: () => Promise<void>; // For admin panel only
@@ -375,15 +375,22 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const fetchProductsByCategory = useCallback(async (
     categoryId: string,
     page: number = 1,
-    limit: number = 20
+    limit: number = 20,
+    search: string = ''
   ): Promise<{ products: Product[]; hasMore: boolean; total: number }> => {
     setProductsLoading(true);
     try {
-      const params = new URLSearchParams({
+      const paramsObj: any = {
         category: categoryId,
         page: page.toString(),
         limit: limit.toString()
-      });
+      };
+      
+      if (search) {
+        paramsObj.search = search;
+      }
+      
+      const params = new URLSearchParams(paramsObj);
 
       const res = await fetch(`/api/products?${params}`);
       if (!res.ok) throw new Error('Failed to fetch products');

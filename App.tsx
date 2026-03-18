@@ -490,7 +490,7 @@ const App: React.FC = () => {
         onClose={() => setIsSearchOpen(false)}
         onSearch={(term) => {
           setGlobalSearchTerm(term);
-          navigate('store');
+          navigate('store', undefined, null);
           setIsSearchOpen(false);
         }}
         onProductClick={(productId) => {

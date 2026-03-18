@@ -57,12 +57,31 @@ router.get('/', async (req: Request, res: Response) => {
       query.category = category;
     }
 
-    // Search filter (name and description)
+    // Search filter (name, description, category name, or flags)
     if (search && typeof search === 'string' && search.trim()) {
-      query.$or = [
-        { name: { $regex: search.trim(), $options: 'i' } },
-        { description: { $regex: search.trim(), $options: 'i' } }
+      const searchTerm = search.trim();
+      
+      // 1. Find categories that match the search term
+      const matchingCategories = await Category.find({ 
+        name: { $regex: searchTerm, $options: 'i' } 
+      }).select('_id').lean();
+      const catIds = matchingCategories.map(c => c._id);
+
+      const orQuery: any[] = [
+        { name: { $regex: searchTerm, $options: 'i' } },
+        { description: { $regex: searchTerm, $options: 'i' } }
       ];
+
+      if (catIds.length > 0) {
+        orQuery.push({ category: { $in: catIds } });
+      }
+
+      // 2. Handle concept-aware searches
+      if (/new|drop/i.test(searchTerm)) orQuery.push({ isNewArrival: true });
+      if (/limited|edition/i.test(searchTerm)) orQuery.push({ isLimitedEdition: true });
+      if (/sale|off|deal/i.test(searchTerm)) orQuery.push({ $or: [{ tags: 'sale' }, { originalPrice: { $gt: 0 } }] });
+
+      query.$or = orQuery;
     }
 
     // Filter by specific IDs (comma separated)

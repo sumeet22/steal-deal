@@ -372,7 +372,7 @@ const Storefront: React.FC<StorefrontProps> = ({
   }, []); // Only runs on component mount
 
   // State for search and pagination
-  const [categorySearchTerm, setCategorySearchTerm] = useState('');
+  const [localSearchTerm, setLocalSearchTerm] = useState(''); // Only for local UI feedback if needed, but we mostly use propsSearchTerm
   const currentPageRef = React.useRef(1);
   const [currentPage, setCurrentPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
@@ -381,52 +381,38 @@ const Storefront: React.FC<StorefrontProps> = ({
     return categories.find(c => c.id === activeCategoryId);
   }, [categories, activeCategoryId]);
 
-  // Fetch products when category changes
+  // Consolidated effect to fetch products based on category and/or search term
   React.useEffect(() => {
-    if (activeCategoryId) {
+    // Determine what to fetch
+    const fetchAction = async () => {
       setCurrentPage(1);
-      fetchProductsByCategory(activeCategoryId, 1, 20).then(result => {
+      if (activeCategoryId) {
+        // Fetch within category, possibly with search
+        const result = await fetchProductsByCategory(activeCategoryId, 1, 20, propsSearchTerm);
         setHasMore(result.hasMore);
-      });
-    }
-  }, [activeCategoryId, fetchProductsByCategory]);
+      } else if (propsSearchTerm.trim()) {
+        // Global search
+        const result = await fetchProductsBySearch(propsSearchTerm.trim(), 1, 20);
+        setHasMore(result.hasMore);
+      }
+    };
 
-  // Fetch products when global search changes (debounced)
-  React.useEffect(() => {
-    if (propsSearchTerm.trim()) {
-      const timer = setTimeout(() => {
-        setCurrentPage(1);
-        fetchProductsBySearch(propsSearchTerm, 1, 20).then(result => {
-          setHasMore(result.hasMore);
-        });
-      }, 300); // 300ms debounce
-      return () => clearTimeout(timer);
-    }
-  }, [propsSearchTerm, fetchProductsBySearch]);
+    // Use a small debounce for search terms
+    const delay = propsSearchTerm.trim() ? 400 : 0;
+    const timer = setTimeout(fetchAction, delay);
+    
+    return () => clearTimeout(timer);
+  }, [activeCategoryId, propsSearchTerm, fetchProductsByCategory, fetchProductsBySearch]);
 
-  // Category search is now client-side filtering (products already loaded for category)
-  const categoryFilteredProducts = useMemo(() => {
-    if (!activeCategoryId) return [];
-
-    // Filter by active category AND active status to prevent Admin-panel cache leaks
-    const baseProducts = products.filter(p => p.categoryId === activeCategoryId && p.isActive !== false);
-
-    if (!categorySearchTerm.trim()) {
-      return baseProducts;
-    }
-
-    const term = categorySearchTerm.trim().toLowerCase();
-    return baseProducts.filter(product =>
-      (product.name || '').toLowerCase().includes(term)
-    );
-  }, [products, categorySearchTerm, activeCategoryId]);
-
-  // Global search products (already loaded from API)
-  const globalFilteredProducts = useMemo(() => {
-    if (!propsSearchTerm.trim()) return [];
-    // Only show active products
+  // Results for the current view (category or search)
+  const filteredResults = useMemo(() => {
+    // If no search/category, results are meaningless (handled by render logic)
+    if (!activeCategoryId && !propsSearchTerm.trim()) return [];
+    
+    // Sort logic can be added here if needed, but server usually sorts by creation/relevance
+    // Just return products from context which are already filtered by server
     return products.filter(p => p.isActive !== false);
-  }, [products, propsSearchTerm]);
+  }, [products, activeCategoryId, propsSearchTerm]);
 
   // Create a memoized map of cart items by product ID to ensure stable references
   const cartItemsMap = useMemo(() => {
@@ -439,13 +425,12 @@ const Storefront: React.FC<StorefrontProps> = ({
 
   const handleSelectCategory = (categoryId: string) => {
     onCategorySelect(categoryId);
-    setCategorySearchTerm('');
-    if (propsOnSearch) propsOnSearch(''); // Clear global search when selecting category
+    if (propsOnSearch) propsOnSearch(''); // Clear search when selecting a new category
   };
 
   const handleBackToCategories = () => {
     onCategorySelect(null);
-    setCategorySearchTerm('');
+    if (propsOnSearch) propsOnSearch(''); // Also clear search when going back
   };
 
   // Pull-to-refresh handler
@@ -625,7 +610,7 @@ const Storefront: React.FC<StorefrontProps> = ({
           <div>
             <h2 className="text-2xl font-bold mb-6">Search Results</h2>
             <ProductGrid
-              productsList={globalFilteredProducts}
+              productsList={filteredResults}
               cartItemsMap={cartItemsMap}
               onProductClick={handleProductClick}
               onAddToCart={handleAddToCart}
@@ -640,7 +625,7 @@ const Storefront: React.FC<StorefrontProps> = ({
             )}
 
             {/* Infinite scroll sentinel */}
-            {hasMore && globalFilteredProducts.length > 0 && (
+            {hasMore && filteredResults.length > 0 && (
               <div ref={loadMoreRef} className="h-20 flex items-center justify-center">
                 {productsLoading && (
                   <p className="text-gray-500 text-sm">Loading more results...</p>
@@ -715,8 +700,8 @@ const Storefront: React.FC<StorefrontProps> = ({
         <input
           type="text"
           placeholder="Search in this category..."
-          value={categorySearchTerm}
-          onChange={(e) => setCategorySearchTerm(e.target.value)}
+          value={propsSearchTerm}
+          onChange={(e) => propsOnSearch && propsOnSearch(e.target.value)}
           className="w-full p-3 pl-10 border rounded-full bg-white dark:bg-gray-800 dark:border-gray-700 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
         />
         <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-gray-400">
@@ -725,7 +710,7 @@ const Storefront: React.FC<StorefrontProps> = ({
       </div>
 
       <ProductGrid
-        productsList={categoryFilteredProducts}
+        productsList={filteredResults}
         cartItemsMap={cartItemsMap}
         onProductClick={handleProductClick}
         onAddToCart={handleAddToCart}
@@ -740,7 +725,7 @@ const Storefront: React.FC<StorefrontProps> = ({
       )}
 
       {/* Infinite scroll sentinel */}
-      {hasMore && categoryFilteredProducts.length > 0 && (
+      {hasMore && filteredResults.length > 0 && (
         <div ref={loadMoreRef} className="h-20 flex items-center justify-center">
           {productsLoading && (
             <p className="text-gray-500 text-sm">Loading more products...</p>
