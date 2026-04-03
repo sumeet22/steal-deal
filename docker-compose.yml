@@ -49,12 +49,11 @@ services:
         limits:
           memory: 2048M  # Caps your backend at 2GB to save system RAM
     healthcheck:
-      # Note: Ensure your backend has a GET /health or / endpoint that returns 200 OK
-      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:5000/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s # Gives the backend time to boot before checking health
+      start_period: 60s # Gives more time for database connection
     logging:
       driver: "json-file"
       options:
