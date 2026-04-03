@@ -71,14 +71,21 @@ app.use('/api/payment', strictLimiter);
 app.use('/api/auth/login', strictLimiter);
 app.use('/api/auth/register', strictLimiter);
 
-mongoose.connect(process.env.MONGO_URI, {
+const maskUri = (uri: string | undefined): string => {
+  if (!uri) return 'undefined';
+  return uri.replace(/\/\/.*@/, '//****:****@');
+};
+
+console.log(`Connecting to MongoDB at: ${maskUri(process.env.MONGO_URI)}`);
+
+mongoose.connect(process.env.MONGO_URI as string, {
   maxPoolSize: 10, // Maximum number of connections in the pool
   minPoolSize: 2,  // Minimum number of connections to maintain
   serverSelectionTimeoutMS: 5000, // Timeout for server selection
   socketTimeoutMS: 45000, // Socket timeout
 })
-  .then(() => console.log('MongoDB connected with connection pooling'))
-  .catch(err => console.error(err));
+  .then(() => console.log('MongoDB connected successfully'))
+  .catch(err => console.error('MongoDB connection error:', err));
 
 import categoriesRouter from './routes/categories.js';
 import productsRouter from './routes/products.js';
