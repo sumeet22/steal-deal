@@ -6,8 +6,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.frontend.prod
-    ports:
-      - "80:80"
+    expose:
+      - "80"
     restart: unless-stopped
     depends_on:
       backend:
