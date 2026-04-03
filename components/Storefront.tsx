@@ -7,6 +7,7 @@ import { Product, ProductImage } from '../types';
 import QuantityStepper from './shared/QuantityStepper';
 import PullToRefresh from './shared/PullToRefresh';
 import ComingSoon from './ComingSoon';
+import SocialProofToast from './shared/SocialProofToast';
 
 interface StorefrontProps {
   onProductClick: (productId: string) => void;
@@ -69,7 +70,7 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
   onAddToCart,
   onUpdateQuantity
 }) => {
-  const { getDisplayPrice } = useAppContext();
+  const { getDisplayPrice, trackProductActivity } = useAppContext();
   const isInCart = !!cartItem;
 
   // Use cart quantity if in cart
@@ -88,8 +89,8 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
 
   const stats = useMemo(() => {
     return {
-      viewCount: (product.viewCount && product.viewCount > 0) ? product.viewCount : Math.floor(Math.random() * (45 - 10 + 1)) + 10,
-      soldLast24Hours: (product.soldLast24Hours && product.soldLast24Hours > 0) ? product.soldLast24Hours : Math.floor(Math.random() * (12 - 2 + 1)) + 2
+      viewCount: product.viewCount || Math.floor(Math.random() * (45 - 10 + 1)) + 10,
+      soldLast24Hours: product.soldLast24Hours || Math.floor(Math.random() * (12 - 2 + 1)) + 2
     };
   }, [product.viewCount, product.soldLast24Hours]);
 
@@ -110,6 +111,13 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
     }
   }, [cartItem]);
 
+  // Track view when component mounts (or product changes)
+  React.useEffect(() => {
+    if (product.id) {
+      trackProductActivity(product.id, 'view');
+    }
+  }, [product.id, trackProductActivity]);
+
   const handleAddToCart = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     e.stopPropagation();
@@ -117,6 +125,9 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
     setIsAdding(true);
     // Always add quantity of 1 when clicking ADD TO CART
     onAddToCart(product);
+
+    // Track cart action
+    trackProductActivity(product.id, 'cart');
 
     // Show success feedback
     setTimeout(() => {
@@ -203,6 +214,14 @@ export const ProductCard: React.FC<ProductCardProps> = React.memo(({
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Real-time Social Proof Toast */}
+        <SocialProofToast 
+          productId={product.id} 
+          productName={product.name}
+          viewCount={stats.viewCount}
+          soldCount={stats.soldLast24Hours}
+        />
       </div>
       <div className="p-4 sm:p-5 flex flex-col flex-grow">
         <h3 className="text-lg sm:text-xl font-bold tracking-tight text-slate-900 dark:text-white leading-tight mb-2 group-hover:text-brand-500 transition-colors" onClick={() => onProductClick(product.id)}>{product.name}</h3>

@@ -340,4 +340,31 @@ router.post('/reorder', async (req: Request, res: Response) => {
   }
 });
 
+// Track product metrics (views/add-to-cart)
+router.post('/:id/track', async (req: Request, res: Response) => {
+  try {
+    const { action } = req.body;
+    const update: any = {};
+    
+    if (action === 'view') {
+      update.$inc = { viewCount: 1 };
+    } else if (action === 'cart') {
+      update.$inc = { addToCartCount: 1 };
+    } else {
+      return res.status(400).json({ message: 'Invalid action' });
+    }
+
+    const product = await Product.findByIdAndUpdate(
+      req.params.id,
+      update,
+      { new: true }
+    );
+
+    if (!product) return res.status(404).json({ message: 'Product not found' });
+    res.json({ success: true, product });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error });
+  }
+});
+
 export default router;

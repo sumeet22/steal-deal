@@ -59,6 +59,8 @@ interface AppContextType {
   productsLoading: boolean;
   settingsLoaded: boolean;
   mapProductData: (p: any) => Product;
+  fetchOrders: () => Promise<void>;
+  trackProductActivity: (productId: string, action: 'view' | 'cart') => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -147,6 +149,18 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     isPublic: c.isPublic !== false,
   }), []);
 
+  const fetchOrders = useCallback(async () => {
+    try {
+      const res = await fetch('/api/orders');
+      if (!res.ok) throw new Error('Failed to fetch orders');
+      const data = await res.json();
+      const mapped: Order[] = (data || []).map(mapOrderData);
+      setOrders(mapped);
+    } catch (err) {
+      showToast('Error', 'Failed to load orders from server', 'error');
+    }
+  }, [mapOrderData, showToast]);
+
   useEffect(() => {
     const fetchCategories = async () => {
       try {
@@ -192,17 +206,6 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       }
     };
 
-    const fetchOrders = async () => {
-      try {
-        const res = await fetch('/api/orders');
-        if (!res.ok) throw new Error('Failed to fetch orders');
-        const data = await res.json();
-        const mapped: Order[] = (data || []).map(mapOrderData);
-        setOrders(mapped);
-      } catch (err) {
-        showToast('Error', 'Failed to load orders from server', 'error');
-      }
-    };
 
     const fetchSettings = async () => {
       try {
@@ -237,7 +240,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     fetchOrders();
     fetchSettings();
     fetchCoupons();
-  }, [showToast, token]);
+  }, [showToast, token, fetchOrders]);
 
   const updateSettings = useCallback(async (newSettings: { pricePercentage?: number, shippingFee?: number, freeShippingThreshold?: number }) => {
     try {
@@ -1066,61 +1069,77 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     })();
   }, [setUsers, showToast, token]);
 
-  const value = {
-    products,
-    categories,
-    users,
-    cart,
-    orders,
-    currentUser,
-    setCurrentUser,
-    token,
-    logout,
-    fetchProductsByCategory,
-    fetchProductsBySearch,
-    fetchNewArrivals,
-    fetchAllProductsForAdmin,
-    addProduct,
-    updateProduct,
-    deleteProduct,
-    reorderProducts,
-    addCategory,
-    updateCategory,
-    deleteCategory,
-    reorderCategories,
-    addUser,
-    updateUser,
-    deleteUser,
-    addAddress,
-    addToCart,
-    removeFromCart,
-    updateCartQuantity,
-    clearCart,
-    validateAndUpdateCart,
-    createOrder,
-    updateOrderStatus,
-    getDisplayPrice,
-    pricePercentage,
-    setPricePercentage,
-    shippingFee,
-    setShippingFee,
-    freeShippingThreshold,
-    setFreeShippingThreshold,
-    coupons,
-    fetchCoupons,
-    validateCoupon,
-    addCoupon,
-    deleteCoupon,
-    setProducts,
-    setCategories,
-    setOrders,
-    setUsers,
-    productsLoading,
-    settingsLoaded,
-    mapProductData,
-  };
+  const trackProductActivity = useCallback(async (productId: string, action: 'view' | 'cart') => {
+    try {
+      await fetch(`/api/products/${productId}/track`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action }),
+      });
+    } catch (err) {
+      console.error('Failed to track product activity:', err);
+    }
+  }, []);
 
-  return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
+  return (
+    <AppContext.Provider value={{
+      products,
+      categories,
+      users,
+      cart,
+      orders,
+      currentUser,
+      setCurrentUser,
+      token,
+      logout,
+      fetchProductsByCategory,
+      fetchProductsBySearch,
+      fetchNewArrivals,
+      fetchAllProductsForAdmin,
+      addProduct,
+      updateProduct,
+      deleteProduct,
+      reorderProducts,
+      addCategory,
+      updateCategory,
+      deleteCategory,
+      reorderCategories,
+      addUser,
+      updateUser,
+      deleteUser,
+      addAddress,
+      addToCart,
+      removeFromCart,
+      updateCartQuantity,
+      clearCart,
+      validateAndUpdateCart,
+      createOrder,
+      updateOrderStatus,
+      getDisplayPrice,
+      pricePercentage,
+      setPricePercentage,
+      shippingFee,
+      setShippingFee,
+      freeShippingThreshold,
+      setFreeShippingThreshold,
+      coupons,
+      fetchCoupons,
+      validateCoupon,
+      addCoupon,
+      deleteCoupon,
+      setProducts,
+      setCategories,
+      setOrders,
+      setUsers,
+      productsLoading,
+      settingsLoaded,
+      mapProductData,
+      fetchOrders,
+      trackProductActivity,
+    }}>
+      {children}
+    </AppContext.Provider>
+  );
 };
 
 export const useAppContext = () => {

@@ -7,8 +7,10 @@ import CsvUpload from './admin/CsvUpload';
 import DataManagement from './admin/DataManagement';
 import UserManagement from './admin/UserManagement';
 import CouponManagement from './admin/CouponManagement';
+import AnalyticsDashboard from './admin/AnalyticsDashboard';
+import OrderNotification from './admin/OrderNotification';
 
-type AdminView = 'products' | 'categories' | 'orders' | 'users' | 'csv-upload' | 'data-management' | 'price-settings' | 'coupons';
+type AdminView = 'products' | 'categories' | 'orders' | 'users' | 'csv-upload' | 'data-management' | 'price-settings' | 'coupons' | 'analytics';
 
 const AdminDashboard: React.FC = () => {
   const [view, setView] = useState<AdminView>('products');
@@ -142,6 +144,8 @@ const AdminDashboard: React.FC = () => {
             </div>
           </div>
         );
+      case 'analytics':
+        return <AnalyticsDashboard />;
       default:
         return <ProductManagement />;
     }
@@ -159,6 +163,9 @@ const AdminDashboard: React.FC = () => {
       <h1 className="text-3xl font-bold">Admin Dashboard</h1>
       <div className="bg-white dark:bg-gray-800 p-2 rounded-lg shadow-md">
         <nav className="flex flex-wrap items-center gap-2" aria-label="Tabs">
+          <button onClick={() => setView('analytics')} className={getTabClass('analytics')}>
+            📈 Business Analytics
+          </button>
           <button onClick={() => setView('products')} className={getTabClass('products')}>
             Products
           </button>
@@ -189,6 +196,8 @@ const AdminDashboard: React.FC = () => {
       <div className="mt-6">
         {renderView()}
       </div>
+
+      <OrderNotification onViewOrders={() => setView('orders')} />
     </div>
   );
 };
