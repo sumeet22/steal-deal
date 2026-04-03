@@ -23,6 +23,7 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
   CMD wget --quiet --tries=1 --spider http://localhost:5000/health || exit 1
 
 ENV NODE_ENV=production
+ENV TS_NODE_PROJECT="tsconfig.backend.json"
 EXPOSE 5000
 
 # Use ts-node for running TypeScript directly

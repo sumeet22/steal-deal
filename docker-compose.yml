@@ -52,8 +52,8 @@ services:
       test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:5000/health || exit 1"]
       interval: 30s
       timeout: 10s
-      retries: 3
-      start_period: 60s # Gives more time for database connection
+      retries: 5 # Increased retries
+      start_period: 90s # Extended warmup for slow DB connections
     logging:
       driver: "json-file"
       options:
