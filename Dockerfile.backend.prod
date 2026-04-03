@@ -1,15 +1,33 @@
-# Production-optimized backend Dockerfile
+# Multi-stage build for stability and speed
+# Stage 1: Build the backend
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+COPY package*.json ./
+COPY tsconfig*.json ./
+
+# Install all dependencies for build
+RUN npm ci --legacy-peer-deps
+
+# Copy source
+COPY . .
+
+# Build TypeScript to JavaScript
+RUN npm run build:server
+
+# Stage 2: Production runtime
 FROM node:20-alpine
 
 WORKDIR /app
 
-# Install dependencies (including dev deps for ts-node)
-COPY package*.json ./
-RUN npm ci --legacy-peer-deps && \
-    npm cache clean --force
+# Copy built assets and package files from builder
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/package*.json ./
 
-# Copy source
-COPY . .
+# Install only production dependencies
+RUN npm ci --omit=dev --legacy-peer-deps && \
+    npm cache clean --force
 
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs && \
@@ -18,14 +36,13 @@ RUN addgroup -g 1001 -S nodejs && \
 
 USER nodejs
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
-  CMD wget --quiet --tries=1 --spider http://127.0.0.1:5000/health || exit 1
+# Health check (matches docker-compose)
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+  CMD wget --quiet --tries=1 --spider http://localhost:5000/health || exit 1
 
 ENV NODE_ENV=production
-ENV TS_NODE_PROJECT="tsconfig.backend.json"
 EXPOSE 5000
 
-# Use ts-node for running TypeScript directly
-CMD ["node", "--loader", "ts-node/esm", "server/index.ts"]
-
+# Run the compiled code directly with node
+# Note: npm run start:backend is defined in package.json as "node dist/server/index.js"
+CMD ["npm", "run", "start:backend"]

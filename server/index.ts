@@ -112,7 +112,15 @@ app.use('/api/settings', settingsRouter);
 app.use('/api/coupons', couponRouter);
 
 app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'healthy', timestamp: new Date().toISOString() });
+  const dbStatus = mongoose.connection.readyState;
+  const status = dbStatus === 1 ? 'healthy' : 'unhealthy';
+  const statusCode = dbStatus === 1 ? 200 : 503;
+  
+  res.status(statusCode).json({
+    status,
+    database: dbStatus === 1 ? 'connected' : 'disconnected',
+    timestamp: new Date().toISOString()
+  });
 });
 
 app.get('/api/health', (req, res) => {

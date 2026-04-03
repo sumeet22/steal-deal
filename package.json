@@ -6,8 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:server": "tsc -p tsconfig.backend.json",
     "preview": "vite preview",
-    "start:backend": "node --loader ts-node/esm server/index.ts",
+    "start:backend": "node dist/server/index.js",
     "seed:db": "node --loader ts-node/esm server/seed.ts",
     "db:backup": "node scripts/db-manager.js backup",
     "db:restore": "node scripts/db-manager.js restore"
