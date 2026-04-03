@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   # Nginx reverse proxy and static file server
   nginx:
@@ -5,16 +7,28 @@ services:
       context: .
       dockerfile: Dockerfile.frontend.prod
     expose:
-      - "80"  # Add this - tells Docker nginx listens on port 80
-    healthcheck:
-      disable: true
-
+      - "80"
+    # Restart policy ensures it comes back up after a crash
+    restart: unless-stopped
     depends_on:
       backend:
-        condition: service_started
-    restart: unless-stopped
+        condition: service_healthy  # Only starts Nginx once Backend is actually ready
     networks:
       - app-network
+    deploy:
+      resources:
+        limits:
+          memory: 512M  # Nginx is lightweight; 512MB is plenty
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost/ || exit 1"]
+      interval: 1m
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   # Backend API server
   backend:
@@ -30,6 +44,22 @@ services:
     restart: unless-stopped
     networks:
       - app-network
+    deploy:
+      resources:
+        limits:
+          memory: 2048M  # Caps your backend at 2GB to save system RAM
+    healthcheck:
+      # Note: Ensure your backend has a GET /health or / endpoint that returns 200 OK
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s # Gives the backend time to boot before checking health
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 networks:
   app-network:

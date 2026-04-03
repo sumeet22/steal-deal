@@ -34,16 +34,23 @@ app.use((req, _res, next) => {
 });
 app.use(hpp()); // Prevent HTTP Parameter Pollution
 
+const skipLocalhost = (req: any) => {
+  const ip = req.ip || req.connection?.remoteAddress;
+  return ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1';
+};
+
 // Rate Limiting
 const globalLimiter = rateLimit({
   windowMs: 10 * 60 * 1000, // 10 minutes
   max: 2000, // Allow more for browsing
+  skip: skipLocalhost,
   message: 'Too many requests from this IP, please try again after 10 minutes'
 });
 
 const strictLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
   max: 200, // Increased from 20 to 200 to accommodate retries and app init
+  skip: skipLocalhost,
   message: 'Too many requests to this sensitive endpoint. Please wait.'
 });
 
@@ -55,7 +62,7 @@ app.use('/api/payment', strictLimiter);
 app.use('/api/auth/login', strictLimiter);
 app.use('/api/auth/register', strictLimiter);
 
-mongoose.connect(process.env.MONGO_URI || 'mongodb://localhost:27018/stealdeal', {
+mongoose.connect(process.env.MONGO_URI, {
   maxPoolSize: 10, // Maximum number of connections in the pool
   minPoolSize: 2,  // Minimum number of connections to maintain
   serverSelectionTimeoutMS: 5000, // Timeout for server selection
@@ -87,6 +94,14 @@ app.use('/api/payment', paymentRouter);
 app.use('/api/contact', contactRouter);
 app.use('/api/settings', settingsRouter);
 app.use('/api/coupons', couponRouter);
+
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'healthy', timestamp: new Date().toISOString() });
+});
+
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ status: 'healthy', timestamp: new Date().toISOString() });
+});
 
 app.get('/', (req, res) => {
   res.send('API is running...');
