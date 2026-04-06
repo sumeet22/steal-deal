@@ -1,12 +1,64 @@
 import 'dotenv/config';
 console.log('--- Backend Process Initializing ---');
+
+// Track server state for graceful shutdown
+let isShuttingDown = false;
+let server: any = null;
+
+// Handle uncaught exceptions
 process.on('uncaughtException', (err) => {
   console.error('CRITICAL: Uncaught Exception:', err);
-  process.exit(1);
+  if (isShuttingDown) return;
+  gracefulShutdown('uncaughtException');
 });
+
+// Handle unhandled rejections
 process.on('unhandledRejection', (reason, promise) => {
   console.error('CRITICAL: Unhandled Rejection at:', promise, 'reason:', reason);
+  if (isShuttingDown) return;
+  gracefulShutdown('unhandledRejection');
 });
+
+// Graceful shutdown function
+const gracefulShutdown = (signal: string) => {
+  if (isShuttingDown) return;
+  isShuttingDown = true;
+  
+  console.log(`\n${signal} received. Starting graceful shutdown...`);
+  
+  // Set a timeout to force shutdown after 30 seconds
+  const forceShutdown = setTimeout(() => {
+    console.log('Force shutdown after 30 seconds timeout');
+    process.exit(1);
+  }, 30000);
+  
+  // Close server if it exists
+  if (server) {
+    server.close(() => {
+      console.log('HTTP server closed');
+      clearTimeout(forceShutdown);
+      
+      // Close MongoDB connection
+      mongoose.connection.close(false).then(() => {
+        console.log('MongoDB connection closed');
+        clearTimeout(forceShutdown);
+        process.exit(0);
+      }).catch(err => {
+        console.error('Error closing MongoDB connection:', err);
+        clearTimeout(forceShutdown);
+        process.exit(0);
+      });
+    });
+  } else {
+    // If server hasn't started yet, just exit
+    clearTimeout(forceShutdown);
+    process.exit(0);
+  }
+};
+
+// Handle termination signals
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 
 import express from 'express';
 import mongoose from 'mongoose';
@@ -131,6 +183,34 @@ app.get('/', (req, res) => {
   res.send('API is running...');
 });
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on port ${PORT}`);
-});
+const startServer = async () => {
+  try {
+    // Wait for MongoDB connection before starting server
+    await mongoose.connection.asPromise();
+    
+    if (mongoose.connection.readyState === 1) {
+      console.log('MongoDB connected successfully, starting server...');
+    } else {
+      console.warn('MongoDB connection not ready, starting server anyway...');
+    }
+    
+    server = app.listen(PORT, '0.0.0.0', () => {
+      console.log(`Server running on port ${PORT}`);
+      console.log(`Health check: http://localhost:${PORT}/health`);
+    });
+    
+    // Handle server errors
+    server.on('error', (err: any) => {
+      console.error('Server error:', err);
+      if (err.code === 'EADDRINUSE') {
+        console.error(`Port ${PORT} is already in use`);
+        process.exit(1);
+      }
+    });
+  } catch (err) {
+    console.error('Failed to start server:', err);
+    process.exit(1);
+  }
+};
+
+startServer();

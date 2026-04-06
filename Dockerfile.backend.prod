@@ -45,4 +45,5 @@ EXPOSE 5000
 
 # Run the compiled code directly with node
 # Note: npm run start:backend is defined in package.json as "node dist/server/index.js"
+# NODE_OPTIONS is set via docker-compose.yml environment variable
 CMD ["npm", "run", "start:backend"]
