@@ -183,34 +183,30 @@ app.get('/', (req, res) => {
   res.send('API is running...');
 });
 
-const startServer = async () => {
-  try {
-    // Wait for MongoDB connection before starting server
-    await mongoose.connection.asPromise();
-    
-    if (mongoose.connection.readyState === 1) {
-      console.log('MongoDB connected successfully, starting server...');
-    } else {
-      console.warn('MongoDB connection not ready, starting server anyway...');
-    }
-    
-    server = app.listen(PORT, '0.0.0.0', () => {
-      console.log(`Server running on port ${PORT}`);
-      console.log(`Health check: http://localhost:${PORT}/health`);
-    });
-    
-    // Handle server errors
-    server.on('error', (err: any) => {
-      console.error('Server error:', err);
-      if (err.code === 'EADDRINUSE') {
-        console.error(`Port ${PORT} is already in use`);
-        process.exit(1);
-      }
-    });
-  } catch (err) {
-    console.error('Failed to start server:', err);
+// Start server immediately, MongoDB connects in background
+server = app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server running on port ${PORT}`);
+  console.log(`Health check: http://localhost:${PORT}/health`);
+});
+
+// Handle server errors
+server.on('error', (err: any) => {
+  console.error('Server error:', err);
+  if (err.code === 'EADDRINUSE') {
+    console.error(`Port ${PORT} is already in use`);
     process.exit(1);
   }
-};
+});
 
-startServer();
+// Monitor MongoDB connection status
+mongoose.connection.on('connected', () => {
+  console.log('MongoDB connected successfully');
+});
+
+mongoose.connection.on('error', (err) => {
+  console.error('MongoDB connection error:', err);
+});
+
+mongoose.connection.on('disconnected', () => {
+  console.warn('MongoDB disconnected');
+});
