@@ -354,15 +354,6 @@ const Storefront: React.FC<StorefrontProps> = ({
 }) => {
   const { products, categories, cart, addToCart, updateCartQuantity, fetchProductsByCategory, fetchProductsBySearch, productsLoading, settingsLoaded } = useAppContext();
 
-  // If settings haven't loaded yet, show a clean loading state to avoid price flicker
-  if (!settingsLoaded && products.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
-        <LoadingSpinner className="w-12 h-12 text-brand-600" />
-        <p className="text-slate-400 font-medium animate-pulse italic uppercase tracking-widest text-xs">Syncing Premium Pricing...</p>
-      </div>
-    );
-  }
 
   // Restore scroll position on mount
   React.useEffect(() => {
@@ -510,6 +501,15 @@ const Storefront: React.FC<StorefrontProps> = ({
     onProductClick(productId);
   }, [onProductClick]);
 
+  // If settings haven't loaded yet, show a clean loading state to avoid price flicker
+  if (!settingsLoaded && products.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+        <LoadingSpinner className="w-12 h-12 text-brand-600" />
+        <p className="text-slate-400 font-medium animate-pulse italic uppercase tracking-widest text-xs">Syncing Premium Pricing...</p>
+      </div>
+    );
+  }
 
   const renderCategoryView = () => {
     // Check if there are any active categories

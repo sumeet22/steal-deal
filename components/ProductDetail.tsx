@@ -51,16 +51,6 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ productId, onBack }) => {
     return foundProduct || fetchedProduct;
   }, [products, productId, fetchedProduct]);
 
-  // If settings haven't loaded yet, show a clean loading state to avoid price flicker
-  if (!settingsLoaded && !product) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
-        <LoadingSpinner className="w-12 h-12 text-brand-600" />
-        <p className="text-slate-400 font-medium animate-pulse italic uppercase tracking-widest text-xs">Loading Details...</p>
-      </div>
-    );
-  }
-
   // Sync quantity with cart
   useEffect(() => {
     if (productId) {
@@ -134,6 +124,16 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ productId, onBack }) => {
       setLoading(false);
     }
   }, [productId, mapProductData]);
+
+  // If settings haven't loaded yet, show a clean loading state to avoid price flicker
+  if (!settingsLoaded && !product) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+        <LoadingSpinner className="w-12 h-12 text-brand-600" />
+        <p className="text-slate-400 font-medium animate-pulse italic uppercase tracking-widest text-xs">Loading Details...</p>
+      </div>
+    );
+  }
 
 
   if (loading) {

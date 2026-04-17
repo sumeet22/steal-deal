@@ -37,16 +37,6 @@ const Checkout: React.FC<CheckoutProps> = ({ onBackToStore }) => {
   const { cart, createOrder, currentUser, setCurrentUser, addAddress, validateAndUpdateCart, shippingFee, freeShippingThreshold, validateCoupon, settingsLoaded } = useAppContext();
   const { showToast } = useToast();
 
-  // If settings haven't loaded yet, show a clean loading state to avoid price flicker
-  if (!settingsLoaded && cart.length > 0) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
-        <LoadingSpinner className="w-12 h-12 text-brand-600" />
-        <p className="text-slate-400 font-medium animate-pulse italic uppercase tracking-widest text-xs">Finalizing Prices...</p>
-      </div>
-    );
-  }
-
   const [customerInfo, setCustomerInfo] = useState({
     customerName: '',
     customerEmail: '',
@@ -146,6 +136,16 @@ const Checkout: React.FC<CheckoutProps> = ({ onBackToStore }) => {
     };
     fetchPublicCoupons();
   }, [validateAndUpdateCart, showToast]);
+
+  // If settings haven't loaded yet, show a clean loading state to avoid price flicker
+  if (!settingsLoaded && cart.length > 0) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+        <LoadingSpinner className="w-12 h-12 text-brand-600" />
+        <p className="text-slate-400 font-medium animate-pulse italic uppercase tracking-widest text-xs">Finalizing Prices...</p>
+      </div>
+    );
+  }
 
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
