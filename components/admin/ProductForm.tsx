@@ -41,10 +41,10 @@ const ProductForm: React.FC<ProductFormProps> = ({ product, onClose }) => {
     if (product) {
       setFormData({
         name: product.name,
-        price: product.basePrice.toString(),
+        price: (product.basePrice || product.price || 0).toString(),
         originalPrice: product.originalPrice?.toString() || '',
-        description: product.description,
-        stockQuantity: product.stockQuantity.toString(),
+        description: product.description || '',
+        stockQuantity: (product.stockQuantity || 0).toString(),
         categoryId: product.categoryId,
         isNew: product.tags?.includes('new') || false,
         outOfStock: product.outOfStock || false,
