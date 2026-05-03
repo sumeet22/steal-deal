@@ -19,12 +19,18 @@ export interface IUser extends Document {
   phone: string;
   email: string;
   password?: string;
+  role: 'user' | 'admin';
+  isVerified: boolean;
   isAdmin: boolean;
   addresses: IAddress[];
   isBanned: boolean;
+  verificationToken?: string;
+  passwordResetToken?: string;
+  passwordResetExpires?: Date;
   createdAt: Date;
   updatedAt: Date;
   comparePassword: (candidatePassword: string) => Promise<boolean>;
+  matchPassword: (candidatePassword: string) => Promise<boolean>;
 }
 
 const AddressSchema = new Schema<IAddress>({
@@ -60,6 +66,15 @@ const UserSchema = new Schema<IUser>({
     type: String,
     required: true,
   },
+  role: {
+    type: String,
+    enum: ['user', 'admin'],
+    default: 'user'
+  },
+  isVerified: {
+    type: Boolean,
+    default: false
+  },
   isAdmin: {
     type: Boolean,
     default: false,
@@ -69,6 +84,9 @@ const UserSchema = new Schema<IUser>({
     type: Boolean,
     default: false,
   },
+  verificationToken: String,
+  passwordResetToken: String,
+  passwordResetExpires: Date,
   createdAt: {
     type: Date,
     default: Date.now,
@@ -89,6 +107,11 @@ UserSchema.pre('save', async function (next: Function) {
 });
 
 UserSchema.methods.comparePassword = async function (candidatePassword: string) {
+  return bcrypt.compare(candidatePassword, this.password!);
+};
+
+// Alias for compatibility with auth.js
+UserSchema.methods.matchPassword = async function (candidatePassword: string) {
   return bcrypt.compare(candidatePassword, this.password!);
 };
 

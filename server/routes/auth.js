@@ -445,6 +445,12 @@ router.post('/login', async (req, res) => {
 
   try {
     let user = await User.findOne({ email });
+    console.log(`Login attempt for: ${email}`);
+    console.log(`User found: ${user ? 'Yes' : 'No'}`);
+    if (user) {
+      console.log(`User isVerified status in code: ${user.isVerified}`);
+      console.log(`User object keys: ${Object.keys(user.toObject())}`);
+    }
 
     if (!user) {
       return res.status(400).json({ msg: 'Invalid Credentials' });
@@ -503,7 +509,7 @@ router.post('/post-checkout-register', async (req, res) => {
     }
 
     const user = await User.create({
-      username: name,
+      name,
       email: email.toLowerCase(),
       phone,
       password,
@@ -513,7 +519,7 @@ router.post('/post-checkout-register', async (req, res) => {
     if (user) {
       res.status(201).json({
         _id: user._id,
-        username: user.username,
+        name: user.name,
         email: user.email,
         phone: user.phone,
         role: user.role,
